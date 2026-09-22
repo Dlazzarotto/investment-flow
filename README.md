@@ -11,8 +11,10 @@ supabase/migrations/0002_estimativas_ia.sql  # estimativas de valor médio (IA),
 supabase/migrations/0003_participacao_lock.sql # trava de 100 % com lock na linha do projeto (sem corrida)
 supabase/migrations/0004_projeto_membros.sql # acesso de sócios: projeto_membros, papel leitor/editor, RLS por membro
 supabase/migrations/0005_custos_e_despesas.sql # custo direto da venda (coluna gerada), tabela despesas, fluxo com saída
+supabase/migrations/0006_papeis_pin_convites.sql # papéis admin/manager/escritório, PIN de autorização, convites por link
 app/
   login/                              # e-mail + senha (Supabase Auth)
+  convite/[token]/                    # entrada pelo link de convite (um clique, não a visita)
   projetos/page.tsx                   # lista + criar projeto (nome, moeda, tipo de parceria, sua %)
   projetos/[id]/layout.tsx            # shell com seletor global de projeto e abas
   projetos/[id]/page.tsx              # dashboard: saldo, KPIs (ROI, margem bruta, saída, TIR), 3 gráficos, rateio, cenários, tabela mensal
@@ -35,6 +37,7 @@ tests/schema2.test.sql                # testes da migration 0002
 tests/schema3.test.sql                # testes da migration 0003 (trava preservada; roteiro de concorrência)
 tests/schema4.test.sql                # testes da migration 0004 (leitor, editor, e-mail não confirmado, revogação)
 tests/schema5.test.sql                # testes da migration 0005 (custo gerado, despesas, fluxo com as três saídas)
+tests/schema6.test.sql                # testes da migration 0006 (papéis, PIN, trava de tentativas, convites)
 ```
 
 ## Idiomas (pt · en · es · zh)
@@ -45,10 +48,22 @@ tests/schema5.test.sql                # testes da migration 0005 (custo gerado, 
 
 ## Acesso ao projeto
 
-- O dono é quem criou o projeto (`projetos.owner_id`): só ele convida/remove sócios, altera a estrutura da
-  parceria e exclui o projeto.
-- `projeto_membros` guarda quem mais entra, por e-mail, com papel **leitor** (vê tudo) ou **editor** (também
-  lança, edita e exclui investimentos, vendas e participantes).
+- O dono é quem criou o projeto (`projetos.owner_id`). Só ele exclui o projeto; no resto, o **admin** faz o mesmo.
+- `projeto_membros` guarda quem mais entra, com um de três papéis:
+
+| Papel | Vê investimentos | Lança venda/despesa | Altera e exclui | Convida, parceria, PIN |
+|---|---|---|---|---|
+| admin | sim | sim | sim | sim |
+| manager | **não** | sim | sim | não |
+| escritorio | **não** | sim | **só com o PIN** | não |
+
+- **PIN de autorização:** é do projeto, cadastrado pelo admin, guardado com bcrypt e nunca lido de volta. Não é
+  a senha de login de ninguém. Acertar abre uma janela de poucos minutos; cinco erros em 15 minutos travam as
+  tentativas. Sem PIN cadastrado, o Escritório não altera nem exclui nada.
+- **Convite por link:** `/convite/[token]` com papel embutido, validade, número de usos e revogação. O banco
+  guarda só o sha256 do token — o link não é recuperável depois de gerado.
+- Como o manager não enxerga investimentos, o fluxo mensal dele vem sem o capex: o saldo que ele vê é o
+  **resultado operacional**, e o ROI sai da tela porque o denominador é justamente o investimento.
 - O RLS decide por `pode_ver_projeto()` / `pode_editar_projeto()`, que casam o e-mail **confirmado** da conta
   (`auth.users.email_confirmed_at`) com a lista de membros. A tela pergunta o papel ao banco
   (`papel_no_projeto()`), então nunca mostra um botão que o RLS vai recusar.
@@ -98,7 +113,7 @@ tests/schema5.test.sql                # testes da migration 0005 (custo gerado, 
 
 ## Configuração
 
-1. **Supabase** → SQL Editor → execute `0001_schema.sql`, `0002_estimativas_ia.sql`, `0003_participacao_lock.sql`, `0004_projeto_membros.sql` e `0005_custos_e_despesas.sql` (idempotentes, nesta ordem).
+1. **Supabase** → SQL Editor → execute `0001_schema.sql`, `0002_estimativas_ia.sql`, `0003_participacao_lock.sql`, `0004_projeto_membros.sql`, `0005_custos_e_despesas.sql` e `0006_papeis_pin_convites.sql` (idempotentes, nesta ordem).
    Em Authentication → Providers → Email, **mantenha "Confirm email" ligado**: o acesso de sócio é vinculado ao e-mail confirmado da conta e, sem confirmação, qualquer pessoa poderia se cadastrar com o e-mail do sócio e entrar no projeto.
 2. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `ANTHROPIC_API_KEY`.
 3. `npm install` · `npm run dev` → http://localhost:3000
@@ -108,7 +123,7 @@ tests/schema5.test.sql                # testes da migration 0005 (custo gerado, 
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (61 testes)
+npm test            # vitest (66 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):

@@ -131,12 +131,41 @@ export interface EstimativaIA {
   criado_em: string;
 }
 
-/** Papel de acesso de um membro convidado (tabela projeto_membros). */
-export const PAPEIS_MEMBRO = ["leitor", "editor"] as const;
+/**
+ * Papel de acesso de um membro convidado (tabela projeto_membros).
+ *   admin      → tudo que o dono faz, menos excluir o projeto
+ *   manager    → vê e lança entradas e saídas; não enxerga investimentos
+ *   escritorio → só lança; alterar e excluir exigem o PIN do projeto
+ */
+export const PAPEIS_MEMBRO = ["admin", "manager", "escritorio"] as const;
 export type PapelMembro = (typeof PAPEIS_MEMBRO)[number];
 
 /** Papel do usuário logado no projeto; null quando não tem acesso. */
 export type PapelNoProjeto = PapelMembro | "dono" | null;
+
+/** O que cada papel pode fazer — derivado em lib/permissoes.ts, espelha o SQL de 0006. */
+export interface Permissoes {
+  verInvestimentos: boolean;
+  lancar: boolean;
+  /** Altera e exclui sem precisar de PIN. */
+  alterar: boolean;
+  /** Pode alterar/excluir digitando o PIN do projeto (escritório). */
+  alterarComPin: boolean;
+  administrar: boolean;
+  ehDono: boolean;
+}
+
+/** Convite por link (o token em si nunca volta do banco — só o hash fica guardado). */
+export interface Convite {
+  id: string;
+  projeto_id: string;
+  papel: PapelMembro;
+  criado_em: string;
+  expira_em: string;
+  usos: number;
+  max_usos: number;
+  revogado: boolean;
+}
 
 export interface ProjetoMembro {
   id: string;

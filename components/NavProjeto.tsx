@@ -3,13 +3,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/client";
 
-export function NavProjeto({ projetoId }: { projetoId: string }) {
+export function NavProjeto({ projetoId, verInvestimentos }: { projetoId: string; verInvestimentos: boolean }) {
   const { d } = useI18n();
   const pathname = usePathname();
   const base = `/projetos/${projetoId}`;
   const abas = [
     { seg: "", rotulo: d.nav.dashboard },
-    { seg: "/investimentos", rotulo: d.nav.investimentos },
+    // Investimentos é assunto de dono e admin (0006): a aba some para os demais.
+    ...(verInvestimentos ? [{ seg: "/investimentos", rotulo: d.nav.investimentos }] : []),
     { seg: "/vendas", rotulo: d.nav.vendas },
     { seg: "/despesas", rotulo: d.nav.despesas },
     { seg: "/participantes", rotulo: d.nav.parceria },

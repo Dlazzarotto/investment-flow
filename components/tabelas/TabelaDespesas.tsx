@@ -5,6 +5,7 @@ import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Vazio } from "@/components/ui/Vazio";
+import { CampoPin } from "@/components/ui/CampoPin";
 import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
@@ -15,8 +16,8 @@ import { CATEGORIAS_DESPESA, type ActionState, type Despesa, type Moeda } from "
 const COLUNAS_BASE = 4;
 
 /** Tabela de despesas com edição na própria linha (uma por vez). */
-export function TabelaDespesas({ despesas, projetoId, moeda, editavel }:
-  { despesas: Despesa[]; projetoId: string; moeda: Moeda; editavel: boolean }) {
+export function TabelaDespesas({ despesas, projetoId, moeda, editavel, pedirPin = false }:
+  { despesas: Despesa[]; projetoId: string; moeda: Moeda; editavel: boolean; pedirPin?: boolean }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const t = d.despesas;
@@ -47,6 +48,7 @@ export function TabelaDespesas({ despesas, projetoId, moeda, editavel }:
                       despesa={x} projetoId={projetoId} moeda={moeda}
                       aoCancelar={() => setEditando(null)}
                       aoSalvar={(msg) => { setEditando(null); setAviso({ ok: true, sucesso: msg }); }}
+                      pedirPin={pedirPin}
                     />
                   </div>
                 </td>
@@ -66,7 +68,7 @@ export function TabelaDespesas({ despesas, projetoId, moeda, editavel }:
                         {d.comum.editar}
                       </button>
                       <BotaoExcluir action={excluirDespesa} id={x.id} projetoId={projetoId}
-                                    confirmacao={fmtTexto(t.excluirConfirma, { descricao: x.descricao })} rotulo={d.comum.excluir} />
+                                    confirmacao={fmtTexto(t.excluirConfirma, { descricao: x.descricao })} rotulo={d.comum.excluir} pedirPin={pedirPin} />
                     </div>
                   </td>
                 )}
@@ -79,8 +81,8 @@ export function TabelaDespesas({ despesas, projetoId, moeda, editavel }:
   );
 }
 
-function FormEdicao({ despesa: x, projetoId, moeda, aoCancelar, aoSalvar }:
-  { despesa: Despesa; projetoId: string; moeda: Moeda; aoCancelar: () => void; aoSalvar: (msg: string) => void }) {
+function FormEdicao({ despesa: x, projetoId, moeda, aoCancelar, aoSalvar, pedirPin }:
+  { despesa: Despesa; projetoId: string; moeda: Moeda; aoCancelar: () => void; aoSalvar: (msg: string) => void; pedirPin: boolean }) {
   const { d } = useI18n();
   const [estado, formAction] = useAcaoFormulario(atualizarDespesa);
   const ultimaSalva = useRef(0);
@@ -117,6 +119,7 @@ function FormEdicao({ despesa: x, projetoId, moeda, aoCancelar, aoSalvar }:
         <label className="rotulo" htmlFor={`data-${x.id}`}>{d.despesas.dataDespesa}</label>
         <input id={`data-${x.id}`} name="data" type="date" required className="campo" defaultValue={x.data.slice(0, 10)} />
       </div>
+      {pedirPin && <div className="sm:col-span-3"><CampoPin id={x.id} /></div>}
       <div className="flex flex-wrap items-center gap-3 sm:col-span-6">
         <SubmitButton>{d.comum.salvar}</SubmitButton>
         <button type="button" className="btn-quieto" onClick={aoCancelar}>{d.comum.cancelar}</button>

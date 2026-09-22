@@ -1,6 +1,7 @@
 import { FormDespesa } from "@/components/forms/FormDespesa";
 import { TabelaDespesas } from "@/components/tabelas/TabelaDespesas";
-import { listarDespesas, obterPapel, obterProjeto, podeEditar } from "@/lib/consultas";
+import { listarDespesas, obterPapel, obterProjeto } from "@/lib/consultas";
+import { permissoes } from "@/lib/permissoes";
 import { despesasPorCategoria } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
@@ -12,7 +13,8 @@ export default async function DespesasPage({ params }: { params: { id: string } 
   const f = formatadores(locale);
   const projeto = await obterProjeto(params.id);
   const [despesas, papel] = await Promise.all([listarDespesas(projeto.id), obterPapel(projeto.id)]);
-  const editavel = podeEditar(papel);
+  const pode = permissoes(papel);
+  const editavel = pode.lancar;
   const total = despesas.reduce((s, x) => s + Number(x.valor), 0);
   const porCategoria = despesasPorCategoria(despesas);
   const m = projeto.moeda;
@@ -32,7 +34,7 @@ export default async function DespesasPage({ params }: { params: { id: string } 
           <h2 className="mb-0">{t.cadastradas}</h2>
           <p className="text-stone">{d.comum.total}: <span className="num font-semibold text-navy">{f.moeda(total, m)}</span></p>
         </div>
-        <TabelaDespesas despesas={despesas} projetoId={projeto.id} moeda={m} editavel={editavel} />
+        <TabelaDespesas despesas={despesas} projetoId={projeto.id} moeda={m} editavel={editavel} pedirPin={pode.alterarComPin} />
       </section>
       {porCategoria.length > 0 && (
         <section className="secao">

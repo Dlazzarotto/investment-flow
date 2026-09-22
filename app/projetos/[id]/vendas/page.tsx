@@ -1,6 +1,7 @@
 import { FormVenda } from "@/components/forms/FormVenda";
 import { TabelaVendas } from "@/components/tabelas/TabelaVendas";
-import { listarVendas, obterPapel, obterProjeto, podeEditar } from "@/lib/consultas";
+import { listarVendas, obterPapel, obterProjeto } from "@/lib/consultas";
+import { permissoes } from "@/lib/permissoes";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
@@ -10,7 +11,8 @@ export default async function VendasPage({ params }: { params: { id: string } })
   const f = formatadores(locale);
   const projeto = await obterProjeto(params.id);
   const [vendas, papel] = await Promise.all([listarVendas(projeto.id), obterPapel(projeto.id)]);
-  const editavel = podeEditar(papel);
+  const pode = permissoes(papel);
+  const editavel = pode.lancar;
   const total = vendas.reduce((s, v) => s + Number(v.receita_total), 0);
   const m = projeto.moeda;
   const t = d.vendas;
@@ -29,7 +31,7 @@ export default async function VendasPage({ params }: { params: { id: string } })
           <h2 className="mb-0">{t.historico}</h2>
           <p className="text-stone">{d.comum.total}: <span className="num font-semibold text-navy">{f.moeda(total, m)}</span></p>
         </div>
-        <TabelaVendas vendas={vendas} projetoId={projeto.id} moeda={m} editavel={editavel} />
+        <TabelaVendas vendas={vendas} projetoId={projeto.id} moeda={m} editavel={editavel} pedirPin={pode.alterarComPin} />
       </section>
     </>
   );

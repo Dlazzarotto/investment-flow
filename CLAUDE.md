@@ -1,6 +1,6 @@
 # Investment Dashboard — contexto para o Claude Code
 
-Gestão de aportes (Capex/Opex), vendas/receitas, parceria (tipo + % de participação) e dashboard por projeto (JVs, logística, mineração). Versão atual: 2.4. Idioma de trabalho com o usuário: português.
+Gestão de aportes (Capex/Opex), vendas/receitas, parceria (tipo + % de participação) e dashboard por projeto (JVs, logística, mineração). Versão atual: 2.5. Idioma de trabalho com o usuário: português.
 
 ## Stack
 
@@ -17,6 +17,7 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0003_participacao_lock.sql (trava de 100 % com lock — sem corrida)
                        0004_projeto_membros.sql (acesso de sócios: papel leitor/editor, RLS por membro)
                        0005_custos_e_despesas.sql (custo direto da venda, tabela despesas, fluxo com saída)
+                       0006_papeis_pin_convites.sql (admin/manager/escritório, PIN de autorização, convite por link)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, vendas/, despesas/, participantes/ (layout.tsx = Shell)
 app/api/export/[id]    CSV/XLSX no idioma atual;  app/api/ia/estimar  POST valor médio de mercado
@@ -34,7 +35,7 @@ tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); sche
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 61 testes, todos devem passar
+npm test          # vitest — 66 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -55,7 +56,13 @@ Ambiente: `.env.local` com `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANO
 ## Decisões já tomadas (não reabrir sem pedido)
 
 - Migração de Streamlit/SQLite (v1) para esta stack: decidida e concluída.
-- Participantes são cadastro (nome, papel, %) e continuam separados do acesso. Quem entra no projeto está em `projeto_membros` (convite por e-mail, papel leitor/editor); só o dono convida, remove, altera a estrutura da parceria e exclui o projeto.
+- Participantes são cadastro (nome, papel, %) e continuam separados do acesso. Quem entra no projeto está em `projeto_membros`, com um de três papéis:
+  - **admin** — tudo que o dono faz, menos excluir o projeto
+  - **manager** — vê e lança entradas e saídas; **não enxerga investimentos** (a aba some e o RLS filtra, então o fluxo mensal dele vem sem capex e sem ROI)
+  - **escritorio** — só lança; alterar e excluir exigem o **PIN do projeto**
+- O PIN é do projeto, cadastrado pelo admin, guardado com bcrypt e nunca lido de volta. **Não é a senha de login de ninguém** — pedir a senha da conta de outra pessoa é o caminho curto para vazá-la. Acertar abre uma janela de poucos minutos (`public.autorizacoes`), e o RLS é quem exige a janela.
+- Convite por e-mail e por **link** (`/convite/[token]`): o banco guarda só o sha256 do token, com validade, número de usos e revogação. Entrar é um clique, não a visita — prefetch e prévia de link não gastam um uso.
+- Quem decide é sempre o banco (`papel_no_projeto`, `pode_*`); `lib/permissoes.ts` espelha isso só para a tela não oferecer botão que o RLS vai recusar.
 - O vínculo do membro é pelo e-mail **confirmado** da conta: com "Confirm email" desligado no Supabase, qualquer um poderia se cadastrar com o e-mail do sócio. Manter a confirmação ligada.
 - Estimativa de IA: modelo padrão `claude-sonnet-4-6`, até 5 buscas, resposta JSON validada por zod, gravada em `estimativas_ia`; a tabela de investimentos compara valor lançado × última média por `lower(trim(item))`.
 - Fonte via `<link>` (IBM Plex Sans + Noto Sans SC) com `optimizeFonts: false` para o build não depender de rede.

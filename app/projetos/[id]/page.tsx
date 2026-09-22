@@ -4,7 +4,8 @@ import { Vazio } from "@/components/ui/Vazio";
 import { GraficoFluxo } from "@/components/charts/GraficoFluxo";
 import { GraficoBreakeven } from "@/components/charts/GraficoBreakeven";
 import { GraficoAlocacao } from "@/components/charts/GraficoAlocacao";
-import { listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, obterFluxoMensal, obterProjeto } from "@/lib/consultas";
+import { listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, obterFluxoMensal, obterPapel, obterProjeto } from "@/lib/consultas";
+import { permissoes } from "@/lib/permissoes";
 import { Cenarios } from "@/components/Cenarios";
 import {
   MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes,
@@ -18,8 +19,12 @@ export default async function DashboardPage({ params }: { params: { id: string }
   const { locale, d } = obterD();
   const f = formatadores(locale);
   const projeto = await obterProjeto(params.id);
+  const papel = await obterPapel(projeto.id);
+  const pode = permissoes(papel);
   const [investimentos, vendas, despesas, participantes, fluxo] = await Promise.all([
-    listarInvestimentos(projeto.id), listarVendas(projeto.id), listarDespesas(projeto.id),
+    // O RLS já devolveria vazio para quem não pode ver capex; nem pedimos.
+    pode.verInvestimentos ? listarInvestimentos(projeto.id) : Promise.resolve([]),
+    listarVendas(projeto.id), listarDespesas(projeto.id),
     listarParticipantes(projeto.id), obterFluxoMensal(projeto.id),
   ]);
   const kpis = calcularKpis(investimentos, vendas, despesas);
@@ -34,7 +39,7 @@ export default async function DashboardPage({ params }: { params: { id: string }
   const semDados = investimentos.length === 0 && vendas.length === 0 && despesas.length === 0;
   const tomSaldo = kpis.saldo > 0 ? "gain" : kpis.saldo < 0 ? "loss" : "neutro";
   const m = projeto.moeda;
-  const papel = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
+  const papelDaParte = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
     : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo];
   const nomeParte = (r: Rateio) => r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome;
 
@@ -52,6 +57,10 @@ export default async function DashboardPage({ params }: { params: { id: string }
         </div>
       </div>
 
+      {!pode.verInvestimentos && (
+        <p className="mt-6 rounded-md border-l-4 border-navy bg-navy-soft px-4 py-3">{d.acesso.semInvestimentos}</p>
+      )}
+
       <section className="mt-8 rounded-md bg-navy px-5 py-6 text-white sm:px-8">
         <p className="text-sm text-white/75">{d.dashboard.saldo}</p>
         <p className={`num mt-1 text-3xl font-semibold leading-none ${kpis.saldo < 0 ? "text-orange" : ""}`}>{f.moeda(kpis.saldo, m)}</p>
@@ -68,9 +77,14 @@ export default async function DashboardPage({ params }: { params: { id: string }
       </section>
 
       <section className="mt-8 grid gap-6 sm:grid-cols-3">
-        <Kpi rotulo={d.dashboard.investimentoTotal} valor={f.moeda(kpis.investimentoTotal, m)} nota={fmtTexto(d.dashboard.lancamentos, { n: investimentos.length })} />
+        {/* Investimento e ROI dependem do capex: sem ele, os dois saem da tela. */}
+        {pode.verInvestimentos && (
+          <Kpi rotulo={d.dashboard.investimentoTotal} valor={f.moeda(kpis.investimentoTotal, m)} nota={fmtTexto(d.dashboard.lancamentos, { n: investimentos.length })} />
+        )}
         <Kpi rotulo={d.dashboard.receitaTotal} valor={f.moeda(kpis.receitaTotal, m)} nota={fmtTexto(d.dashboard.vendasN, { n: vendas.length })} />
-        <Kpi rotulo={d.dashboard.roi} valor={f.pct(kpis.roi)} tom={tomSaldo} nota={d.dashboard.roiNota} />
+        {pode.verInvestimentos
+          ? <Kpi rotulo={d.dashboard.roi} valor={f.pct(kpis.roi)} tom={tomSaldo} nota={d.dashboard.roiNota} />
+          : <Kpi rotulo={d.dashboard.despesas} valor={f.moeda(kpis.despesasTotal, m)} nota={d.despesas.titulo} />}
       </section>
 
       <section className="mt-8 grid gap-6 sm:grid-cols-3">
@@ -99,10 +113,12 @@ export default async function DashboardPage({ params }: { params: { id: string }
           <section className="secao"><h2>{d.dashboard.fluxo}</h2><GraficoFluxo fluxo={fluxo} moeda={m} /></section>
           <section className="secao"><h2>{d.dashboard.breakeven}</h2><GraficoBreakeven fluxo={fluxo} moeda={m} breakeven={breakeven} /></section>
           <section className="secao grid gap-8 lg:grid-cols-2">
-            <div>
-              <h2 className="mb-4 text-xl">{d.dashboard.alocacao}</h2>
-              {alocacao.length === 0 ? <Vazio titulo={d.dashboard.semInvestimentos} texto={d.dashboard.semInvestimentosTexto} /> : <GraficoAlocacao alocacao={alocacao} moeda={m} />}
-            </div>
+            {pode.verInvestimentos && (
+              <div>
+                <h2 className="mb-4 text-xl">{d.dashboard.alocacao}</h2>
+                {alocacao.length === 0 ? <Vazio titulo={d.dashboard.semInvestimentos} texto={d.dashboard.semInvestimentosTexto} /> : <GraficoAlocacao alocacao={alocacao} moeda={m} />}
+              </div>
+            )}
             <div>
               <h2 className="mb-4 text-xl">{d.dashboard.porParticipacao}</h2>
               <div className="overflow-x-auto">
@@ -112,7 +128,7 @@ export default async function DashboardPage({ params }: { params: { id: string }
                     {rateio.map((r, i) => (
                       <tr key={`${r.tipo}-${i}`} className={r.tipo === "restante" ? "text-stone" : ""}>
                         <td className="font-medium">{nomeParte(r)}</td>
-                        <td>{papel(r.tipo)}</td>
+                        <td>{papelDaParte(r.tipo)}</td>
                         <td className="num">{f.numero(r.percentual, 2)}</td>
                         <td className={`num ${r.saldoAtribuivel < 0 ? "text-loss" : ""}`}>{f.moeda(r.saldoAtribuivel, m)}</td>
                       </tr>
@@ -132,7 +148,7 @@ export default async function DashboardPage({ params }: { params: { id: string }
             <div className="overflow-x-auto">
               <table className="tabela">
                 <thead><tr>
-                  <th>{d.dashboard.mes}</th><th className="num">{d.dashboard.investimento}</th>
+                  <th>{d.dashboard.mes}</th>{pode.verInvestimentos && <th className="num">{d.dashboard.investimento}</th>}
                   <th className="num">{d.dashboard.custoVendas}</th><th className="num">{d.dashboard.despesas}</th>
                   <th className="num">{d.dashboard.saida}</th><th className="num">{d.dashboard.receita}</th>
                   <th className="num">{d.dashboard.saidaAcum}</th><th className="num">{d.dashboard.recAcum}</th><th className="num">{d.dashboard.saldoAcum}</th>
@@ -141,7 +157,7 @@ export default async function DashboardPage({ params }: { params: { id: string }
                   {fluxo.map((x) => (
                     <tr key={x.mes}>
                       <td>{f.mesLongo(x.mes)}</td>
-                      <td className="num">{f.moeda(x.investimento, m)}</td>
+                      {pode.verInvestimentos && <td className="num">{f.moeda(x.investimento, m)}</td>}
                       <td className="num">{f.moeda(x.custo_vendas, m)}</td><td className="num">{f.moeda(x.despesas, m)}</td>
                       <td className="num font-semibold">{f.moeda(x.saida, m)}</td><td className="num">{f.moeda(x.receita, m)}</td>
                       <td className="num">{f.moeda(x.saida_acumulada, m)}</td><td className="num">{f.moeda(x.rec_acumulada, m)}</td>

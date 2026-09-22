@@ -85,6 +85,12 @@ export function criarSchemas(d: Dicionario) {
       email: z.string().trim().toLowerCase().email(v.emailInvalido).max(320, v.nomeLongo),
       papel: z.enum(PAPEIS_MEMBRO, enumMsg(v.papelInvalido)),
     }),
+    convite: z.object({
+      projeto_id: uuid,
+      papel: z.enum(PAPEIS_MEMBRO, enumMsg(v.papelInvalido)),
+      dias: z.coerce.number().int().min(1).max(90).catch(7),
+      max_usos: z.coerce.number().int().min(1).max(50).catch(1),
+    }),
     id: z.object({ id: uuid, projeto_id: uuid }),
     /** Identificador isolado (edição/exclusão de projeto). */
     uuid,

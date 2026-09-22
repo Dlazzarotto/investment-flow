@@ -5,6 +5,7 @@ import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Vazio } from "@/components/ui/Vazio";
+import { CampoPin } from "@/components/ui/CampoPin";
 import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
@@ -16,8 +17,8 @@ import { CATEGORIAS_RECEITA, UNIDADES_VOLUME, type ActionState, type Moeda, type
 const COLUNAS_BASE = 8;
 
 /** Tabela de vendas com edição na própria linha (uma por vez). */
-export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
-  { vendas: Venda[]; projetoId: string; moeda: Moeda; editavel: boolean }) {
+export function TabelaVendas({ vendas, projetoId, moeda, editavel, pedirPin = false }:
+  { vendas: Venda[]; projetoId: string; moeda: Moeda; editavel: boolean; pedirPin?: boolean }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const t = d.vendas;
@@ -51,6 +52,7 @@ export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
                       venda={v} projetoId={projetoId} moeda={moeda}
                       aoCancelar={() => setEditando(null)}
                       aoSalvar={(msg) => { setEditando(null); setAviso({ ok: true, sucesso: msg }); }}
+                      pedirPin={pedirPin}
                     />
                   </div>
                 </td>
@@ -82,7 +84,7 @@ export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
                         {d.comum.editar}
                       </button>
                       <BotaoExcluir action={excluirVenda} id={v.id} projetoId={projetoId}
-                                    confirmacao={fmtTexto(t.excluirConfirma, { data: f.data(v.data) })} rotulo={d.comum.excluir} />
+                                    confirmacao={fmtTexto(t.excluirConfirma, { data: f.data(v.data) })} rotulo={d.comum.excluir} pedirPin={pedirPin} />
                     </div>
                   </td>
                 )}
@@ -96,8 +98,8 @@ export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
   );
 }
 
-function FormEdicao({ venda: v, projetoId, moeda, aoCancelar, aoSalvar }:
-  { venda: Venda; projetoId: string; moeda: Moeda; aoCancelar: () => void; aoSalvar: (msg: string) => void }) {
+function FormEdicao({ venda: v, projetoId, moeda, aoCancelar, aoSalvar, pedirPin }:
+  { venda: Venda; projetoId: string; moeda: Moeda; aoCancelar: () => void; aoSalvar: (msg: string) => void; pedirPin: boolean }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const [estado, formAction] = useAcaoFormulario(atualizarVenda);
@@ -148,6 +150,7 @@ function FormEdicao({ venda: v, projetoId, moeda, aoCancelar, aoSalvar }:
         <input id={`preco-${v.id}`} name="preco_unitario" type="number" inputMode="decimal" min="0.01" step="0.01" required
                className="campo num" defaultValue={Number(v.preco_unitario)} onChange={(e) => setPreco(Number(e.target.value))} />
       </div>
+      {pedirPin && <div className="sm:col-span-3"><CampoPin id={v.id} /></div>}
       <div className="flex flex-wrap items-center gap-3 sm:col-span-6">
         <SubmitButton>{d.comum.salvar}</SubmitButton>
         <button type="button" className="btn-quieto" onClick={aoCancelar}>{d.comum.cancelar}</button>

@@ -1,13 +1,17 @@
 import { FormProjeto } from "@/components/forms/FormProjeto";
 import { FormParticipante } from "@/components/forms/FormParticipante";
 import { FormMembro } from "@/components/forms/FormMembro";
+import { FormPin } from "@/components/forms/FormPin";
+import { FormConvite } from "@/components/forms/FormConvite";
 import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { Vazio } from "@/components/ui/Vazio";
 import { ConfirmarExclusaoProjeto } from "@/components/ConfirmarExclusaoProjeto";
 import { atualizarProjeto, excluirProjeto } from "@/app/actions/projetos";
 import { excluirParticipante } from "@/app/actions/participantes";
 import { removerMembro } from "@/app/actions/membros";
-import { listarMembros, listarParticipantes, obterPapel, obterProjeto, podeEditar } from "@/lib/consultas";
+import { revogarConvite } from "@/app/actions/acesso";
+import { listarConvites, listarMembros, listarParticipantes, obterPapel, obterProjeto, projetoTemPin } from "@/lib/consultas";
+import { permissoes } from "@/lib/permissoes";
 import { totalParticipacao } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
@@ -17,15 +21,19 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
   const { locale, d } = obterD();
   const f = formatadores(locale);
   const projeto = await obterProjeto(params.id);
-  const [participantes, papel, membros] = await Promise.all([
-    listarParticipantes(projeto.id), obterPapel(projeto.id), listarMembros(projeto.id),
+  const papel = await obterPapel(projeto.id);
+  const pode = permissoes(papel);
+  const [participantes, membros, convites, temPin] = await Promise.all([
+    listarParticipantes(projeto.id), listarMembros(projeto.id),
+    pode.administrar ? listarConvites(projeto.id) : Promise.resolve([]),
+    projetoTemPin(projeto.id),
   ]);
   const alocado = totalParticipacao(projeto, participantes);
   const disponivel = Math.round((100 - alocado) * 100) / 100;
   const t = d.parceria;
   const pctDono = Math.min(projeto.participacao_pct, 100);
-  const ehDono = papel === "dono";
-  const editavel = podeEditar(papel);
+  const ehDono = pode.ehDono;
+  const editavel = pode.administrar;
 
   return (
     <>
@@ -113,8 +121,55 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
           </table>
         </div>
         {membros.length === 0 && <div className="mt-4"><Vazio titulo={d.membros.vazioTitulo} texto={d.membros.vazioTexto} /></div>}
-        {ehDono && <div className="mt-6 max-w-3xl"><FormMembro projetoId={projeto.id} /></div>}
+        {editavel && <div className="mt-6 max-w-3xl"><FormMembro projetoId={projeto.id} /></div>}
       </section>
+
+      {editavel && (
+        <section className="secao">
+          <h2>{d.acesso.convites}</h2>
+          <div className="max-w-3xl"><FormConvite projetoId={projeto.id} /></div>
+          <h3 className="mb-3 mt-8 text-lg text-navy">{d.acesso.listaConvites}</h3>
+          {convites.length === 0 ? <Vazio titulo={d.acesso.semConvites} texto={d.acesso.semConvitesTexto} /> : (
+            <div className="overflow-x-auto">
+              <table className="tabela">
+                <thead><tr>
+                  <th>{d.membros.papel}</th><th>{d.acesso.expiraEm}</th><th className="num">{d.acesso.usos}</th>
+                  <th>{d.comum.total}</th><th>{d.comum.acoes}</th>
+                </tr></thead>
+                <tbody>
+                  {convites.map((c) => {
+                    const situacao = c.revogado ? d.acesso.revogado
+                      : new Date(c.expira_em) < new Date() ? d.acesso.vencido
+                      : c.usos >= c.max_usos ? d.acesso.esgotado : d.acesso.ativo;
+                    const ativo = situacao === d.acesso.ativo;
+                    return (
+                      <tr key={c.id} className={ativo ? "" : "text-stone"}>
+                        <td className="font-medium">{d.enums.papelMembro[c.papel]}</td>
+                        <td className="whitespace-nowrap">{f.data(c.expira_em)}</td>
+                        <td className="num">{fmtTexto(d.acesso.usosDe, { usos: c.usos, max: c.max_usos })}</td>
+                        <td>{situacao}</td>
+                        <td>
+                          {ativo && (
+                            <BotaoExcluir action={revogarConvite} id={c.id} projetoId={projeto.id}
+                                          confirmacao={d.acesso.revogarConfirma} rotulo={d.acesso.revogar} />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {editavel && (
+        <section className="secao max-w-3xl">
+          <h2>{d.acesso.pin}</h2>
+          <FormPin projetoId={projeto.id} temPin={temPin} />
+        </section>
+      )}
 
       {ehDono && (
         <section className="secao max-w-3xl border-t border-stone-light pt-8">

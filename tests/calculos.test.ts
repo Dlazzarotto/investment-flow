@@ -5,6 +5,7 @@ import {
   totalParticipacao, vpl,
 } from "@/lib/calculos";
 import { caminhoInterno, criarSchemas } from "@/lib/validacao";
+import { permissoes } from "@/lib/permissoes";
 import { formatadores, hojeISO } from "@/lib/format";
 import { obterDicionario } from "@/lib/i18n";
 const { projeto: projetoSchema, participante: participanteSchema, investimento: investimentoSchema, venda: vendaSchema } = criarSchemas(obterDicionario("pt"));
@@ -247,10 +248,12 @@ describe("Validação (zod)", () => {
   });
   it("membro: e-mail normalizado para minúsculas e papel dentro do enum", () => {
     const { membro } = criarSchemas(obterDicionario("pt"));
-    const base = { projeto_id: uuid, email: "  Socio@Empresa.COM ", papel: "editor" };
-    expect(membro.safeParse(base).data).toEqual({ projeto_id: uuid, email: "socio@empresa.com", papel: "editor" });
+    const base = { projeto_id: uuid, email: "  Socio@Empresa.COM ", papel: "manager" };
+    expect(membro.safeParse(base).data).toEqual({ projeto_id: uuid, email: "socio@empresa.com", papel: "manager" });
     expect(membro.safeParse({ ...base, email: "sem-arroba" }).error?.issues[0].message).toBe("Informe um e-mail válido.");
+    // "dono" não é papel de membro: quem cria o projeto já é o dono
     expect(membro.safeParse({ ...base, papel: "dono" }).error?.issues[0].message).toBe("Papel inválido.");
+    expect(membro.safeParse({ ...base, papel: "editor" }).success).toBe(false);
     expect(membro.safeParse({ ...base, projeto_id: "x" }).success).toBe(false);
   });
   it("redirecionamento pós-login só aceita caminho interno", () => {
@@ -265,6 +268,37 @@ describe("Validação (zod)", () => {
     expect(participanteSchema.safeParse(p).success).toBe(true);
     expect(participanteSchema.safeParse({ ...p, percentual: "0" }).success).toBe(false);
     expect(participanteSchema.safeParse({ ...p, tipo: "gerente" }).success).toBe(false);
+  });
+});
+
+describe("Permissões por papel", () => {
+  it("dono e admin mandam em tudo", () => {
+    for (const papel of ["dono", "admin"] as const) {
+      expect(permissoes(papel)).toMatchObject({
+        verInvestimentos: true, lancar: true, alterar: true, alterarComPin: false, administrar: true,
+      });
+    }
+    expect(permissoes("dono").ehDono).toBe(true);
+    expect(permissoes("admin").ehDono).toBe(false);
+  });
+  it("manager vê e corrige entradas e saídas, mas não enxerga investimentos", () => {
+    expect(permissoes("manager")).toEqual({
+      verInvestimentos: false, lancar: true, alterar: true, alterarComPin: false, administrar: false, ehDono: false,
+    });
+  });
+  it("escritório só lança; alterar e excluir dependem do PIN", () => {
+    expect(permissoes("escritorio")).toEqual({
+      verInvestimentos: false, lancar: true, alterar: false, alterarComPin: true, administrar: false, ehDono: false,
+    });
+  });
+  it("sem papel não faz nada", () => {
+    expect(permissoes(null)).toEqual({
+      verInvestimentos: false, lancar: false, alterar: false, alterarComPin: false, administrar: false, ehDono: false,
+    });
+  });
+  it("só o escritório passa pelo caminho do PIN", () => {
+    const comPin = (["dono", "admin", "manager", "escritorio", null] as const).filter((p) => permissoes(p).alterarComPin);
+    expect(comPin).toEqual(["escritorio"]);
   });
 });
 

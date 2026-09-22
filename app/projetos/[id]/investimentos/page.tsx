@@ -1,6 +1,8 @@
 import { FormInvestimento } from "@/components/forms/FormInvestimento";
 import { TabelaInvestimentos, type LinhaInvestimento } from "@/components/tabelas/TabelaInvestimentos";
-import { listarInvestimentos, mapaUltimasEstimativas, obterPapel, obterProjeto, podeEditar } from "@/lib/consultas";
+import { notFound } from "next/navigation";
+import { listarInvestimentos, mapaUltimasEstimativas, obterPapel, obterProjeto } from "@/lib/consultas";
+import { permissoes } from "@/lib/permissoes";
 import { normalizarItem } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
@@ -10,10 +12,13 @@ export default async function InvestimentosPage({ params }: { params: { id: stri
   const { locale, d } = obterD();
   const f = formatadores(locale);
   const projeto = await obterProjeto(params.id);
-  const [investimentos, estimativas, papel] = await Promise.all([
-    listarInvestimentos(projeto.id), mapaUltimasEstimativas(projeto.id), obterPapel(projeto.id),
+  const papel = await obterPapel(projeto.id);
+  // Investimentos são de dono e admin; para os demais a rota não existe.
+  if (!permissoes(papel).verInvestimentos) notFound();
+  const [investimentos, estimativas] = await Promise.all([
+    listarInvestimentos(projeto.id), mapaUltimasEstimativas(projeto.id),
   ]);
-  const editavel = podeEditar(papel);
+  const editavel = true;
   const total = investimentos.reduce((s, i) => s + Number(i.valor_total), 0);
   const iaDisponivel = Boolean(process.env.ANTHROPIC_API_KEY);
   const m = projeto.moeda;

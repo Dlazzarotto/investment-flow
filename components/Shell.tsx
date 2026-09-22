@@ -7,8 +7,8 @@ import { NavProjeto } from "./NavProjeto";
 import type { Projeto } from "@/lib/types";
 
 /** Barra superior navy com seletor global de projeto, idioma e abas; área de conteúdo. */
-export function Shell({ projetos, projetoAtual, children }:
-  { projetos: Projeto[]; projetoAtual?: Projeto; children: React.ReactNode }) {
+export function Shell({ projetos, projetoAtual, verInvestimentos = false, children }:
+  { projetos: Projeto[]; projetoAtual?: Projeto; verInvestimentos?: boolean; children: React.ReactNode }) {
   const { locale, d } = obterD();
   return (
     <div className="min-h-screen">
@@ -23,7 +23,7 @@ export function Shell({ projetos, projetoAtual, children }:
             <button type="submit" className="btn min-h-touch px-3 text-sm text-white/80 hover:text-white">{d.comum.sair}</button>
           </form>
         </div>
-        {projetoAtual && <NavProjeto projetoId={projetoAtual.id} />}
+        {projetoAtual && <NavProjeto projetoId={projetoAtual.id} verInvestimentos={verInvestimentos} />}
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
     </div>

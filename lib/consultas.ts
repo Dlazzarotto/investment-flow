@@ -5,8 +5,10 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { permissoes } from "@/lib/permissoes";
 import type {
-  Despesa, EstimativaIA, FluxoMensal, Investimento, PapelNoProjeto, Participante, Projeto, ProjetoMembro, Venda,
+  Convite, Despesa, EstimativaIA, FluxoMensal, Investimento, PapelNoProjeto, Participante, Projeto,
+  ProjetoMembro, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,9 +32,26 @@ export const obterPapel = cache(async (projetoId: string): Promise<PapelNoProjet
   return (data as PapelNoProjeto) ?? null;
 });
 
+/** Atalho usado pelas telas de lançamento; a regra completa está em lib/permissoes.ts. */
 export function podeEditar(papel: PapelNoProjeto): boolean {
-  return papel === "dono" || papel === "editor";
+  return permissoes(papel).lancar;
 }
+
+/** Existe PIN cadastrado no projeto? (só o boolean — o hash nunca sai do banco) */
+export const projetoTemPin = cache(async (projetoId: string): Promise<boolean> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("tem_pin", { p_projeto_id: projetoId });
+  if (error) throw new Error(error.message);
+  return Boolean(data);
+});
+
+export const listarConvites = cache(async (projetoId: string): Promise<Convite[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("convites").select("*")
+    .eq("projeto_id", projetoId).order("criado_em", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Convite[];
+});
 
 export const listarMembros = cache(async (projetoId: string): Promise<ProjetoMembro[]> => {
   const supabase = createClient();
