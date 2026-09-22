@@ -53,68 +53,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- 2. PIN de autorização do projeto
--- ---------------------------------------------------------------------------
-create table if not exists public.projeto_pin (
-  projeto_id    uuid primary key references public.projetos (id) on delete cascade,
-  hash          text not null,
-  atualizado_em timestamptz not null default now(),
-  atualizado_por uuid references auth.users (id) on delete set null
-);
--- Sem policy nenhuma: RLS ligado e nada liberado, então o hash não sai por
--- consulta direta. Quem mexe são as funções security definer abaixo.
-alter table public.projeto_pin enable row level security;
-
-/** Registro de cada tentativa de autorização — serve de trilha e de trava. */
-create table if not exists public.autorizacoes (
-  id         uuid primary key default gen_random_uuid(),
-  projeto_id uuid not null references public.projetos (id) on delete cascade,
-  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  sucesso    boolean not null,
-  criado_em  timestamptz not null default now(),
-  expira_em  timestamptz not null
-);
-create index if not exists autorizacoes_busca_idx
-  on public.autorizacoes (projeto_id, user_id, sucesso, expira_em desc);
-
-alter table public.autorizacoes enable row level security;
-drop policy if exists autorizacoes_ver on public.autorizacoes;
-create policy autorizacoes_ver on public.autorizacoes
-  for select to authenticated
-  using (public.pode_ver_projeto(projeto_id));
-
--- ---------------------------------------------------------------------------
--- 3. Convites por link
--- ---------------------------------------------------------------------------
-create table if not exists public.convites (
-  id         uuid primary key default gen_random_uuid(),
-  projeto_id uuid not null references public.projetos (id) on delete cascade,
-  token_hash text not null unique,
-  papel      public.papel_projeto not null default 'escritorio',
-  criado_por uuid references auth.users (id) on delete set null,
-  criado_em  timestamptz not null default now(),
-  expira_em  timestamptz not null,
-  usos       int not null default 0 check (usos >= 0),
-  max_usos   int not null default 1 check (max_usos between 1 and 50),
-  revogado   boolean not null default false
-);
-create index if not exists convites_projeto_idx on public.convites (projeto_id, criado_em desc);
-
-alter table public.convites enable row level security;
--- A lista de convites é do projeto; o token não está aqui, só o hash.
-drop policy if exists convites_ver on public.convites;
-create policy convites_ver on public.convites
-  for select to authenticated
-  using (public.pode_administrar_projeto(projeto_id));
-
-drop policy if exists convites_gerir on public.convites;
-create policy convites_gerir on public.convites
-  for all to authenticated
-  using (public.pode_administrar_projeto(projeto_id))
-  with check (public.pode_administrar_projeto(projeto_id));
-
--- ---------------------------------------------------------------------------
--- 4. Funções de permissão
+-- 2. Funções de permissão
 --
 -- Todas security definer pelo mesmo motivo de 0004: as policies de projetos
 -- consultam projeto_membros e vice-versa, e sem isso o Postgres entra em
@@ -171,6 +110,67 @@ create or replace function public.pode_editar_projeto(p_projeto_id uuid)
 returns boolean language sql stable security definer set search_path = public as $$
   select public.pode_lancar(p_projeto_id);
 $$;
+
+-- ---------------------------------------------------------------------------
+-- 3. PIN de autorização do projeto
+-- ---------------------------------------------------------------------------
+create table if not exists public.projeto_pin (
+  projeto_id    uuid primary key references public.projetos (id) on delete cascade,
+  hash          text not null,
+  atualizado_em timestamptz not null default now(),
+  atualizado_por uuid references auth.users (id) on delete set null
+);
+-- Sem policy nenhuma: RLS ligado e nada liberado, então o hash não sai por
+-- consulta direta. Quem mexe são as funções security definer abaixo.
+alter table public.projeto_pin enable row level security;
+
+/** Registro de cada tentativa de autorização — serve de trilha e de trava. */
+create table if not exists public.autorizacoes (
+  id         uuid primary key default gen_random_uuid(),
+  projeto_id uuid not null references public.projetos (id) on delete cascade,
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  sucesso    boolean not null,
+  criado_em  timestamptz not null default now(),
+  expira_em  timestamptz not null
+);
+create index if not exists autorizacoes_busca_idx
+  on public.autorizacoes (projeto_id, user_id, sucesso, expira_em desc);
+
+alter table public.autorizacoes enable row level security;
+drop policy if exists autorizacoes_ver on public.autorizacoes;
+create policy autorizacoes_ver on public.autorizacoes
+  for select to authenticated
+  using (public.pode_ver_projeto(projeto_id));
+
+-- ---------------------------------------------------------------------------
+-- 4. Convites por link
+-- ---------------------------------------------------------------------------
+create table if not exists public.convites (
+  id         uuid primary key default gen_random_uuid(),
+  projeto_id uuid not null references public.projetos (id) on delete cascade,
+  token_hash text not null unique,
+  papel      public.papel_projeto not null default 'escritorio',
+  criado_por uuid references auth.users (id) on delete set null,
+  criado_em  timestamptz not null default now(),
+  expira_em  timestamptz not null,
+  usos       int not null default 0 check (usos >= 0),
+  max_usos   int not null default 1 check (max_usos between 1 and 50),
+  revogado   boolean not null default false
+);
+create index if not exists convites_projeto_idx on public.convites (projeto_id, criado_em desc);
+
+alter table public.convites enable row level security;
+-- A lista de convites é do projeto; o token não está aqui, só o hash.
+drop policy if exists convites_ver on public.convites;
+create policy convites_ver on public.convites
+  for select to authenticated
+  using (public.pode_administrar_projeto(projeto_id));
+
+drop policy if exists convites_gerir on public.convites;
+create policy convites_gerir on public.convites
+  for all to authenticated
+  using (public.pode_administrar_projeto(projeto_id))
+  with check (public.pode_administrar_projeto(projeto_id));
 
 -- ---------------------------------------------------------------------------
 -- 5. PIN: cadastrar, autorizar, consultar janela aberta
@@ -265,7 +265,7 @@ returns boolean language sql stable security definer set search_path = public as
 $$;
 
 -- ---------------------------------------------------------------------------
--- 6. Convites por link
+-- 6. Convites por link: criar e aceitar
 -- ---------------------------------------------------------------------------
 /** Guarda só o sha256 do token: o link em si não fica no banco. */
 create or replace function public.hash_token(p_token text)
