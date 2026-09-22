@@ -18,7 +18,7 @@ export const zh: Dicionario = {
     credenciais: "邮箱或密码错误。", contaCriada: "账户已创建。请确认收到的邮件后登录。",
     emailInvalido: "请输入有效的邮箱。", senhaCurta: "密码至少需要 6 个字符。",
     falhaCadastro: "无法创建账户：{msg}", jaCadastrado: "该邮箱已注册账户。",
-    senhaFraca: "密码不符合最低要求。", limiteEmails: "尝试次数过多，请稍等几分钟后重试。",
+    senhaFraca: "密码不符合最低要求。", limiteEmails: "项目的邮件发送已达上限。请约一小时后重试，或请管理员为您创建账户。", limiteTentativas: "尝试次数过多，请稍等几分钟后重试。",
     cadastroDesativado: "新账户注册已停用。",
   },
   projetos: {

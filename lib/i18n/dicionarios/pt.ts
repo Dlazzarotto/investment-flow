@@ -18,7 +18,7 @@ export const pt = {
     credenciais: "E-mail ou senha incorretos.", contaCriada: "Conta criada. Confirme o e-mail recebido para entrar.",
     emailInvalido: "Informe um e-mail válido.", senhaCurta: "A senha deve ter pelo menos 6 caracteres.",
     falhaCadastro: "Não foi possível criar a conta: {msg}", jaCadastrado: "Já existe uma conta com este e-mail.",
-    senhaFraca: "A senha não atende aos requisitos mínimos.", limiteEmails: "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+    senhaFraca: "A senha não atende aos requisitos mínimos.", limiteEmails: "O limite de envio de e-mails do projeto foi atingido. Tente de novo em cerca de uma hora, ou peça ao administrador para criar sua conta.", limiteTentativas: "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
     cadastroDesativado: "O cadastro de novas contas está desativado.",
   },
   projetos: {

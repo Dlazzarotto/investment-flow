@@ -18,8 +18,10 @@ function traduzirErroCadastro(err: AuthError, d: Dicionario): string {
     case "user_already_exists":
     case "email_exists": return d.login.jaCadastrado;
     case "weak_password": return d.login.senhaFraca;
-    case "over_email_send_rate_limit":
-    case "over_request_rate_limit": return d.login.limiteEmails;
+    // São esperas bem diferentes: o limite de e-mail do Supabase é de 2 por hora
+    // no projeto inteiro; o de requisições passa em minutos.
+    case "over_email_send_rate_limit": return d.login.limiteEmails;
+    case "over_request_rate_limit": return d.login.limiteTentativas;
     case "signup_disabled": return d.login.cadastroDesativado;
     case "email_address_invalid":
     case "validation_failed": return d.login.emailInvalido;

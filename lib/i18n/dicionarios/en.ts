@@ -18,7 +18,7 @@ export const en: Dicionario = {
     credenciais: "Incorrect email or password.", contaCriada: "Account created. Confirm the email you received to sign in.",
     emailInvalido: "Enter a valid email.", senhaCurta: "Password must have at least 6 characters.",
     falhaCadastro: "Could not create the account: {msg}", jaCadastrado: "An account with this email already exists.",
-    senhaFraca: "The password does not meet the minimum requirements.", limiteEmails: "Too many attempts. Wait a few minutes and try again.",
+    senhaFraca: "The password does not meet the minimum requirements.", limiteEmails: "The project reached its email sending limit. Try again in about an hour, or ask the administrator to create your account.", limiteTentativas: "Too many attempts. Wait a few minutes and try again.",
     cadastroDesativado: "New account sign-up is disabled.",
   },
   projetos: {

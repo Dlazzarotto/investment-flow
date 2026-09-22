@@ -18,7 +18,7 @@ export const es: Dicionario = {
     credenciais: "Correo o contraseña incorrectos.", contaCriada: "Cuenta creada. Confirme el correo recibido para entrar.",
     emailInvalido: "Ingrese un correo válido.", senhaCurta: "La contraseña debe tener al menos 6 caracteres.",
     falhaCadastro: "No se pudo crear la cuenta: {msg}", jaCadastrado: "Ya existe una cuenta con este correo.",
-    senhaFraca: "La contraseña no cumple los requisitos mínimos.", limiteEmails: "Demasiados intentos. Espere unos minutos e inténtelo de nuevo.",
+    senhaFraca: "La contraseña no cumple los requisitos mínimos.", limiteEmails: "El proyecto alcanzó su límite de envío de correos. Inténtelo de nuevo en aproximadamente una hora, o pida al administrador que cree su cuenta.", limiteTentativas: "Demasiados intentos. Espere unos minutos e inténtelo de nuevo.",
     cadastroDesativado: "El registro de nuevas cuentas está desactivado.",
   },
   projetos: {
