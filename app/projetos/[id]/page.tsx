@@ -5,7 +5,11 @@ import { GraficoFluxo } from "@/components/charts/GraficoFluxo";
 import { GraficoBreakeven } from "@/components/charts/GraficoBreakeven";
 import { GraficoAlocacao } from "@/components/charts/GraficoAlocacao";
 import { listarInvestimentos, listarParticipantes, listarVendas, obterFluxoMensal, obterProjeto } from "@/lib/consultas";
-import { alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes, type Rateio, type TipoRateio } from "@/lib/calculos";
+import { Cenarios } from "@/components/Cenarios";
+import {
+  MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes,
+  roiAnualizado, tirAnual, tirMensal, type Rateio, type TipoRateio,
+} from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
@@ -19,6 +23,10 @@ export default async function DashboardPage({ params }: { params: { id: string }
   ]);
   const kpis = calcularKpis(investimentos, vendas);
   const breakeven = encontrarBreakeven(fluxo);
+  const roiAno = roiAnualizado(kpis.roi, fluxo.length);
+  const fluxoLiquido = fluxo.map((x) => x.receita - x.investimento);
+  const tir = tirAnual(fluxoLiquido);
+  const tirMes = tirMensal(fluxoLiquido);
   const alocacao = alocacaoPorCategoria(investimentos);
   const rateio = ratearParticipacoes(projeto, participantes, kpis);
   const meu = rateio[0];
@@ -64,6 +72,16 @@ export default async function DashboardPage({ params }: { params: { id: string }
         <Kpi rotulo={d.dashboard.roi} valor={f.pct(kpis.roi)} tom={tomSaldo} nota={d.dashboard.roiNota} />
       </section>
 
+      {!semDados && (
+        <section className="mt-8 grid gap-6 sm:grid-cols-2">
+          <Kpi rotulo={d.dashboard.roiAnualizado} valor={f.pct(roiAno)} tom={tomSaldo}
+               nota={roiAno === null ? fmtTexto(d.dashboard.roiCurto, { min: MESES_MINIMOS_ANUALIZAR })
+                                     : fmtTexto(d.dashboard.roiAnualizadoNota, { meses: fluxo.length })} />
+          <Kpi rotulo={d.dashboard.tir} valor={f.pct(tir)} tom={tomSaldo}
+               nota={tir === null ? d.dashboard.semTir : fmtTexto(d.dashboard.tirNota, { mensal: f.pct(tirMes) })} />
+        </section>
+      )}
+
       {semDados ? (
         <div className="secao"><Vazio titulo={d.dashboard.vazioTitulo} texto={d.dashboard.vazioTexto} /></div>
       ) : (
@@ -94,6 +112,10 @@ export default async function DashboardPage({ params }: { params: { id: string }
               </div>
               <Link href={`/projetos/${projeto.id}/participantes`} className="mt-3 inline-block text-navy underline">{d.dashboard.gerenciar}</Link>
             </div>
+          </section>
+          <section className="secao">
+            <h2>{d.dashboard.cenarios}</h2>
+            <Cenarios fluxo={fluxo} moeda={m} />
           </section>
           <section className="secao">
             <h2>{d.dashboard.tabelaMensal}</h2>

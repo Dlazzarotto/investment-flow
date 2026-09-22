@@ -82,6 +82,14 @@ export const es: Dicionario = {
     mes: "Mes", investimento: "Inversión", receita: "Ingreso", invAcum: "Inv. acumulada", recAcum: "Ing. acumulado", saldoAcum: "Saldo acumulado",
     serieInvestimentos: "Inversiones", serieReceitas: "Ingresos", serieCusto: "Costo acumulado", serieReceitaAcum: "Ingreso acumulado",
     breakevenRotulo: "Equilibrio {mes}",
+    retorno: "Retorno", roiAnualizado: "ROI anualizado", roiAnualizadoNota: "Equivalente anual, en {meses} meses",
+    roiCurto: "Período demasiado corto para anualizar (mínimo {min} meses).",
+    tir: "TIR (anual)", tirNota: "Tasa que anula el flujo de caja mensual ({mensal} al mes)",
+    semTir: "No calculable: el flujo necesita aportes e ingresos.",
+    cenarios: "Escenarios", cenario: "Escenario",
+    cenariosTexto: "Sensibilidad sobre el histórico: repite el flujo real con los ingresos y la inversión desplazados. No es una proyección.",
+    ajusteReceita: "Variación de ingresos (%)", ajusteInvestimento: "Variación de la inversión (%)",
+    premissaCenario: "Ingresos ×{receita} · Inversión ×{investimento}",
   },
   ia: {
     titulo: "Valor promedio de mercado con IA — contexto (opcional)",
@@ -108,6 +116,8 @@ export const es: Dicionario = {
     unidadeRef: "Unidad ref.", minimo: "Mínimo", medio: "Promedio", maximo: "Máximo", confianca: "Confianza", contexto: "Contexto", premissas: "Supuestos", fontes: "Fuentes", modelo: "Modelo",
     tipoInvestimento: "INVERSIÓN", tipoReceita: "INGRESO", venda: "Venta",
     tipo: "Tipo", id: "ID", descricao: "Descripción",
+    roiAnualizado: "ROI anualizado (%)", tirAnual: "TIR (% anual)", cenarios: "Escenarios", cenario: "Escenario",
+    fatorReceita: "Factor ingresos", fatorInvestimento: "Factor inversión",
   },
   validacao: {
     dataInvalida: "Ingrese una fecha válida.", numero: "{campo} debe ser un número.", maiorZero: "{campo} debe ser mayor que cero.",
@@ -138,6 +148,7 @@ export const es: Dicionario = {
     categoriaInvestimento: { infraestrutura: "Infraestructura", logistica: "Logística", operacional: "Operacional" },
     categoriaReceita: { venda_produto: "Venta de producto", frete_logistica: "Flete / logística", servicos: "Servicios", outros: "Otros" },
     confianca: { baixa: "Confianza baja", media: "Confianza media", alta: "Confianza alta" },
+    cenario: { otimista: "Optimista", base: "Base (real)", pessimista: "Pesimista" },
     unidades: { Toneladas: "Toneladas", "m³": "m³", Barris: "Barriles", Unidades: "Unidades", "Contêineres": "Contenedores", Horas: "Horas" },
   },
 };

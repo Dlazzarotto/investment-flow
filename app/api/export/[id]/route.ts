@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas, obterFluxoMensal, obterProjeto } from "@/lib/consultas";
-import { calcularKpis, desvioVsMedia, encontrarBreakeven, normalizarItem, ratearParticipacoes, type Rateio, type TipoRateio } from "@/lib/calculos";
+import {
+  calcularKpis, desvioVsMedia, encontrarBreakeven, normalizarItem, ratearParticipacoes, roiAnualizado,
+  simularCenarios, tirAnual, type Rateio, type TipoRateio,
+} from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { montarCsv } from "@/lib/csv";
 
@@ -46,7 +49,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     [x.projeto, projeto.nome], [x.moeda, projeto.moeda], [x.dataInicio, projeto.data_inicio],
     [x.tipoParceria, d.enums.tipoParceria[projeto.tipo_parceria]], [x.suaParticipacao, Number(projeto.participacao_pct)],
     [x.investimentoTotal, kpis.investimentoTotal], [x.receitaTotal, kpis.receitaTotal], [x.saldo, kpis.saldo],
-    [x.roi, kpis.roi === null ? "—" : Math.round(kpis.roi * 10000) / 100], [x.breakeven, breakeven ?? x.naoAtingido],
+    [x.roi, pctExcel(kpis.roi)], [x.roiAnualizado, pctExcel(roiAnualizado(kpis.roi, fluxo.length))],
+    [x.tirAnual, pctExcel(tirAnual(fluxo.map((m) => m.receita - m.investimento)))],
+    [x.breakeven, breakeven ?? x.naoAtingido],
   ]);
 
   const part = wb.addWorksheet(x.participacao);
@@ -94,6 +99,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   ];
   for (const f of fluxo) fx.addRow({ mes: f.mes.slice(0, 7), i: f.investimento, r: f.receita, ia: f.inv_acumulado, ra: f.rec_acumulada, s: f.saldo_acumulado });
 
+  const cen = wb.addWorksheet(x.cenarios);
+  cen.columns = [
+    { header: x.cenario, key: "nome", width: 20 }, { header: x.fatorReceita, key: "fr", width: 16 },
+    { header: x.fatorInvestimento, key: "fi", width: 18 }, { header: x.investimentoTotal, key: "inv", width: 22 },
+    { header: x.receitaTotal, key: "rec", width: 20 }, { header: x.saldo, key: "saldo", width: 18 },
+    { header: x.roi, key: "roi", width: 16 }, { header: x.roiAnualizado, key: "roiAno", width: 20 },
+    { header: x.tirAnual, key: "tir", width: 18 }, { header: x.breakeven, key: "be", width: 14 },
+  ];
+  for (const c of simularCenarios(fluxo)) {
+    cen.addRow({ nome: d.enums.cenario[c.cenario], fr: c.fatorReceita, fi: c.fatorInvestimento,
+      inv: c.investimentoTotal, rec: c.receitaTotal, saldo: c.saldo, roi: pctExcel(c.roi),
+      roiAno: pctExcel(c.roiAnualizado), tir: pctExcel(c.tirAnual), be: c.breakeven ?? x.naoAtingido });
+  }
+
   const est = wb.addWorksheet(x.estimativas);
   est.columns = [
     { header: x.item, key: "item", width: 34 }, { header: x.unidadeRef, key: "un", width: 16 },
@@ -120,4 +139,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       "Content-Disposition": `attachment; filename="${slug}_relatorio.xlsx"`,
     },
   });
+}
+
+/** Fração (0,25) vira percentual arredondado para a planilha (25); null vira travessão. */
+function pctExcel(v: number | null): number | string {
+  return v === null || !Number.isFinite(v) ? "—" : Math.round(v * 10000) / 100;
 }

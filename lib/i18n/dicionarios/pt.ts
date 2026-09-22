@@ -82,6 +82,14 @@ export const pt = {
     mes: "Mês", investimento: "Investimento", receita: "Receita", invAcum: "Inv. acumulado", recAcum: "Rec. acumulada", saldoAcum: "Saldo acumulado",
     serieInvestimentos: "Investimentos", serieReceitas: "Receitas", serieCusto: "Custo acumulado", serieReceitaAcum: "Receita acumulada",
     breakevenRotulo: "Break-even {mes}",
+    retorno: "Retorno", roiAnualizado: "ROI anualizado", roiAnualizadoNota: "Equivalente ao ano, em {meses} meses",
+    roiCurto: "Período curto demais para anualizar (mínimo de {min} meses).",
+    tir: "TIR (ao ano)", tirNota: "Taxa que zera o fluxo de caixa mensal ({mensal} ao mês)",
+    semTir: "Não calculável: o fluxo precisa ter aportes e receitas.",
+    cenarios: "Cenários", cenario: "Cenário",
+    cenariosTexto: "Sensibilidade sobre o histórico: repete o fluxo real com a receita e o investimento deslocados. Não é projeção de futuro.",
+    ajusteReceita: "Variação da receita (%)", ajusteInvestimento: "Variação do investimento (%)",
+    premissaCenario: "Receita ×{receita} · Investimento ×{investimento}",
   },
   ia: {
     titulo: "Valor médio de mercado com IA — contexto (opcional)",
@@ -108,6 +116,8 @@ export const pt = {
     unidadeRef: "Unidade ref.", minimo: "Mínimo", medio: "Médio", maximo: "Máximo", confianca: "Confiança", contexto: "Contexto", premissas: "Premissas", fontes: "Fontes", modelo: "Modelo",
     tipoInvestimento: "INVESTIMENTO", tipoReceita: "RECEITA", venda: "Venda",
     tipo: "Tipo", id: "ID", descricao: "Descrição",
+    roiAnualizado: "ROI anualizado (%)", tirAnual: "TIR (% ao ano)", cenarios: "Cenários", cenario: "Cenário",
+    fatorReceita: "Fator receita", fatorInvestimento: "Fator investimento",
   },
   validacao: {
     dataInvalida: "Informe uma data válida.", numero: "{campo} deve ser um número.", maiorZero: "{campo} deve ser maior que zero.",
@@ -138,6 +148,7 @@ export const pt = {
     categoriaInvestimento: { infraestrutura: "Infraestrutura", logistica: "Logística", operacional: "Operacional" },
     categoriaReceita: { venda_produto: "Venda de produto", frete_logistica: "Frete / logística", servicos: "Serviços", outros: "Outros" },
     confianca: { baixa: "Confiança baixa", media: "Confiança média", alta: "Confiança alta" },
+    cenario: { otimista: "Otimista", base: "Base (real)", pessimista: "Pessimista" },
     unidades: { Toneladas: "Toneladas", "m³": "m³", Barris: "Barris", Unidades: "Unidades", "Contêineres": "Contêineres", Horas: "Horas" },
   },
 };

@@ -82,6 +82,14 @@ export const en: Dicionario = {
     mes: "Month", investimento: "Investment", receita: "Revenue", invAcum: "Cum. investment", recAcum: "Cum. revenue", saldoAcum: "Cum. balance",
     serieInvestimentos: "Investments", serieReceitas: "Revenue", serieCusto: "Cumulative cost", serieReceitaAcum: "Cumulative revenue",
     breakevenRotulo: "Break-even {mes}",
+    retorno: "Return", roiAnualizado: "Annualized ROI", roiAnualizadoNota: "Yearly equivalent, over {meses} months",
+    roiCurto: "Period too short to annualize (at least {min} months).",
+    tir: "IRR (per year)", tirNota: "Rate that zeroes the monthly cash flow ({mensal} per month)",
+    semTir: "Not computable: the flow needs both contributions and revenue.",
+    cenarios: "Scenarios", cenario: "Scenario",
+    cenariosTexto: "Sensitivity on the history: replays the real flow with revenue and investment shifted. It is not a forecast.",
+    ajusteReceita: "Revenue change (%)", ajusteInvestimento: "Investment change (%)",
+    premissaCenario: "Revenue ×{receita} · Investment ×{investimento}",
   },
   ia: {
     titulo: "AI market average — context (optional)",
@@ -108,6 +116,8 @@ export const en: Dicionario = {
     unidadeRef: "Ref. unit", minimo: "Minimum", medio: "Average", maximo: "Maximum", confianca: "Confidence", contexto: "Context", premissas: "Assumptions", fontes: "Sources", modelo: "Model",
     tipoInvestimento: "INVESTMENT", tipoReceita: "REVENUE", venda: "Sale",
     tipo: "Type", id: "ID", descricao: "Description",
+    roiAnualizado: "Annualized ROI (%)", tirAnual: "IRR (% per year)", cenarios: "Scenarios", cenario: "Scenario",
+    fatorReceita: "Revenue factor", fatorInvestimento: "Investment factor",
   },
   validacao: {
     dataInvalida: "Enter a valid date.", numero: "{campo} must be a number.", maiorZero: "{campo} must be greater than zero.",
@@ -138,6 +148,7 @@ export const en: Dicionario = {
     categoriaInvestimento: { infraestrutura: "Infrastructure", logistica: "Logistics", operacional: "Operations" },
     categoriaReceita: { venda_produto: "Product sale", frete_logistica: "Freight / logistics", servicos: "Services", outros: "Other" },
     confianca: { baixa: "Low confidence", media: "Medium confidence", alta: "High confidence" },
+    cenario: { otimista: "Optimistic", base: "Base (actual)", pessimista: "Pessimistic" },
     unidades: { Toneladas: "Tonnes", "m³": "m³", Barris: "Barrels", Unidades: "Units", "Contêineres": "Containers", Horas: "Hours" },
   },
 };

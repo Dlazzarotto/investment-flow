@@ -82,6 +82,14 @@ export const zh: Dicionario = {
     mes: "月份", investimento: "投资", receita: "收入", invAcum: "累计投资", recAcum: "累计收入", saldoAcum: "累计余额",
     serieInvestimentos: "投资", serieReceitas: "收入", serieCusto: "累计成本", serieReceitaAcum: "累计收入",
     breakevenRotulo: "盈亏平衡 {mes}",
+    retorno: "回报", roiAnualizado: "年化投资回报率", roiAnualizadoNota: "按 {meses} 个月折算为年率",
+    roiCurto: "期间过短，无法年化（至少 {min} 个月）。",
+    tir: "内部收益率（年）", tirNota: "使月度现金流净现值为零的利率（每月 {mensal}）",
+    semTir: "无法计算：现金流需要同时包含投入与收入。",
+    cenarios: "情景", cenario: "情景",
+    cenariosTexto: "基于历史数据的敏感性分析：用调整后的收入与投资重演真实现金流，并非对未来的预测。",
+    ajusteReceita: "收入变动（%）", ajusteInvestimento: "投资变动（%）",
+    premissaCenario: "收入 ×{receita} · 投资 ×{investimento}",
   },
   ia: {
     titulo: "AI 市场均价 — 背景信息（可选）",
@@ -108,6 +116,8 @@ export const zh: Dicionario = {
     unidadeRef: "参考单位", minimo: "最低", medio: "均价", maximo: "最高", confianca: "置信度", contexto: "背景", premissas: "假设条件", fontes: "来源", modelo: "模型",
     tipoInvestimento: "投资", tipoReceita: "收入", venda: "销售",
     tipo: "类型", id: "ID", descricao: "描述",
+    roiAnualizado: "年化投资回报率（%）", tirAnual: "内部收益率（年，%）", cenarios: "情景", cenario: "情景",
+    fatorReceita: "收入系数", fatorInvestimento: "投资系数",
   },
   validacao: {
     dataInvalida: "请输入有效日期。", numero: "{campo}必须是数字。", maiorZero: "{campo}必须大于零。",
@@ -138,6 +148,7 @@ export const zh: Dicionario = {
     categoriaInvestimento: { infraestrutura: "基础设施", logistica: "物流", operacional: "运营" },
     categoriaReceita: { venda_produto: "产品销售", frete_logistica: "运费 / 物流", servicos: "服务", outros: "其他" },
     confianca: { baixa: "置信度低", media: "置信度中", alta: "置信度高" },
+    cenario: { otimista: "乐观", base: "基准（实际）", pessimista: "悲观" },
     unidades: { Toneladas: "吨", "m³": "立方米", Barris: "桶", Unidades: "件", "Contêineres": "集装箱", Horas: "小时" },
   },
 };

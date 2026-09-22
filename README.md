@@ -13,17 +13,17 @@ app/
   login/                              # e-mail + senha (Supabase Auth)
   projetos/page.tsx                   # lista + criar projeto (nome, moeda, tipo de parceria, sua %)
   projetos/[id]/layout.tsx            # shell com seletor global de projeto e abas
-  projetos/[id]/page.tsx              # dashboard: saldo, KPIs, 3 gráficos, rateio por participação, tabela mensal
+  projetos/[id]/page.tsx              # dashboard: saldo, KPIs (ROI, ROI anualizado, TIR), 3 gráficos, rateio, cenários, tabela mensal
   projetos/[id]/investimentos/        # formulário + tabela com edição na linha e exclusão
   projetos/[id]/vendas/               # formulário + tabela com edição na linha e exclusão
   projetos/[id]/participantes/        # estrutura da parceria, participantes, exclusão do projeto
-  api/export/[id]/route.ts            # ?formato=csv (separador/decimal do idioma) | xlsx (6 abas, inclui Estimativas IA)
+  api/export/[id]/route.ts            # ?formato=csv (separador/decimal do idioma) | xlsx (7 abas, inclui Cenários e Estimativas IA)
   api/ia/estimar/route.ts             # POST — valor médio de mercado do item via Claude API + busca na web
   actions/                            # server actions (zod → Supabase → revalidate)
 lib/                                  # types, validacao (zod, mensagens traduzidas), calculos, format (por idioma), csv (por idioma), consultas, supabase/
 lib/i18n/                             # config (pt/en/es/zh), dicionarios/*.ts, server.ts (cookie/Accept-Language), client.tsx (provider)
-components/                           # Shell, seletor, nav, forms, tabelas (edição inline), charts (Recharts), ui
-tests/calculos.test.ts                # 15 testes (vitest): KPIs, break-even, rateio, zod (datas reais, limites do banco), redirect seguro, formatação
+components/                           # Shell, seletor, nav, Cenarios, forms, tabelas (edição inline), charts (Recharts), ui
+tests/calculos.test.ts                # 24 testes (vitest): KPIs, break-even, rateio, ROI anualizado, TIR/VPL, cenários, zod, formatação
 tests/ia.test.ts                      # 12 testes: parser/validação da resposta da IA (blocos fatiados, JSON malformado), prompt, desvio vs média
 tests/i18n.test.ts                    # 10 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
 tests/csv.test.ts                     # 6 testes: separador e decimal por idioma, aspas, BOM, diretiva sep=
@@ -61,6 +61,9 @@ tests/schema3.test.sql                # testes da migration 0003 (trava preserva
 - `valor_total` e `receita_total` são colunas geradas pelo Postgres (não aceitam divergência)
 - `fluxo_mensal(projeto_id)`: série mensal contínua (meses sem lançamento = 0) com acumulados
 - Saldo = receita − investimento · ROI = saldo ÷ investimento · Break-even = 1º mês com receita acum. ≥ custo acum.
+- ROI anualizado = (1 + ROI)^(12/meses) − 1, a partir de 3 meses de série · TIR = taxa mensal que zera o VPL
+  do fluxo líquido (bisseção), anualizada por (1 + i)¹² − 1; só existe quando há aportes e receitas
+- Cenários: sensibilidade sobre o histórico (receita ±x %, investimento ∓y %), não projeção de futuro
 
 ## Configuração
 
@@ -74,7 +77,7 @@ tests/schema3.test.sql                # testes da migration 0003 (trava preserva
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (43 testes)
+npm test            # vitest (52 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):

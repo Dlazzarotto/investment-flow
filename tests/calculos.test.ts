@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes, totalParticipacao } from "@/lib/calculos";
+import {
+  MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes,
+  roiAnualizado, simularCenarios, tirAnual, tirMensal, totalParticipacao, vpl,
+} from "@/lib/calculos";
 import { caminhoInterno, criarSchemas } from "@/lib/validacao";
 import { formatadores, hojeISO } from "@/lib/format";
 import { obterDicionario } from "@/lib/i18n";
@@ -69,6 +72,80 @@ describe("Participação", () => {
     const r = ratearParticipacoes({ participacao_pct: 60 }, [], k);
     expect(r.at(-1)).toMatchObject({ tipo: "restante", nome: "", percentual: 40, saldoAtribuivel: 592_000 });
     expect(totalParticipacao({ participacao_pct: 60 }, [{ percentual: 15.5 }])).toBe(75.5);
+  });
+});
+
+describe("Retorno no tempo", () => {
+  it("ROI anualizado converte o retorno do período em taxa equivalente ao ano", () => {
+    // 21 % em 24 meses ≈ 10 % ao ano (1,1² = 1,21)
+    expect(roiAnualizado(0.21, 24)).toBeCloseTo(0.1, 6);
+    // em 12 meses a taxa anual é o próprio ROI
+    expect(roiAnualizado(0.7048, 12)).toBeCloseTo(0.7048, 10);
+    // meio ano de 10 % equivale a 21 % ao ano
+    expect(roiAnualizado(0.1, 6)).toBeCloseTo(0.21, 6);
+  });
+  it("ROI anualizado: null sem ROI, null com período curto demais, −100 % quando não houve receita", () => {
+    expect(roiAnualizado(null, 24)).toBeNull();
+    expect(roiAnualizado(0.5, MESES_MINIMOS_ANUALIZAR - 1)).toBeNull();
+    expect(roiAnualizado(0.5, MESES_MINIMOS_ANUALIZAR)).not.toBeNull();
+    expect(roiAnualizado(-1, 12)).toBe(-1);
+  });
+
+  it("VPL desconta cada mês pela taxa e a TIR zera o VPL", () => {
+    const f = [-1000, 300, 400, 500];
+    expect(vpl(f, 0)).toBe(200);
+    const tir = tirMensal(f)!;
+    expect(tir).toBeGreaterThan(0);
+    expect(vpl(f, tir)).toBeCloseTo(0, 6);
+  });
+  it("TIR devolve a taxa exata de um caso conhecido", () => {
+    // aporte de 100 que devolve 110 um mês depois = 10 % ao mês
+    expect(tirMensal([-100, 110])).toBeCloseTo(0.1, 8);
+    expect(tirAnual([-100, 110])).toBeCloseTo(Math.pow(1.1, 12) - 1, 6);
+  });
+  it("TIR é null sem troca de sinal ou com série curta", () => {
+    expect(tirMensal([100, 200])).toBeNull();
+    expect(tirMensal([-100, -200])).toBeNull();
+    expect(tirMensal([0, 0, 0])).toBeNull();
+    expect(tirMensal([-100])).toBeNull();
+    expect(tirAnual([500])).toBeNull();
+  });
+  it("TIR negativa quando o projeto devolve menos do que custou", () => {
+    const tir = tirMensal([-1000, 100, 100, 100])!;
+    expect(tir).toBeLessThan(0);
+    expect(vpl([-1000, 100, 100, 100], tir)).toBeCloseTo(0, 6);
+  });
+
+  it("cenários: base reproduz o real; otimista e pessimista deslocam receita e custo", () => {
+    const [oti, base, pes] = simularCenarios(fluxo, { receita: 0.15, investimento: 0.1 });
+    expect(base.investimentoTotal).toBe(2_100_000);
+    expect(base.receitaTotal).toBe(3_580_000);
+    expect(base.saldo).toBe(1_480_000);
+    expect(base.breakeven).toBe("2026-04-01");
+    expect(base.meses).toBe(6);
+
+    expect(oti.receitaTotal).toBeCloseTo(3_580_000 * 1.15, 2);
+    expect(oti.investimentoTotal).toBeCloseTo(2_100_000 * 0.9, 2);
+    expect(oti.saldo).toBeGreaterThan(base.saldo);
+    expect(oti.roi!).toBeGreaterThan(base.roi!);
+
+    expect(pes.receitaTotal).toBeCloseTo(3_580_000 * 0.85, 2);
+    expect(pes.investimentoTotal).toBeCloseTo(2_100_000 * 1.1, 2);
+    expect(pes.saldo).toBeLessThan(base.saldo);
+    expect(pes.roi!).toBeLessThan(base.roi!);
+  });
+  it("cenários: o break-even pode mudar de mês e a ordem é otimista → base → pessimista", () => {
+    const r = simularCenarios(fluxo, { receita: 0.5, investimento: 0.5 });
+    expect(r.map((x) => x.cenario)).toEqual(["otimista", "base", "pessimista"]);
+    // receita +50 % e custo −50 %: o break-even antecipa
+    expect(r[0].breakeven).toBe("2026-03-01");
+    // receita −50 % e custo +50 %: não chega ao equilíbrio na série
+    expect(r[2].breakeven).toBeNull();
+  });
+  it("cenários: fluxo vazio não quebra e devolve tudo zerado", () => {
+    const r = simularCenarios([]);
+    expect(r).toHaveLength(3);
+    expect(r[1]).toMatchObject({ investimentoTotal: 0, receitaTotal: 0, saldo: 0, roi: null, tirAnual: null, breakeven: null, meses: 0 });
   });
 });
 
