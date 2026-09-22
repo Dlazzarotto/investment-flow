@@ -22,8 +22,8 @@ lib/i18n/              config.ts, dicionarios/{pt,en,es,zh}.ts, server.ts (obter
 lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchemas(d)), calculos.ts (puro),
                        format.ts (formatadores(locale) — Intl, datas em UTC), csv.ts (CSV por idioma),
                        consultas.ts (leituras, com cache() por requisição)
-components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, forms/, charts/ (estilo.ts = cores e
-                       fontes dos gráficos), ui/ (useHoje, useAcaoFormulario)
+components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, forms/, tabelas/ (tabelas com edição
+                       na própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario)
 tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); schema*.test.sql (psql)
 ```
 
@@ -32,7 +32,7 @@ tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); sche
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 42 testes, todos devem passar
+npm test          # vitest — 43 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -62,6 +62,5 @@ Windows + PowerShell 5; projeto dentro do OneDrive. Ao sugerir comandos: um bloc
 
 ## Próximos passos possíveis
 
-- Edição inline de investimentos/vendas (hoje só criar/excluir)
 - Login para sócios (`projeto_membros` + RLS por membro)
 - ROI anualizado / TIR; cenários (otimista/base/pessimista)

@@ -7,6 +7,7 @@ export const zh: Dicionario = {
     verProjetos: "查看我的项目", tentarDeNovo: "重试", erroTitulo: "出了点问题",
     naoEncontradoTitulo: "未找到项目", naoEncontradoTexto: "该项目可能已被删除或属于其他账户。",
     semPermissao: "您没有执行此操作的权限。",
+    editar: "编辑", cancelar: "取消", salvar: "保存", acoes: "操作", alteracaoSalva: "修改已保存。",
   },
   nav: { dashboard: "仪表盘", investimentos: "投资", vendas: "销售", parceria: "合作",
     projetoAtivo: "当前项目", escolha: "选择项目…", secoes: "项目板块" },
@@ -54,6 +55,7 @@ export const zh: Dicionario = {
     legendaDesvio: "偏差 = 录入单价相对 AI 估算市场均价的差异（红色：高出 15 % 以上；绿色：低于 15 % 以上）。",
     iaDesativada: "AI 市场均价估算已停用：请在服务器配置 ANTHROPIC_API_KEY。",
     faixa: "区间 {min} – {max} / {unidade}",
+    atualizado: "投资“{item}”已更新。", editarItem: "编辑投资 {item}", editando: "正在编辑：{item}",
   },
   vendas: {
     titulo: "销售与收入", subtitulo: "项目 {nome} 的收入。总收入由数据库计算（销量 × 单价）。",
@@ -62,6 +64,7 @@ export const zh: Dicionario = {
     receitaCalculada: "计算收入：", registrada: "销售已登记。", historico: "销售记录",
     vazioTitulo: "暂无销售", vazioTexto: "请使用上方表单登记第一笔销售。",
     precoUnit: "单价", receita: "收入", excluirConfirma: "删除 {data} 的销售记录？",
+    atualizada: "{data} 的销售已更新。", editarVenda: "编辑 {data} 的销售", editando: "正在编辑 {data} 的销售",
   },
   dashboard: {
     baixarCsv: "下载 CSV", baixarExcel: "下载 Excel", saldo: "现金余额（收入 − 投资）",

@@ -14,20 +14,20 @@ app/
   projetos/page.tsx                   # lista + criar projeto (nome, moeda, tipo de parceria, sua %)
   projetos/[id]/layout.tsx            # shell com seletor global de projeto e abas
   projetos/[id]/page.tsx              # dashboard: saldo, KPIs, 3 gráficos, rateio por participação, tabela mensal
-  projetos/[id]/investimentos/        # formulário + tabela com exclusão
-  projetos/[id]/vendas/               # formulário + tabela com exclusão
+  projetos/[id]/investimentos/        # formulário + tabela com edição na linha e exclusão
+  projetos/[id]/vendas/               # formulário + tabela com edição na linha e exclusão
   projetos/[id]/participantes/        # estrutura da parceria, participantes, exclusão do projeto
   api/export/[id]/route.ts            # ?formato=csv (separador/decimal do idioma) | xlsx (6 abas, inclui Estimativas IA)
   api/ia/estimar/route.ts             # POST — valor médio de mercado do item via Claude API + busca na web
   actions/                            # server actions (zod → Supabase → revalidate)
 lib/                                  # types, validacao (zod, mensagens traduzidas), calculos, format (por idioma), csv (por idioma), consultas, supabase/
 lib/i18n/                             # config (pt/en/es/zh), dicionarios/*.ts, server.ts (cookie/Accept-Language), client.tsx (provider)
-components/                           # Shell, seletor, nav, forms, charts (Recharts), ui (useHoje, useAcaoFormulario)
+components/                           # Shell, seletor, nav, forms, tabelas (edição inline), charts (Recharts), ui
 tests/calculos.test.ts                # 15 testes (vitest): KPIs, break-even, rateio, zod (datas reais, limites do banco), redirect seguro, formatação
 tests/ia.test.ts                      # 12 testes: parser/validação da resposta da IA (blocos fatiados, JSON malformado), prompt, desvio vs média
-tests/i18n.test.ts                    # 9 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
-tests/schema.test.sql                 # testes do banco (psql): colunas geradas, fluxo mensal, trava 100 %, RLS, cascata
+tests/i18n.test.ts                    # 10 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
 tests/csv.test.ts                     # 6 testes: separador e decimal por idioma, aspas, BOM, diretiva sep=
+tests/schema.test.sql                 # testes do banco (psql): colunas geradas, fluxo mensal, trava 100 %, RLS, cascata
 tests/schema2.test.sql                # testes da migration 0002
 tests/schema3.test.sql                # testes da migration 0003 (trava preservada; roteiro de concorrência)
 ```
@@ -74,7 +74,7 @@ tests/schema3.test.sql                # testes da migration 0003 (trava preserva
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (42 testes)
+npm test            # vitest (43 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):

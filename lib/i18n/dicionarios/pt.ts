@@ -7,6 +7,7 @@ export const pt = {
     verProjetos: "Ver meus projetos", tentarDeNovo: "Tentar de novo", erroTitulo: "Algo deu errado",
     naoEncontradoTitulo: "Projeto não encontrado", naoEncontradoTexto: "Ele pode ter sido excluído ou pertencer a outra conta.",
     semPermissao: "Sem permissão para esta operação.",
+    editar: "Editar", cancelar: "Cancelar", salvar: "Salvar", acoes: "Ações", alteracaoSalva: "Alteração salva.",
   },
   nav: { dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", parceria: "Parceria",
     projetoAtivo: "Projeto ativo", escolha: "Escolha um projeto…", secoes: "Seções do projeto" },
@@ -54,6 +55,7 @@ export const pt = {
     legendaDesvio: "Desvio = valor lançado em relação à média de mercado estimada pela IA (vermelho: mais de 15 % acima; verde: mais de 15 % abaixo).",
     iaDesativada: "Estimativa de valor médio com IA desativada: configure ANTHROPIC_API_KEY no servidor.",
     faixa: "Faixa {min} – {max} por {unidade}",
+    atualizado: "Investimento \"{item}\" atualizado.", editarItem: "Editar o investimento {item}", editando: "Editando: {item}",
   },
   vendas: {
     titulo: "Vendas e receitas", subtitulo: "Receitas do projeto {nome}. A receita total é calculada pelo banco (volume × preço unitário).",
@@ -62,6 +64,7 @@ export const pt = {
     receitaCalculada: "Receita calculada:", registrada: "Venda registrada.", historico: "Histórico de vendas",
     vazioTitulo: "Nenhuma venda", vazioTexto: "Registre a primeira venda no formulário acima.",
     precoUnit: "Preço unit.", receita: "Receita", excluirConfirma: "Excluir a venda de {data}?",
+    atualizada: "Venda de {data} atualizada.", editarVenda: "Editar a venda de {data}", editando: "Editando a venda de {data}",
   },
   dashboard: {
     baixarCsv: "Baixar CSV", baixarExcel: "Baixar Excel", saldo: "Saldo de caixa (receitas − investimentos)",

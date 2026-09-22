@@ -7,6 +7,7 @@ export const en: Dicionario = {
     verProjetos: "View my projects", tentarDeNovo: "Try again", erroTitulo: "Something went wrong",
     naoEncontradoTitulo: "Project not found", naoEncontradoTexto: "It may have been deleted or belong to another account.",
     semPermissao: "You don't have permission for this operation.",
+    editar: "Edit", cancelar: "Cancel", salvar: "Save", acoes: "Actions", alteracaoSalva: "Change saved.",
   },
   nav: { dashboard: "Dashboard", investimentos: "Investments", vendas: "Sales", parceria: "Partnership",
     projetoAtivo: "Active project", escolha: "Choose a project…", secoes: "Project sections" },
@@ -54,6 +55,7 @@ export const en: Dicionario = {
     legendaDesvio: "Deviation = recorded value vs. the AI-estimated market average (red: more than 15 % above; green: more than 15 % below).",
     iaDesativada: "AI market-average estimate is disabled: set ANTHROPIC_API_KEY on the server.",
     faixa: "Range {min} – {max} per {unidade}",
+    atualizado: "Investment \"{item}\" updated.", editarItem: "Edit investment {item}", editando: "Editing: {item}",
   },
   vendas: {
     titulo: "Sales and revenue", subtitulo: "Revenue for {nome}. Total revenue is computed by the database (volume × unit price).",
@@ -62,6 +64,7 @@ export const en: Dicionario = {
     receitaCalculada: "Computed revenue:", registrada: "Sale recorded.", historico: "Sales history",
     vazioTitulo: "No sales", vazioTexto: "Record the first sale using the form above.",
     precoUnit: "Unit price", receita: "Revenue", excluirConfirma: "Delete the sale from {data}?",
+    atualizada: "Sale from {data} updated.", editarVenda: "Edit the sale from {data}", editando: "Editing the sale from {data}",
   },
   dashboard: {
     baixarCsv: "Download CSV", baixarExcel: "Download Excel", saldo: "Cash balance (revenue − investments)",

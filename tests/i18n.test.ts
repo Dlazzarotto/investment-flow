@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCALES, detectarLocale, fmtTexto, obterDicionario } from "@/lib/i18n";
+import { LOCALES, detectarLocale, fmtTexto, obterDicionario, rotuloUnidade } from "@/lib/i18n";
 import { pt } from "@/lib/i18n/dicionarios/pt";
 import { formatadores } from "@/lib/format";
 import { criarSchemas } from "@/lib/validacao";
@@ -30,6 +30,14 @@ describe("Dicionários", () => {
   it("fmtTexto substitui placeholders e mantém os desconhecidos", () => {
     expect(fmtTexto("{a} e {b}", { a: 1, b: "x" })).toBe("1 e x");
     expect(fmtTexto("{a} e {c}", { a: 1 })).toBe("1 e {c}");
+  });
+  it("rotuloUnidade traduz as unidades conhecidas e devolve as demais como estão", () => {
+    expect(rotuloUnidade("Toneladas", obterDicionario("en"))).toBe("Tonnes");
+    expect(rotuloUnidade("Toneladas", obterDicionario("zh"))).toBe("吨");
+    expect(rotuloUnidade("m³", obterDicionario("es"))).toBe("m³");
+    // unidade antiga/importada que não está em UNIDADES_VOLUME não pode sumir da tela
+    expect(rotuloUnidade("Sacas 60 kg", obterDicionario("pt"))).toBe("Sacas 60 kg");
+    expect(rotuloUnidade("", obterDicionario("pt"))).toBe("");
   });
   it("detecta idioma pelo Accept-Language com fallback pt", () => {
     expect(detectarLocale("es-MX,es;q=0.9,en;q=0.8")).toBe("es");

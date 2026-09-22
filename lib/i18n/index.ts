@@ -17,3 +17,12 @@ export function obterDicionario(locale: Locale): Dicionario {
 export function fmtTexto(modelo: string, vars: Record<string, string | number>): string {
   return modelo.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
+
+/**
+ * Rótulo da unidade de volume. As unidades conhecidas (UNIDADES_VOLUME) são traduzidas;
+ * qualquer outra — digitada antes ou importada — aparece como está gravada no banco.
+ */
+export function rotuloUnidade(unidade: string, d: Dicionario): string {
+  const conhecidas = d.enums.unidades as Record<string, string | undefined>;
+  return conhecidas[unidade] ?? unidade;
+}

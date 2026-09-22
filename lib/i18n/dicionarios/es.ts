@@ -7,6 +7,7 @@ export const es: Dicionario = {
     verProjetos: "Ver mis proyectos", tentarDeNovo: "Intentar de nuevo", erroTitulo: "Algo salió mal",
     naoEncontradoTitulo: "Proyecto no encontrado", naoEncontradoTexto: "Puede haber sido eliminado o pertenecer a otra cuenta.",
     semPermissao: "Sin permiso para esta operación.",
+    editar: "Editar", cancelar: "Cancelar", salvar: "Guardar", acoes: "Acciones", alteracaoSalva: "Cambio guardado.",
   },
   nav: { dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", parceria: "Alianza",
     projetoAtivo: "Proyecto activo", escolha: "Elija un proyecto…", secoes: "Secciones del proyecto" },
@@ -54,6 +55,7 @@ export const es: Dicionario = {
     legendaDesvio: "Desvío = valor registrado respecto al promedio de mercado estimado por la IA (rojo: más de 15 % por encima; verde: más de 15 % por debajo).",
     iaDesativada: "Estimación de valor promedio con IA desactivada: configure ANTHROPIC_API_KEY en el servidor.",
     faixa: "Rango {min} – {max} por {unidade}",
+    atualizado: "Inversión \"{item}\" actualizada.", editarItem: "Editar la inversión {item}", editando: "Editando: {item}",
   },
   vendas: {
     titulo: "Ventas e ingresos", subtitulo: "Ingresos del proyecto {nome}. El ingreso total lo calcula la base de datos (volumen × precio unitario).",
@@ -62,6 +64,7 @@ export const es: Dicionario = {
     receitaCalculada: "Ingreso calculado:", registrada: "Venta registrada.", historico: "Historial de ventas",
     vazioTitulo: "Ninguna venta", vazioTexto: "Registre la primera venta con el formulario de arriba.",
     precoUnit: "Precio unit.", receita: "Ingreso", excluirConfirma: "¿Eliminar la venta del {data}?",
+    atualizada: "Venta del {data} actualizada.", editarVenda: "Editar la venta del {data}", editando: "Editando la venta del {data}",
   },
   dashboard: {
     baixarCsv: "Descargar CSV", baixarExcel: "Descargar Excel", saldo: "Saldo de caja (ingresos − inversiones)",

@@ -1,9 +1,7 @@
 import { FormInvestimento } from "@/components/forms/FormInvestimento";
-import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
-import { Vazio } from "@/components/ui/Vazio";
-import { excluirInvestimento } from "@/app/actions/investimentos";
+import { TabelaInvestimentos, type LinhaInvestimento } from "@/components/tabelas/TabelaInvestimentos";
 import { listarInvestimentos, mapaUltimasEstimativas, obterProjeto } from "@/lib/consultas";
-import { desvioVsMedia, normalizarItem } from "@/lib/calculos";
+import { normalizarItem } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
@@ -18,13 +16,25 @@ export default async function InvestimentosPage({ params }: { params: { id: stri
   const m = projeto.moeda;
   const t = d.investimentos;
 
+  // O Map de estimativas não atravessa a fronteira servidor → cliente: vira campo da linha.
+  const linhas: LinhaInvestimento[] = investimentos.map((investimento) => {
+    const e = estimativas.get(normalizarItem(investimento.item));
+    return {
+      investimento,
+      media: e ? {
+        valor_min: Number(e.valor_min), valor_medio: Number(e.valor_medio),
+        valor_max: Number(e.valor_max), unidade_ref: e.unidade_ref,
+      } : null,
+    };
+  });
+
   return (
     <>
       <h1 className="text-2xl">{t.titulo}</h1>
       <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: projeto.nome })}</p>
       <section className="secao">
         <h2>{t.novo}</h2>
-        {!iaDisponivel && <p className="mb-4 text-sm text-stone">{t.iaDesativada}</p>}
+        {!iaDisponivel && <p className="mb-4 text-stone">{t.iaDesativada}</p>}
         <FormInvestimento projetoId={projeto.id} moeda={m} iaDisponivel={iaDisponivel} />
       </section>
       <section className="secao">
@@ -32,40 +42,7 @@ export default async function InvestimentosPage({ params }: { params: { id: stri
           <h2 className="mb-0">{t.cadastrados}</h2>
           <p className="text-stone">{d.comum.total}: <span className="num font-semibold text-navy">{f.moeda(total, m)}</span></p>
         </div>
-        {investimentos.length === 0 ? <Vazio titulo={t.vazioTitulo} texto={t.vazioTexto} /> : (
-          <div className="overflow-x-auto">
-            <table className="tabela">
-              <thead><tr>
-                <th>{d.comum.data}</th><th>{t.item}</th><th>{d.comum.categoria}</th>
-                <th className="num">{t.qtd}</th><th className="num">{t.valorUnit}</th>
-                <th className="num">{t.mediaIA}</th><th className="num">{t.desvio}</th><th className="num">{t.valorTotal}</th><th></th>
-              </tr></thead>
-              <tbody>
-                {investimentos.map((i) => {
-                  const est = estimativas.get(normalizarItem(i.item));
-                  const desvio = est ? desvioVsMedia(Number(i.valor_unitario), Number(est.valor_medio)) : null;
-                  const corDesvio = desvio === null ? "text-stone" : desvio > 0.15 ? "text-loss" : desvio < -0.15 ? "text-gain" : "";
-                  return (
-                    <tr key={i.id}>
-                      <td className="whitespace-nowrap">{f.data(i.data)}</td>
-                      <td className="font-medium">{i.item}</td>
-                      <td>{d.enums.categoriaInvestimento[i.categoria]}</td>
-                      <td className="num">{f.numero(Number(i.quantidade), 2)}</td>
-                      <td className="num">{f.moeda(Number(i.valor_unitario), m)}</td>
-                      <td className="num" title={est ? fmtTexto(t.faixa, { min: f.moeda(Number(est.valor_min), m), max: f.moeda(Number(est.valor_max), m), unidade: est.unidade_ref }) : undefined}>
-                        {est ? f.moeda(Number(est.valor_medio), m) : "—"}
-                      </td>
-                      <td className={`num ${corDesvio}`}>{desvio === null ? "—" : `${desvio > 0 ? "+" : ""}${f.pct(desvio)}`}</td>
-                      <td className="num font-semibold">{f.moeda(Number(i.valor_total), m)}</td>
-                      <td><BotaoExcluir action={excluirInvestimento} id={i.id} projetoId={projeto.id} confirmacao={fmtTexto(t.excluirConfirma, { item: i.item })} rotulo={d.comum.excluir} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <p className="mt-2 text-sm text-stone">{t.legendaDesvio}</p>
-          </div>
-        )}
+        <TabelaInvestimentos linhas={linhas} projetoId={projeto.id} moeda={m} />
       </section>
     </>
   );
