@@ -9,10 +9,11 @@ import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
+import { detalharCustoVenda } from "@/lib/calculos";
 import { CATEGORIAS_RECEITA, UNIDADES_VOLUME, type ActionState, type Moeda, type Venda } from "@/lib/types";
 
 /** Colunas da tabela; a de ações só existe para quem pode editar. */
-const COLUNAS_BASE = 6;
+const COLUNAS_BASE = 8;
 
 /** Tabela de vendas com edição na própria linha (uma por vez). */
 export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
@@ -33,11 +34,14 @@ export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
           <thead>
             <tr>
               <th>{d.comum.data}</th><th>{d.comum.categoria}</th><th className="num">{t.volume}</th><th>{d.comum.unidade}</th>
-              <th className="num">{t.precoUnit}</th><th className="num">{t.receita}</th>{editavel && <th>{d.comum.acoes}</th>}
+              <th className="num">{t.precoUnit}</th><th className="num">{t.receita}</th>
+              <th className="num">{t.custoTotal}</th><th className="num">{t.margem}</th>{editavel && <th>{d.comum.acoes}</th>}
             </tr>
           </thead>
           <tbody>
-            {vendas.map((v) => editavel && editando === v.id ? (
+            {vendas.map((v) => {
+              const custo = detalharCustoVenda(v);
+              return editavel && editando === v.id ? (
               <tr key={v.id} className="bg-navy-soft/50">
                 <td colSpan={COLUNAS_BASE + 1} className="py-4">
                   {/* A tabela pode ser mais larga que a tela; o wrapper prende o formulário
@@ -59,6 +63,16 @@ export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
                 <td>{rotuloUnidade(v.unidade, d)}</td>
                 <td className="num">{f.moeda(Number(v.preco_unitario), moeda)}</td>
                 <td className="num font-semibold">{f.moeda(Number(v.receita_total), moeda)}</td>
+                <td className="num" title={custo.total > 0 ? fmtTexto(t.detalheCusto, {
+                  mercadoria: f.moeda(custo.mercadoria, moeda), frete: f.moeda(custo.frete, moeda),
+                  impostos: f.moeda(custo.impostos, moeda), comissao: f.moeda(custo.comissao, moeda),
+                }) : t.semCusto}>
+                  {custo.total > 0 ? f.moeda(custo.total, moeda) : "—"}
+                </td>
+                <td className={`num font-semibold ${custo.margem < 0 ? "text-loss" : "text-gain"}`}>
+                  {f.moeda(custo.margem, moeda)}
+                  {custo.margemPct !== null && <span className="block text-stone">{f.pct(custo.margemPct)}</span>}
+                </td>
                 {editavel && (
                   <td>
                     <div className="flex gap-2">
@@ -73,7 +87,8 @@ export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
                   </td>
                 )}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

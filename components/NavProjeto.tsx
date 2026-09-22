@@ -11,6 +11,7 @@ export function NavProjeto({ projetoId }: { projetoId: string }) {
     { seg: "", rotulo: d.nav.dashboard },
     { seg: "/investimentos", rotulo: d.nav.investimentos },
     { seg: "/vendas", rotulo: d.nav.vendas },
+    { seg: "/despesas", rotulo: d.nav.despesas },
     { seg: "/participantes", rotulo: d.nav.parceria },
   ];
   return (

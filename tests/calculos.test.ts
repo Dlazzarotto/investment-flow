@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes,
-  roiAnualizado, simularCenarios, tirAnual, tirMensal, totalParticipacao, vpl,
+  MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, despesasPorCategoria, detalharCustoVenda,
+  encontrarBreakeven, ratearParticipacoes, roiAnualizado, simularCenarios, tirAnual, tirMensal,
+  totalParticipacao, vpl,
 } from "@/lib/calculos";
 import { caminhoInterno, criarSchemas } from "@/lib/validacao";
 import { formatadores, hojeISO } from "@/lib/format";
@@ -15,17 +16,33 @@ const inv = [
   { categoria: "logistica", valor_total: 800_000 },
   { categoria: "infraestrutura", valor_total: 300_000 },
 ] as const;
-const ven = [{ receita_total: 800_000 }, { receita_total: 1_700_000 }, { receita_total: 1_080_000 }];
+const ven = [
+  { receita_total: 800_000, custo_total: 0 },
+  { receita_total: 1_700_000, custo_total: 0 },
+  { receita_total: 1_080_000, custo_total: 0 },
+];
+
+/** Série sem custo de venda nem despesa: a saída é só o aporte (como era antes de 0005). */
+function linha(mes: string, investimento: number, receita: number, custo_vendas = 0, despesas = 0) {
+  return { mes, investimento, custo_vendas, despesas, saida: investimento + custo_vendas + despesas, receita };
+}
+function acumular(linhas: ReturnType<typeof linha>[]): FluxoMensal[] {
+  let sa = 0, ra = 0;
+  return linhas.map((l) => {
+    sa += l.saida; ra += l.receita;
+    return { ...l, saida_acumulada: sa, rec_acumulada: ra, saldo_acumulado: ra - sa };
+  });
+}
 
 // Mesma série validada no Postgres (tests/schema.test.sql)
-const fluxo: FluxoMensal[] = [
-  { mes: "2026-01-01", investimento: 1_000_000, receita: 0, inv_acumulado: 1_000_000, rec_acumulada: 0, saldo_acumulado: -1_000_000 },
-  { mes: "2026-02-01", investimento: 1_100_000, receita: 0, inv_acumulado: 2_100_000, rec_acumulada: 0, saldo_acumulado: -2_100_000 },
-  { mes: "2026-03-01", investimento: 0, receita: 800_000, inv_acumulado: 2_100_000, rec_acumulada: 800_000, saldo_acumulado: -1_300_000 },
-  { mes: "2026-04-01", investimento: 0, receita: 1_700_000, inv_acumulado: 2_100_000, rec_acumulada: 2_500_000, saldo_acumulado: 400_000 },
-  { mes: "2026-05-01", investimento: 0, receita: 0, inv_acumulado: 2_100_000, rec_acumulada: 2_500_000, saldo_acumulado: 400_000 },
-  { mes: "2026-06-01", investimento: 0, receita: 1_080_000, inv_acumulado: 2_100_000, rec_acumulada: 3_580_000, saldo_acumulado: 1_480_000 },
-];
+const fluxo: FluxoMensal[] = acumular([
+  linha("2026-01-01", 1_000_000, 0),
+  linha("2026-02-01", 1_100_000, 0),
+  linha("2026-03-01", 0, 800_000),
+  linha("2026-04-01", 0, 1_700_000),
+  linha("2026-05-01", 0, 0),
+  linha("2026-06-01", 0, 1_080_000),
+]);
 
 describe("KPIs", () => {
   it("calcula totais, saldo e ROI", () => {
@@ -38,7 +55,53 @@ describe("KPIs", () => {
     expect(calcularKpis([], []).saldo).toBe(0);
   });
   it("aceita valores vindos do banco como string", () => {
-    expect(calcularKpis([{ valor_total: "10.50" as unknown as number }], [{ receita_total: "20" as unknown as number }]).saldo).toBe(9.5);
+    expect(calcularKpis([{ valor_total: "10.50" as unknown as number }],
+      [{ receita_total: "20" as unknown as number, custo_total: "0" as unknown as number }]).saldo).toBe(9.5);
+  });
+});
+
+describe("Custo da venda e despesas", () => {
+  // 10.000 t × 80 = 800.000 de receita; mercadoria 450.000, frete 80.000,
+  // impostos 3,5 % = 28.000, comissão 1,5 % = 12.000 → custo 570.000, margem 230.000
+  const venda = { volume: 10_000, preco_unitario: 80, custo_unitario: 45, frete_unitario: 8, impostos_pct: 3.5, comissao_pct: 1.5 };
+
+  it("quebra o custo da venda nos quatro componentes, igual à coluna gerada do banco", () => {
+    expect(detalharCustoVenda(venda)).toEqual({
+      mercadoria: 450_000, frete: 80_000, impostos: 28_000, comissao: 12_000,
+      total: 570_000, margem: 230_000, margemPct: 230_000 / 800_000,
+    });
+  });
+  it("venda sem custo lançado mantém a receita inteira como margem", () => {
+    const r = detalharCustoVenda({ volume: 100, preco_unitario: 10, custo_unitario: 0, frete_unitario: 0, impostos_pct: 0, comissao_pct: 0 });
+    expect(r).toMatchObject({ total: 0, margem: 1000, margemPct: 1 });
+  });
+  it("margem pode ficar negativa quando o custo supera a receita", () => {
+    const r = detalharCustoVenda({ volume: 10, preco_unitario: 10, custo_unitario: 12, frete_unitario: 0, impostos_pct: 0, comissao_pct: 0 });
+    expect(r.margem).toBe(-20);
+    expect(r.margemPct).toBeCloseTo(-0.2, 10);
+  });
+
+  it("KPIs descontam custo de venda e despesa do saldo, e o ROI segue sobre o aporte", () => {
+    const k = calcularKpis(
+      [{ valor_total: 1_000_000 }],
+      [{ receita_total: 800_000, custo_total: 570_000 }],
+      [{ valor: 60_000 }, { valor: 40_000 }],
+    );
+    expect(k).toMatchObject({
+      investimentoTotal: 1_000_000, receitaTotal: 800_000, custoVendasTotal: 570_000,
+      despesasTotal: 100_000, saidaTotal: 1_670_000, margemBruta: 230_000, saldo: -870_000,
+    });
+    expect(k.margemPct).toBeCloseTo(230_000 / 800_000, 10);
+    expect(k.roi).toBeCloseTo(-870_000 / 1_000_000, 10);
+  });
+  it("sem despesas o resultado é o de antes (compatível com o que já estava lançado)", () => {
+    const k = calcularKpis([...inv], ven);
+    expect(k).toMatchObject({ investimentoTotal: 2_100_000, receitaTotal: 3_580_000, custoVendasTotal: 0, saldo: 1_480_000 });
+  });
+  it("agrupa despesas por categoria em ordem decrescente", () => {
+    expect(despesasPorCategoria([
+      { categoria: "pessoal", valor: 60_000 }, { categoria: "combustivel", valor: 40_000 }, { categoria: "pessoal", valor: 15_000 },
+    ])).toEqual([{ categoria: "pessoal", valor: 75_000 }, { categoria: "combustivel", valor: 40_000 }]);
   });
 });
 
@@ -118,19 +181,19 @@ describe("Retorno no tempo", () => {
 
   it("cenários: base reproduz o real; otimista e pessimista deslocam receita e custo", () => {
     const [oti, base, pes] = simularCenarios(fluxo, { receita: 0.15, investimento: 0.1 });
-    expect(base.investimentoTotal).toBe(2_100_000);
+    expect(base.saidaTotal).toBe(2_100_000);
     expect(base.receitaTotal).toBe(3_580_000);
     expect(base.saldo).toBe(1_480_000);
     expect(base.breakeven).toBe("2026-04-01");
     expect(base.meses).toBe(6);
 
     expect(oti.receitaTotal).toBeCloseTo(3_580_000 * 1.15, 2);
-    expect(oti.investimentoTotal).toBeCloseTo(2_100_000 * 0.9, 2);
+    expect(oti.saidaTotal).toBeCloseTo(2_100_000 * 0.9, 2);
     expect(oti.saldo).toBeGreaterThan(base.saldo);
     expect(oti.roi!).toBeGreaterThan(base.roi!);
 
     expect(pes.receitaTotal).toBeCloseTo(3_580_000 * 0.85, 2);
-    expect(pes.investimentoTotal).toBeCloseTo(2_100_000 * 1.1, 2);
+    expect(pes.saidaTotal).toBeCloseTo(2_100_000 * 1.1, 2);
     expect(pes.saldo).toBeLessThan(base.saldo);
     expect(pes.roi!).toBeLessThan(base.roi!);
   });
@@ -145,7 +208,7 @@ describe("Retorno no tempo", () => {
   it("cenários: fluxo vazio não quebra e devolve tudo zerado", () => {
     const r = simularCenarios([]);
     expect(r).toHaveLength(3);
-    expect(r[1]).toMatchObject({ investimentoTotal: 0, receitaTotal: 0, saldo: 0, roi: null, tirAnual: null, breakeven: null, meses: 0 });
+    expect(r[1]).toMatchObject({ saidaTotal: 0, receitaTotal: 0, saldo: 0, roi: null, tirAnual: null, breakeven: null, meses: 0 });
   });
 });
 

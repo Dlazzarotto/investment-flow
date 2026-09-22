@@ -36,7 +36,7 @@ export function GraficoBreakeven({ fluxo, moeda, breakeven }:
           <Legend wrapperStyle={ESTILO_LEGENDA} />
           <Area type="monotone" dataKey="rec_acumulada" name={d.dashboard.serieReceitaAcum} stroke={NAVY} strokeWidth={3}
                 fill="url(#gRec)" dot={{ r: 3 }} />
-          <Line type="monotone" dataKey="inv_acumulado" name={d.dashboard.serieCusto} stroke={ORANGE} strokeWidth={3} dot={{ r: 3 }} />
+          <Line type="monotone" dataKey="saida_acumulada" name={d.dashboard.serieCusto} stroke={ORANGE} strokeWidth={3} dot={{ r: 3 }} />
           {rotuloBe && (
             <ReferenceLine x={rotuloBe} stroke={GAIN} strokeWidth={2} strokeDasharray="6 4"
                            label={{ value: fmtTexto(d.dashboard.breakevenRotulo, { mes: rotuloBe }), position: "top", fill: GAIN, fontSize: FONTE }} />

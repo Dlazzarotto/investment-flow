@@ -6,7 +6,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type {
-  EstimativaIA, FluxoMensal, Investimento, PapelNoProjeto, Participante, Projeto, ProjetoMembro, Venda,
+  Despesa, EstimativaIA, FluxoMensal, Investimento, PapelNoProjeto, Participante, Projeto, ProjetoMembro, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -83,6 +83,14 @@ export const listarVendas = cache(async (projetoId: string): Promise<Venda[]> =>
   return (data ?? []) as Venda[];
 });
 
+export const listarDespesas = cache(async (projetoId: string): Promise<Despesa[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("despesas").select("*")
+    .eq("projeto_id", projetoId).order("data").order("criado_em");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Despesa[];
+});
+
 export const obterFluxoMensal = cache(async (projetoId: string): Promise<FluxoMensal[]> => {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("fluxo_mensal", { p_projeto_id: projetoId });
@@ -90,8 +98,11 @@ export const obterFluxoMensal = cache(async (projetoId: string): Promise<FluxoMe
   return ((data ?? []) as FluxoMensal[]).map((f) => ({
     mes: String(f.mes).slice(0, 10),
     investimento: Number(f.investimento),
+    custo_vendas: Number(f.custo_vendas),
+    despesas: Number(f.despesas),
+    saida: Number(f.saida),
     receita: Number(f.receita),
-    inv_acumulado: Number(f.inv_acumulado),
+    saida_acumulada: Number(f.saida_acumulada),
     rec_acumulada: Number(f.rec_acumulada),
     saldo_acumulado: Number(f.saldo_acumulado),
   }));

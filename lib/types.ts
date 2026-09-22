@@ -15,6 +15,11 @@ export type CategoriaInvestimento = (typeof CATEGORIAS_INVESTIMENTO)[number];
 export const CATEGORIAS_RECEITA = ["venda_produto", "frete_logistica", "servicos", "outros"] as const;
 export type CategoriaReceita = (typeof CATEGORIAS_RECEITA)[number];
 
+export const CATEGORIAS_DESPESA = [
+  "pessoal", "manutencao", "combustivel", "arrendamento", "administrativo", "impostos", "outros",
+] as const;
+export type CategoriaDespesa = (typeof CATEGORIAS_DESPESA)[number];
+
 export const UNIDADES_VOLUME = ["Toneladas", "m³", "Barris", "Unidades", "Contêineres", "Horas"] as const;
 
 export interface Projeto {
@@ -60,6 +65,27 @@ export interface Venda {
   unidade: string;
   preco_unitario: number;
   receita_total: number;
+  /** Custo da mercadoria por unidade de volume. */
+  custo_unitario: number;
+  /** Frete e logística por unidade de volume. */
+  frete_unitario: number;
+  /** Impostos e royalties, em % da receita. */
+  impostos_pct: number;
+  /** Comissões, em % da receita. */
+  comissao_pct: number;
+  /** Coluna gerada: soma dos quatro componentes acima. */
+  custo_total: number;
+  data: string;
+  criado_em: string;
+}
+
+/** Despesa do projeto que não se liga a uma venda específica (custeio). */
+export interface Despesa {
+  id: string;
+  projeto_id: string;
+  descricao: string;
+  categoria: CategoriaDespesa;
+  valor: number;
   data: string;
   criado_em: string;
 }
@@ -68,8 +94,13 @@ export interface Venda {
 export interface FluxoMensal {
   mes: string; // 'YYYY-MM-DD' (primeiro dia do mês)
   investimento: number;
+  /** Custo direto das vendas do mês (vendas.custo_total). */
+  custo_vendas: number;
+  despesas: number;
+  /** investimento + custo_vendas + despesas. */
+  saida: number;
   receita: number;
-  inv_acumulado: number;
+  saida_acumulada: number;
   rec_acumulada: number;
   saldo_acumulado: number;
 }

@@ -45,7 +45,7 @@ export function Cenarios({ fluxo, moeda }: { fluxo: FluxoMensal[]; moeda: Moeda 
         <table className="tabela">
           <thead>
             <tr>
-              <th>{t.cenario}</th><th className="num">{t.invAcum}</th><th className="num">{t.recAcum}</th>
+              <th>{t.cenario}</th><th className="num">{t.saidaTotal}</th><th className="num">{t.recAcum}</th>
               <th className="num">{t.saldoAcum}</th><th className="num">{t.roi}</th>
               <th className="num">{t.roiAnualizado}</th><th className="num">{t.tir}</th><th>{t.breakeven}</th>
             </tr>
@@ -61,7 +61,7 @@ export function Cenarios({ fluxo, moeda }: { fluxo: FluxoMensal[]; moeda: Moeda 
                     </span>
                   )}
                 </td>
-                <td className="num">{f.moeda(c.investimentoTotal, moeda)}</td>
+                <td className="num">{f.moeda(c.saidaTotal, moeda)}</td>
                 <td className="num">{f.moeda(c.receitaTotal, moeda)}</td>
                 <td className={`num font-semibold ${c.saldo < 0 ? "text-loss" : "text-gain"}`}>{f.moeda(c.saldo, moeda)}</td>
                 <td className="num">{f.pct(c.roi)}</td>

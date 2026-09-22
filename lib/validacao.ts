@@ -2,7 +2,8 @@
 import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
-  CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
+  TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -25,6 +26,13 @@ export function criarSchemas(d: Dicionario) {
       .gt(0, fmtTexto(v.maiorZero, { campo }))
       .lt(max, fmtTexto(v.valorAlto, { campo }));
   const percentual = z.coerce.number({ invalid_type_error: v.pctNumero }).min(0, v.pctNegativo).max(100, v.pctMax);
+  /** Custo opcional: zero é válido (venda sem custo lançado), negativo não. */
+  const custoOpcional = (campo: string) =>
+    z.coerce.number({ invalid_type_error: fmtTexto(v.numero, { campo }) })
+      .finite(fmtTexto(v.valorAlto, { campo }))
+      .min(0, fmtTexto(v.numero, { campo }))
+      .lt(MAX_VALOR, fmtTexto(v.valorAlto, { campo }))
+      .catch(0);
   const enumMsg = (msg: string) => ({ errorMap: () => ({ message: msg }) });
   const uuid = z.string().uuid(v.idInvalido);
 
@@ -58,6 +66,18 @@ export function criarSchemas(d: Dicionario) {
       volume: numeroPositivo(v.volume, MAX_QUANTIDADE),
       unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
       preco_unitario: numeroPositivo(v.precoUnitario, MAX_VALOR),
+      // Custos são opcionais: campo em branco vira 0 e a venda fica como antes de 0005.
+      custo_unitario: custoOpcional(v.custoUnitario2),
+      frete_unitario: custoOpcional(v.freteUnitario),
+      impostos_pct: percentual.catch(0),
+      comissao_pct: percentual.catch(0),
+      data: dataISO,
+    }),
+    despesa: z.object({
+      projeto_id: uuid,
+      descricao: z.string().trim().min(1, v.descricaoObrigatoria).max(160, v.nomeLongo),
+      categoria: z.enum(CATEGORIAS_DESPESA, enumMsg(v.categoriaInvalida)),
+      valor: numeroPositivo(v.valorDespesa, MAX_VALOR),
       data: dataISO,
     }),
     membro: z.object({

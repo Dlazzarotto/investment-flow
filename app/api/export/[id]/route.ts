@@ -1,9 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
-import { listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas, obterFluxoMensal, obterProjeto } from "@/lib/consultas";
 import {
-  calcularKpis, desvioVsMedia, encontrarBreakeven, normalizarItem, ratearParticipacoes, roiAnualizado,
-  simularCenarios, tirAnual, type Rateio, type TipoRateio,
+  listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas,
+  obterFluxoMensal, obterProjeto,
+} from "@/lib/consultas";
+import {
+  calcularKpis, desvioVsMedia, detalharCustoVenda, encontrarBreakeven, normalizarItem, ratearParticipacoes,
+  roiAnualizado, simularCenarios, tirAnual, type Rateio, type TipoRateio,
 } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { montarCsv } from "@/lib/csv";
@@ -16,11 +19,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const x = d.exportacao;
   const formato = req.nextUrl.searchParams.get("formato") === "xlsx" ? "xlsx" : "csv";
   const projeto = await obterProjeto(params.id);
-  const [investimentos, vendas, participantes, fluxo, estimativas] = await Promise.all([
-    listarInvestimentos(projeto.id), listarVendas(projeto.id), listarParticipantes(projeto.id),
-    obterFluxoMensal(projeto.id), mapaUltimasEstimativas(projeto.id),
+  const [investimentos, vendas, despesas, participantes, fluxo, estimativas] = await Promise.all([
+    listarInvestimentos(projeto.id), listarVendas(projeto.id), listarDespesas(projeto.id),
+    listarParticipantes(projeto.id), obterFluxoMensal(projeto.id), mapaUltimasEstimativas(projeto.id),
   ]);
-  const kpis = calcularKpis(investimentos, vendas);
+  const kpis = calcularKpis(investimentos, vendas, despesas);
   const slug = projeto.nome.normalize("NFD").replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "").toLowerCase() || "projeto";
   const papel = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
     : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo];
@@ -28,11 +31,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   if (formato === "csv") {
     const linhas: (string | number)[][] = [
-      [x.tipo, x.id, x.data, x.descricao, x.categoria, x.quantidade, x.unidade, x.precoUnitario, x.valor],
+      [x.tipo, x.id, x.data, x.descricao, x.categoria, x.quantidade, x.unidade, x.precoUnitario, x.valor, x.custoTotal, x.margem],
       ...investimentos.map((i) => [x.tipoInvestimento, i.id, i.data, i.item, d.enums.categoriaInvestimento[i.categoria],
-        Number(i.quantidade), "", Number(i.valor_unitario), Number(i.valor_total)]),
+        Number(i.quantidade), "", Number(i.valor_unitario), -Number(i.valor_total), "", ""]),
       ...vendas.map((v) => [x.tipoReceita, v.id, v.data, x.venda, d.enums.categoriaReceita[v.categoria],
-        Number(v.volume), v.unidade, Number(v.preco_unitario), Number(v.receita_total)]),
+        Number(v.volume), v.unidade, Number(v.preco_unitario), Number(v.receita_total),
+        Number(v.custo_total ?? 0), detalharCustoVenda(v).margem]),
+      ...despesas.map((y) => [x.tipoDespesa, y.id, y.data, y.descricao, d.enums.categoriaDespesa[y.categoria],
+        "", "", "", -Number(y.valor), "", ""]),
     ];
     return new NextResponse(montarCsv(linhas, locale), {
       headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${slug}_dados.csv"` },
@@ -48,7 +54,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   resumo.addRows([
     [x.projeto, projeto.nome], [x.moeda, projeto.moeda], [x.dataInicio, projeto.data_inicio],
     [x.tipoParceria, d.enums.tipoParceria[projeto.tipo_parceria]], [x.suaParticipacao, Number(projeto.participacao_pct)],
-    [x.investimentoTotal, kpis.investimentoTotal], [x.receitaTotal, kpis.receitaTotal], [x.saldo, kpis.saldo],
+    [x.investimentoTotal, kpis.investimentoTotal], [x.custoVendas, kpis.custoVendasTotal],
+    [x.despesas, kpis.despesasTotal], [x.saidaTotal, kpis.saidaTotal],
+    [x.receitaTotal, kpis.receitaTotal], [x.margem, kpis.margemBruta], [x.margemPct, pctExcel(kpis.margemPct)],
+    [x.saldo, kpis.saldo],
     [x.roi, pctExcel(kpis.roi)], [x.roiAnualizado, pctExcel(roiAnualizado(kpis.roi, fluxo.length))],
     [x.tirAnual, pctExcel(tirAnual(fluxo.map((m) => m.receita - m.investimento)))],
     [x.breakeven, breakeven ?? x.naoAtingido],
@@ -85,31 +94,53 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     { header: x.data, key: "data", width: 12 }, { header: x.categoria, key: "categoria", width: 20 },
     { header: x.volume, key: "vol", width: 12 }, { header: x.unidade, key: "un", width: 12 },
     { header: x.precoUnitario, key: "preco", width: 16 }, { header: x.receita, key: "total", width: 16 },
+    { header: x.custoUnitario, key: "cu", width: 16 }, { header: x.freteUnitario, key: "fu", width: 16 },
+    { header: x.impostosPct, key: "ip", width: 14 }, { header: x.comissaoPct, key: "cp", width: 14 },
+    { header: x.custoTotal, key: "ct", width: 16 }, { header: x.margem, key: "mg", width: 16 },
+    { header: x.margemPct, key: "mp", width: 14 },
   ];
   for (const v of vendas) {
+    const custo = detalharCustoVenda(v);
     ven.addRow({ data: v.data, categoria: d.enums.categoriaReceita[v.categoria], vol: Number(v.volume),
-      un: v.unidade, preco: Number(v.preco_unitario), total: Number(v.receita_total) });
+      un: v.unidade, preco: Number(v.preco_unitario), total: Number(v.receita_total),
+      cu: Number(v.custo_unitario ?? 0), fu: Number(v.frete_unitario ?? 0),
+      ip: Number(v.impostos_pct ?? 0), cp: Number(v.comissao_pct ?? 0),
+      ct: custo.total, mg: custo.margem, mp: pctExcel(custo.margemPct) });
+  }
+
+  const desp = wb.addWorksheet(x.despesas);
+  desp.columns = [
+    { header: x.data, key: "data", width: 12 }, { header: x.descricao, key: "desc", width: 40 },
+    { header: x.categoria, key: "categoria", width: 20 }, { header: x.valor, key: "valor", width: 16 },
+  ];
+  for (const y of despesas) {
+    desp.addRow({ data: y.data, desc: y.descricao, categoria: d.enums.categoriaDespesa[y.categoria], valor: Number(y.valor) });
   }
 
   const fx = wb.addWorksheet(x.fluxoMensal);
   fx.columns = [
     { header: x.mes, key: "mes", width: 10 }, { header: x.investimento, key: "i", width: 16 },
-    { header: x.receitaMes, key: "r", width: 16 }, { header: x.invAcum, key: "ia", width: 16 },
-    { header: x.recAcum, key: "ra", width: 16 }, { header: x.saldoAcum, key: "s", width: 16 },
+    { header: x.custoVendas, key: "c", width: 18 }, { header: x.despesas, key: "d", width: 16 },
+    { header: x.saida, key: "sa", width: 16 }, { header: x.receitaMes, key: "r", width: 16 },
+    { header: x.saidaAcum, key: "saa", width: 18 }, { header: x.recAcum, key: "ra", width: 16 },
+    { header: x.saldoAcum, key: "s", width: 16 },
   ];
-  for (const f of fluxo) fx.addRow({ mes: f.mes.slice(0, 7), i: f.investimento, r: f.receita, ia: f.inv_acumulado, ra: f.rec_acumulada, s: f.saldo_acumulado });
+  for (const f of fluxo) {
+    fx.addRow({ mes: f.mes.slice(0, 7), i: f.investimento, c: f.custo_vendas, d: f.despesas, sa: f.saida,
+      r: f.receita, saa: f.saida_acumulada, ra: f.rec_acumulada, s: f.saldo_acumulado });
+  }
 
   const cen = wb.addWorksheet(x.cenarios);
   cen.columns = [
     { header: x.cenario, key: "nome", width: 20 }, { header: x.fatorReceita, key: "fr", width: 16 },
-    { header: x.fatorInvestimento, key: "fi", width: 18 }, { header: x.investimentoTotal, key: "inv", width: 22 },
+    { header: x.fatorInvestimento, key: "fi", width: 18 }, { header: x.saidaTotal, key: "inv", width: 22 },
     { header: x.receitaTotal, key: "rec", width: 20 }, { header: x.saldo, key: "saldo", width: 18 },
     { header: x.roi, key: "roi", width: 16 }, { header: x.roiAnualizado, key: "roiAno", width: 20 },
     { header: x.tirAnual, key: "tir", width: 18 }, { header: x.breakeven, key: "be", width: 14 },
   ];
   for (const c of simularCenarios(fluxo)) {
     cen.addRow({ nome: d.enums.cenario[c.cenario], fr: c.fatorReceita, fi: c.fatorInvestimento,
-      inv: c.investimentoTotal, rec: c.receitaTotal, saldo: c.saldo, roi: pctExcel(c.roi),
+      inv: c.saidaTotal, rec: c.receitaTotal, saldo: c.saldo, roi: pctExcel(c.roi),
       roiAno: pctExcel(c.roiAnualizado), tir: pctExcel(c.tirAnual), be: c.breakeven ?? x.naoAtingido });
   }
 

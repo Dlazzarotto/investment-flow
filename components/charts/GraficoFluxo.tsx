@@ -22,7 +22,8 @@ export function GraficoFluxo({ fluxo, moeda }: { fluxo: FluxoMensal[]; moeda: Mo
           <Tooltip formatter={(v: number, nome: string) => [f.moeda(v, moeda), nome]}
                    labelFormatter={(l) => String(l)} contentStyle={ESTILO_TOOLTIP} />
           <Legend wrapperStyle={ESTILO_LEGENDA} />
-          <Bar dataKey="investimento" name={d.dashboard.serieInvestimentos} fill={ORANGE} radius={[3, 3, 0, 0]} />
+          {/* Uma barra por lado: tudo que saiu (aporte + custo de venda + despesa) contra a receita. */}
+          <Bar dataKey="saida" name={d.dashboard.serieSaida} fill={ORANGE} radius={[3, 3, 0, 0]} />
           <Bar dataKey="receita" name={d.dashboard.serieReceitas} fill={NAVY} radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>

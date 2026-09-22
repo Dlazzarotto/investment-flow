@@ -3,32 +3,91 @@
  * A agregação mensal contínua é feita no banco por public.fluxo_mensal(); aqui
  * ficam KPIs, break-even e rateio por participação.
  */
-import type { FluxoMensal, Investimento, Participante, Projeto, TipoParticipante, Venda } from "./types";
+import type { Despesa, FluxoMensal, Investimento, Participante, Projeto, TipoParticipante, Venda } from "./types";
 
 export interface Kpis {
   investimentoTotal: number;
   receitaTotal: number;
+  /** Custo direto das vendas (mercadoria, frete, impostos, comissão). */
+  custoVendasTotal: number;
+  /** Despesas de custeio do projeto. */
+  despesasTotal: number;
+  /** Tudo que saiu: investimento + custo de vendas + despesas. */
+  saidaTotal: number;
+  /** Receita − custo direto das vendas: o que a operação deixa antes do custeio. */
+  margemBruta: number;
+  /** margemBruta ÷ receita; null sem receita. */
+  margemPct: number | null;
+  /** Receita − saída total. */
   saldo: number;
-  /** (receita − investimento) ÷ investimento; null quando não há investimento */
+  /** saldo ÷ investimento — retorno sobre o capital aportado; null sem investimento. */
   roi: number | null;
 }
 
 export function calcularKpis(investimentos: Pick<Investimento, "valor_total">[],
-                             vendas: Pick<Venda, "receita_total">[]): Kpis {
+                             vendas: Pick<Venda, "receita_total" | "custo_total">[],
+                             despesas: Pick<Despesa, "valor">[] = []): Kpis {
   const investimentoTotal = soma(investimentos.map((i) => Number(i.valor_total)));
   const receitaTotal = soma(vendas.map((v) => Number(v.receita_total)));
-  const saldo = arred(receitaTotal - investimentoTotal);
+  const custoVendasTotal = soma(vendas.map((v) => Number(v.custo_total ?? 0)));
+  const despesasTotal = soma(despesas.map((d) => Number(d.valor)));
+  const saidaTotal = investimentoTotal + custoVendasTotal + despesasTotal;
+  const margemBruta = receitaTotal - custoVendasTotal;
+  const saldo = arred(receitaTotal - saidaTotal);
   return {
     investimentoTotal: arred(investimentoTotal),
     receitaTotal: arred(receitaTotal),
+    custoVendasTotal: arred(custoVendasTotal),
+    despesasTotal: arred(despesasTotal),
+    saidaTotal: arred(saidaTotal),
+    margemBruta: arred(margemBruta),
+    margemPct: receitaTotal > 0 ? margemBruta / receitaTotal : null,
     saldo,
     roi: investimentoTotal > 0 ? saldo / investimentoTotal : null,
   };
 }
 
-/** Primeiro mês em que a receita acumulada iguala ou supera o investimento acumulado (>0). */
+/** Quebra do custo de uma venda nos quatro componentes que o banco soma em custo_total. */
+export interface CustoVenda {
+  mercadoria: number;
+  frete: number;
+  impostos: number;
+  comissao: number;
+  total: number;
+  /** Receita − custo total da venda. */
+  margem: number;
+  /** margem ÷ receita; null sem receita. */
+  margemPct: number | null;
+}
+
+export function detalharCustoVenda(v: Pick<Venda, "volume" | "preco_unitario" | "custo_unitario" | "frete_unitario" | "impostos_pct" | "comissao_pct">): CustoVenda {
+  const volume = Number(v.volume);
+  const receita = volume * Number(v.preco_unitario);
+  const mercadoria = volume * Number(v.custo_unitario ?? 0);
+  const frete = volume * Number(v.frete_unitario ?? 0);
+  const impostos = receita * Number(v.impostos_pct ?? 0) / 100;
+  const comissao = receita * Number(v.comissao_pct ?? 0) / 100;
+  const total = mercadoria + frete + impostos + comissao;
+  const margem = receita - total;
+  return {
+    mercadoria: arred(mercadoria), frete: arred(frete), impostos: arred(impostos), comissao: arred(comissao),
+    total: arred(total), margem: arred(margem),
+    margemPct: receita > 0 ? margem / receita : null,
+  };
+}
+
+/** Despesas somadas por categoria, para o gráfico e a exportação. */
+export function despesasPorCategoria(despesas: Pick<Despesa, "categoria" | "valor">[]) {
+  const mapa = new Map<string, number>();
+  for (const d of despesas) mapa.set(d.categoria, (mapa.get(d.categoria) ?? 0) + Number(d.valor));
+  return [...mapa.entries()]
+    .map(([categoria, valor]) => ({ categoria, valor: arred(valor) }))
+    .sort((a, b) => b.valor - a.valor);
+}
+
+/** Primeiro mês em que a receita acumulada iguala ou supera tudo que saiu (>0). */
 export function encontrarBreakeven(fluxo: FluxoMensal[]): string | null {
-  const hit = fluxo.find((f) => Number(f.inv_acumulado) > 0 && Number(f.rec_acumulada) >= Number(f.inv_acumulado));
+  const hit = fluxo.find((f) => Number(f.saida_acumulada) > 0 && Number(f.rec_acumulada) >= Number(f.saida_acumulada));
   return hit ? hit.mes : null;
 }
 
@@ -151,7 +210,11 @@ export const CENARIOS = ["otimista", "base", "pessimista"] as const;
 export type TipoCenario = (typeof CENARIOS)[number];
 
 /** Variação aplicada ao cenário otimista/pessimista (frações: 0.15 = 15 %). */
-export interface AjusteCenario { receita: number; investimento: number }
+export interface AjusteCenario {
+  receita: number;
+  /** Desloca tudo que sai: aportes, custo das vendas e despesas. */
+  investimento: number;
+}
 
 export const AJUSTE_PADRAO: AjusteCenario = { receita: 0.15, investimento: 0.1 };
 
@@ -160,7 +223,8 @@ export interface ResultadoCenario {
   /** Multiplicadores aplicados à série real, para a tela mostrar o que foi assumido. */
   fatorReceita: number;
   fatorInvestimento: number;
-  investimentoTotal: number;
+  /** Tudo que saiu no cenário (investimento + custo de vendas + despesas). */
+  saidaTotal: number;
   receitaTotal: number;
   saldo: number;
   roi: number | null;
@@ -176,40 +240,45 @@ export interface ResultadoCenario {
  * pessimista, o contrário.
  */
 export function simularCenarios(fluxo: FluxoMensal[], ajuste: AjusteCenario = AJUSTE_PADRAO): ResultadoCenario[] {
-  const fatores: Record<TipoCenario, { receita: number; investimento: number }> = {
-    otimista: { receita: 1 + ajuste.receita, investimento: 1 - ajuste.investimento },
-    base: { receita: 1, investimento: 1 },
-    pessimista: { receita: 1 - ajuste.receita, investimento: 1 + ajuste.investimento },
+  const fatores: Record<TipoCenario, { receita: number; saida: number }> = {
+    otimista: { receita: 1 + ajuste.receita, saida: 1 - ajuste.investimento },
+    base: { receita: 1, saida: 1 },
+    pessimista: { receita: 1 - ajuste.receita, saida: 1 + ajuste.investimento },
   };
   return CENARIOS.map((cenario) => aplicarCenario(fluxo, cenario, fatores[cenario]));
 }
 
 function aplicarCenario(fluxo: FluxoMensal[], cenario: TipoCenario,
-                        fator: { receita: number; investimento: number }): ResultadoCenario {
-  let invAcum = 0, recAcum = 0;
+                        fator: { receita: number; saida: number }): ResultadoCenario {
+  let saidaAcum = 0, recAcum = 0, investAcum = 0;
   const ajustado: FluxoMensal[] = fluxo.map((m) => {
-    const investimento = Number(m.investimento) * fator.investimento;
+    const investimento = Number(m.investimento) * fator.saida;
+    const custo_vendas = Number(m.custo_vendas) * fator.saida;
+    const despesas = Number(m.despesas) * fator.saida;
+    const saida = investimento + custo_vendas + despesas;
     const receita = Number(m.receita) * fator.receita;
-    invAcum += investimento;
+    saidaAcum += saida;
     recAcum += receita;
-    return { mes: m.mes, investimento, receita, inv_acumulado: invAcum, rec_acumulada: recAcum, saldo_acumulado: recAcum - invAcum };
+    investAcum += investimento;
+    return {
+      mes: m.mes, investimento, custo_vendas, despesas, saida, receita,
+      saida_acumulada: saidaAcum, rec_acumulada: recAcum, saldo_acumulado: recAcum - saidaAcum,
+    };
   });
 
-  const investimentoTotal = arred(invAcum);
-  const receitaTotal = arred(recAcum);
-  const saldo = arred(recAcum - invAcum);
-  const roi = invAcum > 0 ? saldo / invAcum : null;
+  const saldo = arred(recAcum - saidaAcum);
   const meses = ajustado.length;
   return {
     cenario,
     fatorReceita: fator.receita,
-    fatorInvestimento: fator.investimento,
-    investimentoTotal,
-    receitaTotal,
+    fatorInvestimento: fator.saida,
+    saidaTotal: arred(saidaAcum),
+    receitaTotal: arred(recAcum),
     saldo,
-    roi,
-    roiAnualizado: roiAnualizado(roi, meses),
-    tirAnual: tirAnual(ajustado.map((m) => m.receita - m.investimento)),
+    // ROI continua sendo sobre o capital aportado, não sobre tudo que saiu.
+    roi: investAcum > 0 ? saldo / investAcum : null,
+    roiAnualizado: roiAnualizado(investAcum > 0 ? saldo / investAcum : null, meses),
+    tirAnual: tirAnual(ajustado.map((m) => m.receita - m.saida)),
     breakeven: encontrarBreakeven(ajustado),
     meses,
   };
