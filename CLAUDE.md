@@ -1,6 +1,6 @@
 # Investment Dashboard — contexto para o Claude Code
 
-Gestão de aportes (Capex/Opex), vendas/receitas, parceria (tipo + % de participação) e dashboard por projeto (JVs, logística, mineração). Versão atual: 2.2. Idioma de trabalho com o usuário: português.
+Gestão de aportes (Capex/Opex), vendas/receitas, parceria (tipo + % de participação) e dashboard por projeto (JVs, logística, mineração). Versão atual: 2.3. Idioma de trabalho com o usuário: português.
 
 ## Stack
 
@@ -64,3 +64,6 @@ Windows + PowerShell 5; projeto dentro do OneDrive. Ao sugerir comandos: um bloc
 
 ## Próximos passos possíveis
 
+- Convite com link/e-mail automático (hoje o dono avisa o sócio por fora)
+- Histórico de alterações (quem editou o quê)
+- Projeção de fluxo futuro (lançamentos planejados), além dos cenários sobre o histórico

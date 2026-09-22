@@ -1,4 +1,4 @@
-# Gestão de Aportes — Next.js + Supabase + Vercel (v2.2)
+# Gestão de Aportes — Next.js + Supabase + Vercel (v2.3)
 
 Investimentos (Capex/Opex), vendas/receitas, parceria (tipo + participação %) e dashboard
 por projeto. Reescrita da v1 (Streamlit/SQLite) na stack Next.js 14 · TypeScript · Supabase · Vercel.
@@ -94,4 +94,4 @@ npm test            # vitest (53 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):
-`psql -v ON_ERROR_STOP=1 -f tests/schema.test.sql` — roda em transação e desfaz tudo (idem `schema2`/`schema3`).
+`psql -v ON_ERROR_STOP=1 -f tests/schema.test.sql` — roda em transação e desfaz tudo (idem `schema2`, `schema3` e `schema4`).
