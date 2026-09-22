@@ -99,3 +99,19 @@ export interface EstimativaIA {
   modelo: string;
   criado_em: string;
 }
+
+/** Papel de acesso de um membro convidado (tabela projeto_membros). */
+export const PAPEIS_MEMBRO = ["leitor", "editor"] as const;
+export type PapelMembro = (typeof PAPEIS_MEMBRO)[number];
+
+/** Papel do usuário logado no projeto; null quando não tem acesso. */
+export type PapelNoProjeto = PapelMembro | "dono" | null;
+
+export interface ProjetoMembro {
+  id: string;
+  projeto_id: string;
+  email: string;
+  email_normalizado: string;
+  papel: PapelMembro;
+  criado_em: string;
+}

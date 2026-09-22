@@ -5,9 +5,42 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { EstimativaIA, FluxoMensal, Investimento, Participante, Projeto, Venda } from "@/lib/types";
+import type {
+  EstimativaIA, FluxoMensal, Investimento, PapelNoProjeto, Participante, Projeto, ProjetoMembro, Venda,
+} from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Usuário logado (o middleware já garante que existe nas páginas do app). */
+export const obterUsuario = cache(async () => {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+});
+
+/**
+ * Papel do usuário logado no projeto: "dono", "editor", "leitor" ou null.
+ * Quem decide é o banco (public.papel_no_projeto), a mesma fonte das policies —
+ * a tela não pode divergir do que o RLS vai permitir.
+ */
+export const obterPapel = cache(async (projetoId: string): Promise<PapelNoProjeto> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("papel_no_projeto", { p_projeto_id: projetoId });
+  if (error) throw new Error(error.message);
+  return (data as PapelNoProjeto) ?? null;
+});
+
+export function podeEditar(papel: PapelNoProjeto): boolean {
+  return papel === "dono" || papel === "editor";
+}
+
+export const listarMembros = cache(async (projetoId: string): Promise<ProjetoMembro[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("projeto_membros").select("*")
+    .eq("projeto_id", projetoId).order("email_normalizado");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ProjetoMembro[];
+});
 
 export const listarProjetos = cache(async (): Promise<Projeto[]> => {
   const supabase = createClient();

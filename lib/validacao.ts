@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
-  CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -59,6 +59,11 @@ export function criarSchemas(d: Dicionario) {
       unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
       preco_unitario: numeroPositivo(v.precoUnitario, MAX_VALOR),
       data: dataISO,
+    }),
+    membro: z.object({
+      projeto_id: uuid,
+      email: z.string().trim().toLowerCase().email(v.emailInvalido).max(320, v.nomeLongo),
+      papel: z.enum(PAPEIS_MEMBRO, enumMsg(v.papelInvalido)),
     }),
     id: z.object({ id: uuid, projeto_id: uuid }),
     /** Identificador isolado (edição/exclusão de projeto). */

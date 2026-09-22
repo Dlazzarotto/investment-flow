@@ -182,6 +182,14 @@ describe("Validação (zod)", () => {
     expect(projetoSchema.safeParse({ nome: "P", data_inicio: "2026-01-01", moeda: "USD", tipo_parceria: "investidor", participacao_pct: "10", descricao: "x".repeat(2001) })
       .error?.issues[0].message).toBe("Descrição muito longa (máx. 2000 caracteres).");
   });
+  it("membro: e-mail normalizado para minúsculas e papel dentro do enum", () => {
+    const { membro } = criarSchemas(obterDicionario("pt"));
+    const base = { projeto_id: uuid, email: "  Socio@Empresa.COM ", papel: "editor" };
+    expect(membro.safeParse(base).data).toEqual({ projeto_id: uuid, email: "socio@empresa.com", papel: "editor" });
+    expect(membro.safeParse({ ...base, email: "sem-arroba" }).error?.issues[0].message).toBe("Informe um e-mail válido.");
+    expect(membro.safeParse({ ...base, papel: "dono" }).error?.issues[0].message).toBe("Papel inválido.");
+    expect(membro.safeParse({ ...base, projeto_id: "x" }).success).toBe(false);
+  });
   it("redirecionamento pós-login só aceita caminho interno", () => {
     expect(caminhoInterno("/projetos/abc")).toBe("/projetos/abc");
     expect(caminhoInterno("//evil.com")).toBe("/projetos");

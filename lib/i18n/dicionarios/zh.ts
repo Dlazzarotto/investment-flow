@@ -104,6 +104,18 @@ export const zh: Dicionario = {
     naoSalva: "已获得估值但未能保存：{msg}", apiErro: "Claude API 返回 {status}：{corpo}",
     truncada: "AI 回复因 token 上限被截断，请缩短上下文后重试。",
   },
+  membros: {
+    titulo: "项目访问权限",
+    subtitulo: "按邮箱为合作伙伴开通访问权限。只有作为所有者的您可以邀请和移除。",
+    email: "合作伙伴邮箱", emailPlaceholder: "partner@company.com", papel: "角色", convidar: "开通访问",
+    convidado: "已为 {email} 开通访问。", removerConfirma: "移除 {email} 的访问权限？",
+    lista: "谁可以访问", vazioTitulo: "目前只有您可以访问", vazioTexto: "用邮箱邀请合作伙伴一起跟进项目。",
+    voceDono: "您（项目所有者）", desde: "自 {data} 起",
+    avisoConfirmacao: "访问权限以账户的已确认邮箱为准。邀请他人前，请在 Supabase 中保持邮箱确认为开启状态。",
+    somenteLeitura: "您对本项目拥有只读权限：可以查看全部内容，但不能录入或修改。",
+    somenteDono: "只有项目所有者可以修改合作结构和访问名单。",
+    compartilhado: "与您共享",
+  },
   exportacao: {
     resumo: "摘要", participacao: "持股", investimentos: "投资", vendas: "销售", fluxoMensal: "月度现金流", estimativas: "AI 估值",
     indicador: "指标", valor: "数值", projeto: "项目", moeda: "货币", dataInicio: "开始日期", tipoParceria: "合作类型",
@@ -127,6 +139,7 @@ export const zh: Dicionario = {
     tipoParticipanteInvalido: "参与方类型无效。", pctMaiorZero: "百分比必须大于零。",
     itemObrigatorio: "项目名称为必填项。", categoriaInvalida: "类别无效。", unidadeObrigatoria: "单位为必填项。",
     dadosInvalidos: "数据无效。", quantidade: "数量", valorUnitario: "单价", volume: "销量", precoUnitario: "单价",
+    papelInvalido: "角色无效。", emailInvalido: "请输入有效的邮箱。",
     descricaoLonga: "描述过长（最多 2000 个字符）。", contatoLongo: "联系方式过长（最多 200 个字符）。",
     unidadeLonga: "单位过长（最多 40 个字符）。", valorAlto: "{campo}过大。", idInvalido: "标识符无效。",
   },
@@ -136,7 +149,7 @@ export const zh: Dicionario = {
     falha: "保存{entidade}失败：{msg}", naoEncontrado: "未找到项目。",
     foraDaFaixa: "数值超出数据库允许的范围（过大或小数位过多）。",
   },
-  entidades: { projeto: "项目", participante: "参与方", investimento: "投资", venda: "销售" },
+  entidades: { membro: "访问权限", projeto: "项目", participante: "参与方", investimento: "投资", venda: "销售" },
   enums: {
     tipoParceria: { sociedade_direta: "直接持股", joint_venture: "合资（JV）", investidor: "投资人" },
     descricaoTipoParceria: {
@@ -148,6 +161,7 @@ export const zh: Dicionario = {
     categoriaInvestimento: { infraestrutura: "基础设施", logistica: "物流", operacional: "运营" },
     categoriaReceita: { venda_produto: "产品销售", frete_logistica: "运费 / 物流", servicos: "服务", outros: "其他" },
     confianca: { baixa: "置信度低", media: "置信度中", alta: "置信度高" },
+    papelMembro: { leitor: "只读", editor: "编辑（可录入与修改）" },
     cenario: { otimista: "乐观", base: "基准（实际）", pessimista: "悲观" },
     unidades: { Toneladas: "吨", "m³": "立方米", Barris: "桶", Unidades: "件", "Contêineres": "集装箱", Horas: "小时" },
   },

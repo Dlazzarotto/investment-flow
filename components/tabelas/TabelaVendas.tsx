@@ -11,11 +11,12 @@ import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { CATEGORIAS_RECEITA, UNIDADES_VOLUME, type ActionState, type Moeda, type Venda } from "@/lib/types";
 
-const COLUNAS = 7;
+/** Colunas da tabela; a de ações só existe para quem pode editar. */
+const COLUNAS_BASE = 6;
 
 /** Tabela de vendas com edição na própria linha (uma por vez). */
-export function TabelaVendas({ vendas, projetoId, moeda }:
-  { vendas: Venda[]; projetoId: string; moeda: Moeda }) {
+export function TabelaVendas({ vendas, projetoId, moeda, editavel }:
+  { vendas: Venda[]; projetoId: string; moeda: Moeda; editavel: boolean }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const t = d.vendas;
@@ -32,13 +33,13 @@ export function TabelaVendas({ vendas, projetoId, moeda }:
           <thead>
             <tr>
               <th>{d.comum.data}</th><th>{d.comum.categoria}</th><th className="num">{t.volume}</th><th>{d.comum.unidade}</th>
-              <th className="num">{t.precoUnit}</th><th className="num">{t.receita}</th><th>{d.comum.acoes}</th>
+              <th className="num">{t.precoUnit}</th><th className="num">{t.receita}</th>{editavel && <th>{d.comum.acoes}</th>}
             </tr>
           </thead>
           <tbody>
-            {vendas.map((v) => editando === v.id ? (
+            {vendas.map((v) => editavel && editando === v.id ? (
               <tr key={v.id} className="bg-navy-soft/50">
-                <td colSpan={COLUNAS} className="py-4">
+                <td colSpan={COLUNAS_BASE + 1} className="py-4">
                   {/* A tabela pode ser mais larga que a tela; o wrapper prende o formulário
                       à esquerda da área rolável para não precisar rolar na horizontal. */}
                   <div className="sticky left-0 w-[calc(100vw-2rem)] max-w-full">
@@ -58,17 +59,19 @@ export function TabelaVendas({ vendas, projetoId, moeda }:
                 <td>{rotuloUnidade(v.unidade, d)}</td>
                 <td className="num">{f.moeda(Number(v.preco_unitario), moeda)}</td>
                 <td className="num font-semibold">{f.moeda(Number(v.receita_total), moeda)}</td>
-                <td>
-                  <div className="flex gap-2">
-                    <button type="button" className="btn-quieto px-3"
-                            aria-label={fmtTexto(t.editarVenda, { data: f.data(v.data) })}
-                            onClick={() => { setAviso(null); setEditando(v.id); }}>
-                      {d.comum.editar}
-                    </button>
-                    <BotaoExcluir action={excluirVenda} id={v.id} projetoId={projetoId}
-                                  confirmacao={fmtTexto(t.excluirConfirma, { data: f.data(v.data) })} rotulo={d.comum.excluir} />
-                  </div>
-                </td>
+                {editavel && (
+                  <td>
+                    <div className="flex gap-2">
+                      <button type="button" className="btn-quieto px-3"
+                              aria-label={fmtTexto(t.editarVenda, { data: f.data(v.data) })}
+                              onClick={() => { setAviso(null); setEditando(v.id); }}>
+                        {d.comum.editar}
+                      </button>
+                      <BotaoExcluir action={excluirVenda} id={v.id} projetoId={projetoId}
+                                    confirmacao={fmtTexto(t.excluirConfirma, { data: f.data(v.data) })} rotulo={d.comum.excluir} />
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

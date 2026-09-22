@@ -3,7 +3,7 @@ import { Shell } from "@/components/Shell";
 import { FormProjeto } from "@/components/forms/FormProjeto";
 import { Vazio } from "@/components/ui/Vazio";
 import { criarProjeto } from "@/app/actions/projetos";
-import { listarProjetos } from "@/lib/consultas";
+import { listarProjetos, obterUsuario } from "@/lib/consultas";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function ProjetosPage() {
   const { locale, d } = obterD();
   const f = formatadores(locale);
-  const projetos = await listarProjetos();
+  const [projetos, usuario] = await Promise.all([listarProjetos(), obterUsuario()]);
   return (
     <Shell projetos={projetos}>
       <h1 className="text-2xl">{d.projetos.titulo}</h1>
@@ -28,7 +28,10 @@ export default async function ProjetosPage() {
               <li key={p.id}>
                 <Link href={`/projetos/${p.id}`} className="block min-h-touch rounded-md border border-stone-light bg-white px-5 py-4 hover:border-navy">
                   <p className="text-lg font-semibold text-navy">{p.nome}</p>
-                  <p className="mt-1 text-sm text-stone">
+                  {usuario && p.owner_id !== usuario.id && (
+                    <p className="mt-1 inline-block rounded-md bg-navy-soft px-2 py-1 text-navy">{d.membros.compartilhado}</p>
+                  )}
+                  <p className="mt-1 text-stone">
                     {fmtTexto(d.projetos.resumoCard, { tipo: d.enums.tipoParceria[p.tipo_parceria], pct: f.numero(p.participacao_pct, 2), moeda: p.moeda, data: f.data(p.data_inicio) })}
                   </p>
                 </Link>

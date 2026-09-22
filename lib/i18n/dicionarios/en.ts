@@ -104,6 +104,18 @@ export const en: Dicionario = {
     naoSalva: "Estimate obtained but not saved: {msg}", apiErro: "Claude API responded {status}: {corpo}",
     truncada: "The AI response was cut off by the token limit. Try again with a shorter context.",
   },
+  membros: {
+    titulo: "Project access",
+    subtitulo: "Give partners access by email. Only you, as the owner, invite and remove.",
+    email: "Partner's email", emailPlaceholder: "partner@company.com", papel: "Role", convidar: "Grant access",
+    convidado: "Access granted to {email}.", removerConfirma: "Remove access for {email}?",
+    lista: "Who has access", vazioTitulo: "Only you have access", vazioTexto: "Invite a partner by email to follow the project.",
+    voceDono: "You (project owner)", desde: "Since {data}",
+    avisoConfirmacao: "Access is matched by the account's confirmed email. Keep email confirmation enabled in Supabase before inviting anyone.",
+    somenteLeitura: "You have read access to this project: you can see everything, but not add or change entries.",
+    somenteDono: "Only the project owner changes the partnership structure and the access list.",
+    compartilhado: "Shared with you",
+  },
   exportacao: {
     resumo: "Summary", participacao: "Stakes", investimentos: "Investments", vendas: "Sales", fluxoMensal: "Monthly Flow", estimativas: "AI Estimates",
     indicador: "Indicator", valor: "Value", projeto: "Project", moeda: "Currency", dataInicio: "Start date", tipoParceria: "Partnership type",
@@ -127,6 +139,7 @@ export const en: Dicionario = {
     tipoParticipanteInvalido: "Invalid participant type.", pctMaiorZero: "Percentage must be greater than zero.",
     itemObrigatorio: "Item name is required.", categoriaInvalida: "Invalid category.", unidadeObrigatoria: "Unit is required.",
     dadosInvalidos: "Invalid data.", quantidade: "Quantity", valorUnitario: "Unit value", volume: "Volume", precoUnitario: "Unit price",
+    papelInvalido: "Invalid role.", emailInvalido: "Enter a valid email.",
     descricaoLonga: "Description is too long (max. 2000 characters).", contatoLongo: "Contact is too long (max. 200 characters).",
     unidadeLonga: "Unit is too long (max. 40 characters).", valorAlto: "{campo} is too large.", idInvalido: "Invalid identifier.",
   },
@@ -136,7 +149,7 @@ export const en: Dicionario = {
     falha: "Failed to save {entidade}: {msg}", naoEncontrado: "Project not found.",
     foraDaFaixa: "Value outside the range accepted by the database (too large or too many decimal places).",
   },
-  entidades: { projeto: "project", participante: "participant", investimento: "investment", venda: "sale" },
+  entidades: { membro: "access", projeto: "project", participante: "participant", investimento: "investment", venda: "sale" },
   enums: {
     tipoParceria: { sociedade_direta: "Direct partnership", joint_venture: "Joint venture", investidor: "Investor" },
     descricaoTipoParceria: {
@@ -148,6 +161,7 @@ export const en: Dicionario = {
     categoriaInvestimento: { infraestrutura: "Infrastructure", logistica: "Logistics", operacional: "Operations" },
     categoriaReceita: { venda_produto: "Product sale", frete_logistica: "Freight / logistics", servicos: "Services", outros: "Other" },
     confianca: { baixa: "Low confidence", media: "Medium confidence", alta: "High confidence" },
+    papelMembro: { leitor: "Viewer (read only)", editor: "Editor (add and change)" },
     cenario: { otimista: "Optimistic", base: "Base (actual)", pessimista: "Pessimistic" },
     unidades: { Toneladas: "Tonnes", "m³": "m³", Barris: "Barrels", Unidades: "Units", "Contêineres": "Containers", Horas: "Hours" },
   },

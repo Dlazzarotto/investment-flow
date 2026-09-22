@@ -104,6 +104,18 @@ export const pt = {
     naoSalva: "Estimativa obtida, mas não foi salva: {msg}", apiErro: "Claude API respondeu {status}: {corpo}",
     truncada: "A resposta da IA foi interrompida pelo limite de tokens. Tente de novo com um contexto mais curto.",
   },
+  membros: {
+    titulo: "Acesso ao projeto",
+    subtitulo: "Libere o acesso de sócios por e-mail. Só você, como dono, convida e remove.",
+    email: "E-mail do sócio", emailPlaceholder: "socio@empresa.com", papel: "Papel", convidar: "Liberar acesso",
+    convidado: "Acesso liberado para {email}.", removerConfirma: "Remover o acesso de {email}?",
+    lista: "Quem tem acesso", vazioTitulo: "Só você tem acesso", vazioTexto: "Convide um sócio pelo e-mail dele para acompanhar o projeto.",
+    voceDono: "Você (dono do projeto)", desde: "Desde {data}",
+    avisoConfirmacao: "O acesso vale pelo e-mail confirmado da conta. Mantenha a confirmação de e-mail ligada no Supabase antes de convidar alguém.",
+    somenteLeitura: "Você tem acesso de leitura a este projeto: pode ver tudo, mas não lançar nem alterar.",
+    somenteDono: "Só o dono do projeto altera a estrutura da parceria e a lista de acessos.",
+    compartilhado: "Compartilhado com você",
+  },
   exportacao: {
     resumo: "Resumo", participacao: "Participação", investimentos: "Investimentos", vendas: "Vendas", fluxoMensal: "Fluxo Mensal", estimativas: "Estimativas IA",
     indicador: "Indicador", valor: "Valor", projeto: "Projeto", moeda: "Moeda", dataInicio: "Data de início", tipoParceria: "Tipo de parceria",
@@ -127,6 +139,7 @@ export const pt = {
     tipoParticipanteInvalido: "Tipo de participante inválido.", pctMaiorZero: "Percentual deve ser maior que zero.",
     itemObrigatorio: "O nome do item é obrigatório.", categoriaInvalida: "Categoria inválida.", unidadeObrigatoria: "A unidade é obrigatória.",
     dadosInvalidos: "Dados inválidos.", quantidade: "Quantidade", valorUnitario: "Valor unitário", volume: "Volume", precoUnitario: "Preço unitário",
+    papelInvalido: "Papel inválido.", emailInvalido: "Informe um e-mail válido.",
     descricaoLonga: "Descrição muito longa (máx. 2000 caracteres).", contatoLongo: "Contato muito longo (máx. 200 caracteres).",
     unidadeLonga: "Unidade muito longa (máx. 40 caracteres).", valorAlto: "{campo} é grande demais.", idInvalido: "Identificador inválido.",
   },
@@ -136,7 +149,7 @@ export const pt = {
     falha: "Falha ao salvar {entidade}: {msg}", naoEncontrado: "Projeto não encontrado.",
     foraDaFaixa: "Valor fora da faixa aceita pelo banco (grande demais ou com casas decimais a mais).",
   },
-  entidades: { projeto: "projeto", participante: "participante", investimento: "investimento", venda: "venda" },
+  entidades: { membro: "acesso", projeto: "projeto", participante: "participante", investimento: "investimento", venda: "venda" },
   enums: {
     tipoParceria: { sociedade_direta: "Sociedade direta", joint_venture: "Joint venture", investidor: "Investidor" },
     descricaoTipoParceria: {
@@ -148,6 +161,7 @@ export const pt = {
     categoriaInvestimento: { infraestrutura: "Infraestrutura", logistica: "Logística", operacional: "Operacional" },
     categoriaReceita: { venda_produto: "Venda de produto", frete_logistica: "Frete / logística", servicos: "Serviços", outros: "Outros" },
     confianca: { baixa: "Confiança baixa", media: "Confiança média", alta: "Confiança alta" },
+    papelMembro: { leitor: "Leitor (só vê)", editor: "Editor (lança e altera)" },
     cenario: { otimista: "Otimista", base: "Base (real)", pessimista: "Pessimista" },
     unidades: { Toneladas: "Toneladas", "m³": "m³", Barris: "Barris", Unidades: "Unidades", "Contêineres": "Contêineres", Horas: "Horas" },
   },

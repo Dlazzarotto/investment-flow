@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { obterPapel, podeEditar } from "@/lib/consultas";
 import { estimarValorMedio } from "@/lib/ia/estimativa";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
@@ -29,6 +30,12 @@ export async function POST(req: NextRequest) {
   if (erroProj) return NextResponse.json({ erro: erroProj.message }, { status: 500 });
   if (!projeto) return NextResponse.json({ erro: d.banco.naoEncontrado }, { status: 404 });
   const p = projeto as Projeto;
+
+  // Quem só lê o projeto não grava estimativa — barrar aqui evita gastar a chamada à
+  // Claude API para depois o RLS recusar o insert.
+  if (!podeEditar(await obterPapel(p.id))) {
+    return NextResponse.json({ erro: d.comum.semPermissao }, { status: 403 });
+  }
 
   let resultado, modelo;
   try {

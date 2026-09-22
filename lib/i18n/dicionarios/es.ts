@@ -104,6 +104,18 @@ export const es: Dicionario = {
     naoSalva: "Estimación obtenida, pero no guardada: {msg}", apiErro: "Claude API respondió {status}: {corpo}",
     truncada: "La respuesta de la IA se interrumpió por el límite de tokens. Inténtelo de nuevo con un contexto más corto.",
   },
+  membros: {
+    titulo: "Acceso al proyecto",
+    subtitulo: "Dé acceso a los socios por correo. Solo usted, como dueño, invita y quita.",
+    email: "Correo del socio", emailPlaceholder: "socio@empresa.com", papel: "Papel", convidar: "Dar acceso",
+    convidado: "Acceso concedido a {email}.", removerConfirma: "¿Quitar el acceso de {email}?",
+    lista: "Quién tiene acceso", vazioTitulo: "Solo usted tiene acceso", vazioTexto: "Invite a un socio por su correo para seguir el proyecto.",
+    voceDono: "Usted (dueño del proyecto)", desde: "Desde {data}",
+    avisoConfirmacao: "El acceso se vincula al correo confirmado de la cuenta. Mantenga la confirmación de correo activada en Supabase antes de invitar a alguien.",
+    somenteLeitura: "Usted tiene acceso de lectura a este proyecto: puede ver todo, pero no registrar ni modificar.",
+    somenteDono: "Solo el dueño del proyecto cambia la estructura de la alianza y la lista de accesos.",
+    compartilhado: "Compartido con usted",
+  },
   exportacao: {
     resumo: "Resumen", participacao: "Participación", investimentos: "Inversiones", vendas: "Ventas", fluxoMensal: "Flujo Mensual", estimativas: "Estimaciones IA",
     indicador: "Indicador", valor: "Valor", projeto: "Proyecto", moeda: "Moneda", dataInicio: "Fecha de inicio", tipoParceria: "Tipo de alianza",
@@ -127,6 +139,7 @@ export const es: Dicionario = {
     tipoParticipanteInvalido: "Tipo de participante inválido.", pctMaiorZero: "El porcentaje debe ser mayor que cero.",
     itemObrigatorio: "El nombre del ítem es obligatorio.", categoriaInvalida: "Categoría inválida.", unidadeObrigatoria: "La unidad es obligatoria.",
     dadosInvalidos: "Datos inválidos.", quantidade: "Cantidad", valorUnitario: "Valor unitario", volume: "Volumen", precoUnitario: "Precio unitario",
+    papelInvalido: "Papel inválido.", emailInvalido: "Ingrese un correo válido.",
     descricaoLonga: "Descripción demasiado larga (máx. 2000 caracteres).", contatoLongo: "Contacto demasiado largo (máx. 200 caracteres).",
     unidadeLonga: "Unidad demasiado larga (máx. 40 caracteres).", valorAlto: "{campo} es demasiado grande.", idInvalido: "Identificador inválido.",
   },
@@ -136,7 +149,7 @@ export const es: Dicionario = {
     falha: "Error al guardar {entidade}: {msg}", naoEncontrado: "Proyecto no encontrado.",
     foraDaFaixa: "Valor fuera del rango aceptado por la base de datos (demasiado grande o con demasiados decimales).",
   },
-  entidades: { projeto: "proyecto", participante: "participante", investimento: "inversión", venda: "venta" },
+  entidades: { membro: "acceso", projeto: "proyecto", participante: "participante", investimento: "inversión", venda: "venta" },
   enums: {
     tipoParceria: { sociedade_direta: "Sociedad directa", joint_venture: "Joint venture", investidor: "Inversor" },
     descricaoTipoParceria: {
@@ -148,6 +161,7 @@ export const es: Dicionario = {
     categoriaInvestimento: { infraestrutura: "Infraestructura", logistica: "Logística", operacional: "Operacional" },
     categoriaReceita: { venda_produto: "Venta de producto", frete_logistica: "Flete / logística", servicos: "Servicios", outros: "Otros" },
     confianca: { baixa: "Confianza baja", media: "Confianza media", alta: "Confianza alta" },
+    papelMembro: { leitor: "Lector (solo ve)", editor: "Editor (registra y modifica)" },
     cenario: { otimista: "Optimista", base: "Base (real)", pessimista: "Pesimista" },
     unidades: { Toneladas: "Toneladas", "m³": "m³", Barris: "Barriles", Unidades: "Unidades", "Contêineres": "Contenedores", Horas: "Horas" },
   },

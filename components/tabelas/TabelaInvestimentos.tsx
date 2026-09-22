@@ -16,11 +16,12 @@ import { CATEGORIAS_INVESTIMENTO, type ActionState, type Investimento, type Moed
 export interface MediaMercado { valor_min: number; valor_medio: number; valor_max: number; unidade_ref: string }
 export interface LinhaInvestimento { investimento: Investimento; media: MediaMercado | null }
 
-const COLUNAS = 9;
+/** Colunas da tabela; a de ações só existe para quem pode editar. */
+const COLUNAS_BASE = 8;
 
 /** Tabela de investimentos com edição na própria linha (uma por vez). */
-export function TabelaInvestimentos({ linhas, projetoId, moeda }:
-  { linhas: LinhaInvestimento[]; projetoId: string; moeda: Moeda }) {
+export function TabelaInvestimentos({ linhas, projetoId, moeda, editavel }:
+  { linhas: LinhaInvestimento[]; projetoId: string; moeda: Moeda; editavel: boolean }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const t = d.investimentos;
@@ -39,15 +40,15 @@ export function TabelaInvestimentos({ linhas, projetoId, moeda }:
               <th>{d.comum.data}</th><th>{t.item}</th><th>{d.comum.categoria}</th>
               <th className="num">{t.qtd}</th><th className="num">{t.valorUnit}</th>
               <th className="num">{t.mediaIA}</th><th className="num">{t.desvio}</th>
-              <th className="num">{t.valorTotal}</th><th>{d.comum.acoes}</th>
+              <th className="num">{t.valorTotal}</th>{editavel && <th>{d.comum.acoes}</th>}
             </tr>
           </thead>
           <tbody>
             {linhas.map(({ investimento: i, media }) => {
-              if (editando === i.id) {
+              if (editavel && editando === i.id) {
                 return (
                   <tr key={i.id} className="bg-navy-soft/50">
-                    <td colSpan={COLUNAS} className="py-4">
+                    <td colSpan={COLUNAS_BASE + 1} className="py-4">
                       {/* A tabela pode ser mais larga que a tela; o wrapper prende o formulário
                           à esquerda da área rolável para não precisar rolar na horizontal. */}
                       <div className="sticky left-0 w-[calc(100vw-2rem)] max-w-full">
@@ -75,17 +76,19 @@ export function TabelaInvestimentos({ linhas, projetoId, moeda }:
                   </td>
                   <td className={`num ${corDesvio}`}>{desvio === null ? "—" : `${desvio > 0 ? "+" : ""}${f.pct(desvio)}`}</td>
                   <td className="num font-semibold">{f.moeda(Number(i.valor_total), moeda)}</td>
-                  <td>
-                    <div className="flex gap-2">
-                      <button type="button" className="btn-quieto px-3"
-                              aria-label={fmtTexto(t.editarItem, { item: i.item })}
-                              onClick={() => { setAviso(null); setEditando(i.id); }}>
-                        {d.comum.editar}
-                      </button>
-                      <BotaoExcluir action={excluirInvestimento} id={i.id} projetoId={projetoId}
-                                    confirmacao={fmtTexto(t.excluirConfirma, { item: i.item })} rotulo={d.comum.excluir} />
-                    </div>
-                  </td>
+                  {editavel && (
+                    <td>
+                      <div className="flex gap-2">
+                        <button type="button" className="btn-quieto px-3"
+                                aria-label={fmtTexto(t.editarItem, { item: i.item })}
+                                onClick={() => { setAviso(null); setEditando(i.id); }}>
+                          {d.comum.editar}
+                        </button>
+                        <BotaoExcluir action={excluirInvestimento} id={i.id} projetoId={projetoId}
+                                      confirmacao={fmtTexto(t.excluirConfirma, { item: i.item })} rotulo={d.comum.excluir} />
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}

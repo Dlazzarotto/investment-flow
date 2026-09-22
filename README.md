@@ -9,6 +9,7 @@ por projeto. Reescrita da v1 (Streamlit/SQLite) na stack Next.js 14 · TypeScrip
 supabase/migrations/0001_schema.sql   # enums, tabelas, colunas geradas, trigger ≤100 %, RLS, fluxo_mensal()
 supabase/migrations/0002_estimativas_ia.sql  # estimativas de valor médio (IA), RLS, ultimas_estimativas()
 supabase/migrations/0003_participacao_lock.sql # trava de 100 % com lock na linha do projeto (sem corrida)
+supabase/migrations/0004_projeto_membros.sql # acesso de sócios: projeto_membros, papel leitor/editor, RLS por membro
 app/
   login/                              # e-mail + senha (Supabase Auth)
   projetos/page.tsx                   # lista + criar projeto (nome, moeda, tipo de parceria, sua %)
@@ -16,20 +17,21 @@ app/
   projetos/[id]/page.tsx              # dashboard: saldo, KPIs (ROI, ROI anualizado, TIR), 3 gráficos, rateio, cenários, tabela mensal
   projetos/[id]/investimentos/        # formulário + tabela com edição na linha e exclusão
   projetos/[id]/vendas/               # formulário + tabela com edição na linha e exclusão
-  projetos/[id]/participantes/        # estrutura da parceria, participantes, exclusão do projeto
+  projetos/[id]/participantes/        # estrutura da parceria, participantes, acesso de sócios, exclusão do projeto
   api/export/[id]/route.ts            # ?formato=csv (separador/decimal do idioma) | xlsx (7 abas, inclui Cenários e Estimativas IA)
   api/ia/estimar/route.ts             # POST — valor médio de mercado do item via Claude API + busca na web
   actions/                            # server actions (zod → Supabase → revalidate)
 lib/                                  # types, validacao (zod, mensagens traduzidas), calculos, format (por idioma), csv (por idioma), consultas, supabase/
 lib/i18n/                             # config (pt/en/es/zh), dicionarios/*.ts, server.ts (cookie/Accept-Language), client.tsx (provider)
 components/                           # Shell, seletor, nav, Cenarios, forms, tabelas (edição inline), charts (Recharts), ui
-tests/calculos.test.ts                # 24 testes (vitest): KPIs, break-even, rateio, ROI anualizado, TIR/VPL, cenários, zod, formatação
+tests/calculos.test.ts                # 25 testes (vitest): KPIs, break-even, rateio, ROI anualizado, TIR/VPL, cenários, zod, formatação
 tests/ia.test.ts                      # 12 testes: parser/validação da resposta da IA (blocos fatiados, JSON malformado), prompt, desvio vs média
 tests/i18n.test.ts                    # 10 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
 tests/csv.test.ts                     # 6 testes: separador e decimal por idioma, aspas, BOM, diretiva sep=
 tests/schema.test.sql                 # testes do banco (psql): colunas geradas, fluxo mensal, trava 100 %, RLS, cascata
 tests/schema2.test.sql                # testes da migration 0002
 tests/schema3.test.sql                # testes da migration 0003 (trava preservada; roteiro de concorrência)
+tests/schema4.test.sql                # testes da migration 0004 (leitor, editor, e-mail não confirmado, revogação)
 ```
 
 ## Idiomas (pt · en · es · zh)
@@ -37,6 +39,17 @@ tests/schema3.test.sql                # testes da migration 0003 (trava preserva
 - Detecção automática pelo `Accept-Language` na primeira visita (cookie `idioma`); seletor no cabeçalho e na tela de login.
 - Um único dicionário por idioma em `lib/i18n/dicionarios/`; `pt.ts` define o tipo e os demais são checados pelo TypeScript e por teste (mesmas chaves e mesmos placeholders).
 - Tudo é traduzido: telas, formulários, validações zod, erros do banco, enums, gráficos, exportação (abas e cabeçalhos), `<html lang>` e o idioma das premissas/observações geradas pela IA. Moeda, número, data e mês seguem o `Intl` do idioma.
+
+## Acesso ao projeto
+
+- O dono é quem criou o projeto (`projetos.owner_id`): só ele convida/remove sócios, altera a estrutura da
+  parceria e exclui o projeto.
+- `projeto_membros` guarda quem mais entra, por e-mail, com papel **leitor** (vê tudo) ou **editor** (também
+  lança, edita e exclui investimentos, vendas e participantes).
+- O RLS decide por `pode_ver_projeto()` / `pode_editar_projeto()`, que casam o e-mail **confirmado** da conta
+  (`auth.users.email_confirmed_at`) com a lista de membros. A tela pergunta o papel ao banco
+  (`papel_no_projeto()`), então nunca mostra um botão que o RLS vai recusar.
+- Remover o membro corta o acesso na hora; excluir o projeto leva os membros junto (cascata).
 
 ## Modelo de parceria
 
@@ -67,8 +80,8 @@ tests/schema3.test.sql                # testes da migration 0003 (trava preserva
 
 ## Configuração
 
-1. **Supabase** → SQL Editor → execute `supabase/migrations/0001_schema.sql`, `0002_estimativas_ia.sql` e `0003_participacao_lock.sql` (idempotentes, nesta ordem).
-   Em Authentication → Providers → Email, desative "Confirm email" se quiser entrar sem confirmação.
+1. **Supabase** → SQL Editor → execute `0001_schema.sql`, `0002_estimativas_ia.sql`, `0003_participacao_lock.sql` e `0004_projeto_membros.sql` (idempotentes, nesta ordem).
+   Em Authentication → Providers → Email, **mantenha "Confirm email" ligado**: o acesso de sócio é vinculado ao e-mail confirmado da conta e, sem confirmação, qualquer pessoa poderia se cadastrar com o e-mail do sócio e entrar no projeto.
 2. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `ANTHROPIC_API_KEY`.
 3. `npm install` · `npm run dev` → http://localhost:3000
 4. **Vercel**: importe o repositório e cadastre as duas variáveis de ambiente. Build padrão (`next build`).
@@ -77,7 +90,7 @@ tests/schema3.test.sql                # testes da migration 0003 (trava preserva
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (52 testes)
+npm test            # vitest (53 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):
