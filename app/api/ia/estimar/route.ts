@@ -4,23 +4,24 @@ import { createClient } from "@/lib/supabase/server";
 import { obterPapel, podeEditar } from "@/lib/consultas";
 import { estimarValorMedio } from "@/lib/ia/estimativa";
 import { obterD } from "@/lib/i18n/server";
-import { fmtTexto } from "@/lib/i18n";
+import { fmtTexto, type Dicionario } from "@/lib/i18n";
 import type { EstimativaIA, Projeto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const entradaSchema = (msgItem: string) => z.object({
-  projeto_id: z.string().uuid(),
-  item: z.string().trim().min(2, msgItem).max(160),
-  contexto: z.string().trim().max(500).optional().transform((v) => v || null),
+const entradaSchema = (d: Dicionario) => z.object({
+  projeto_id: z.string().uuid(d.validacao.idInvalido),
+  item: z.string().trim().min(2, d.ia.informeItem).max(160, d.validacao.nomeLongo),
+  // O campo da tela já limita a 500; cortar aqui é mais gentil do que recusar o pedido.
+  contexto: z.unknown().transform((v) => (typeof v === "string" ? v.trim().slice(0, 500) || null : null)),
 });
 
 /** POST /api/ia/estimar — pesquisa o valor médio de mercado do item e grava a estimativa. */
 export async function POST(req: NextRequest) {
   const { locale, d } = obterD();
   const corpo = await req.json().catch(() => null);
-  const parsed = entradaSchema(d.ia.informeItem).safeParse(corpo);
+  const parsed = entradaSchema(d).safeParse(corpo);
   if (!parsed.success) {
     return NextResponse.json({ erro: parsed.error.issues[0]?.message ?? d.validacao.dadosInvalidos }, { status: 400 });
   }

@@ -33,7 +33,7 @@ tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); sche
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 53 testes, todos devem passar
+npm test          # vitest — 55 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```

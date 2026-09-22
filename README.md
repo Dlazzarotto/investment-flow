@@ -25,7 +25,7 @@ lib/                                  # types, validacao (zod, mensagens traduzi
 lib/i18n/                             # config (pt/en/es/zh), dicionarios/*.ts, server.ts (cookie/Accept-Language), client.tsx (provider)
 components/                           # Shell, seletor, nav, Cenarios, forms, tabelas (edição inline), charts (Recharts), ui
 tests/calculos.test.ts                # 25 testes (vitest): KPIs, break-even, rateio, ROI anualizado, TIR/VPL, cenários, zod, formatação
-tests/ia.test.ts                      # 12 testes: parser/validação da resposta da IA (blocos fatiados, JSON malformado), prompt, desvio vs média
+tests/ia.test.ts                      # 14 testes: parser tolerante da resposta da IA (corta o longo, descarta fonte inválida), prompt, desvio
 tests/i18n.test.ts                    # 10 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
 tests/csv.test.ts                     # 6 testes: separador e decimal por idioma, aspas, BOM, diretiva sep=
 tests/schema.test.sql                 # testes do banco (psql): colunas geradas, fluxo mensal, trava 100 %, RLS, cascata
@@ -64,6 +64,9 @@ tests/schema4.test.sql                # testes da migration 0004 (leitor, editor
 - No formulário de investimento, "Estimar valor médio" envia item + contexto opcional para `/api/ia/estimar`.
 - O servidor chama a Claude Messages API com a ferramenta `web_search` (até 5 buscas), exige JSON
   (mín / médio / máx, unidade de referência, confiança, premissas, fontes) e valida com zod antes de gravar.
+- O parser é tolerante de propósito: texto longo demais é cortado e fonte com link quebrado é descartada —
+  só os números derrubam a estimativa, e com mensagem traduzida. Um detalhe de forma não pode jogar fora
+  uma faixa de preço boa.
 - A estimativa fica em `estimativas_ia`; a tabela de investimentos mostra a última média por item e o desvio
   do valor lançado (vermelho > +15 %, verde < −15 %). O Excel ganha a aba "Estimativas IA".
 - Requisitos: `ANTHROPIC_API_KEY` no servidor (Vercel → Environment Variables) e busca na web habilitada
@@ -90,7 +93,7 @@ tests/schema4.test.sql                # testes da migration 0004 (leitor, editor
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (53 testes)
+npm test            # vitest (55 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):

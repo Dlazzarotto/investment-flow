@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { extrairJson, interpretarResposta, montarPrompt, textoFinal } from "@/lib/ia/estimativa";
 import { desvioVsMedia, normalizarItem } from "@/lib/calculos";
+import { obterDicionario } from "@/lib/i18n";
 
 const bom = `{"unidade_ref":"unidade","valor_min":400000,"valor_medio":520000,"valor_max":700000,"confianca":"media",
  "premissas":["Barcaça graneleira 2.000 t, usada, bacia amazônica","Cotação USD/BRL 5,2"],
@@ -27,9 +28,37 @@ describe("Parser da resposta da IA", () => {
     const zero = bom.replace('"valor_min":400000', '"valor_min":0').replace('"valor_medio":520000', '"valor_medio":0').replace('"valor_max":700000', '"valor_max":0');
     expect(() => interpretarResposta(zero)).toThrow(/não encontrou/);
   });
-  it("rejeita fontes com URL inválida e texto sem JSON", () => {
-    expect(() => interpretarResposta(bom.replace("https://exemplo.com/a", "site-a"))).toThrow();
+  it("texto sem JSON continua sendo erro", () => {
     expect(() => extrairJson("sem json aqui")).toThrow(/não contém JSON/);
+  });
+  it("defeito de forma não derruba a estimativa: corta o que é longo, descarta o que é inválido", () => {
+    const r = interpretarResposta(JSON.stringify({
+      // 95 caracteres — antes esta unidade sozinha devolvia "String must contain at most 60 character(s)"
+      unidade_ref: "unidade (barcaça graneleira de 2.000 t, usada, posta na bacia amazônica, com praça de máquinas)",
+      valor_min: 400000, valor_medio: 520000, valor_max: 700000,
+      confianca: "altíssima",
+      premissas: ["Cotação de fevereiro", "   ", 42, "x".repeat(400)],
+      fontes: [
+        { titulo: "Anúncio A", url: "https://exemplo.com/a" },
+        { titulo: "Mandado por WhatsApp", url: "nao-e-url" },
+        { titulo: "", url: "https://exemplo.com/b" },
+      ],
+      observacao: "y".repeat(600),
+    }));
+    expect(r.valor_medio).toBe(520000);
+    expect(r.unidade_ref).toHaveLength(80);
+    expect(r.confianca).toBe("media");
+    expect(r.premissas).toEqual(["Cotação de fevereiro", "x".repeat(300)]);
+    expect(r.fontes.map((f) => f.url)).toEqual(["https://exemplo.com/a", "https://exemplo.com/b"]);
+    expect(r.fontes[1].titulo).toBe("https://exemplo.com/b");
+    expect(r.observacao).toHaveLength(500);
+  });
+  it("número inutilizável continua sendo erro, e traduzido", () => {
+    const pt = obterDicionario("pt");
+    const en = obterDicionario("en");
+    expect(() => interpretarResposta('{"valor_min":"abc","valor_medio":1,"valor_max":2}', pt)).toThrow(pt.ia.semValor);
+    expect(() => interpretarResposta('{"valor_medio":5}', pt)).toThrow(pt.ia.semValor);
+    expect(() => interpretarResposta('{"valor_medio":5}', en)).toThrow(en.ia.semValor);
   });
   it("JSON malformado devolve a mensagem traduzida, não o SyntaxError em inglês", () => {
     expect(() => extrairJson('{"valor_min": 1, "valor_medio": }', "Sem JSON.")).toThrow("Sem JSON.");

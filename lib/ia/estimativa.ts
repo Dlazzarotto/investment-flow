@@ -36,27 +36,54 @@ export interface ResultadoEstimativa {
   observacao: string | null;
 }
 
-export const resultadoSchema = criarResultadoSchema();
+/** Limites de texto da resposta. O que passar disso é CORTADO, nunca recusado. */
+const MAX_UNIDADE = 80, MAX_TITULO = 200, MAX_PREMISSA = 300, MAX_OBSERVACAO = 500, MAX_ITENS = 10;
 
+/** Texto vindo do modelo, aparado e cortado no limite; qualquer outra coisa vira "". */
+function textoCortado(max: number) {
+  return z.unknown().transform((v) => (typeof v === "string" ? v.trim().slice(0, max) : ""));
+}
+
+/** Fonte só entra com URL válida; sem título usável, o próprio link vira o rótulo. */
+const fonteSchema = z.object({
+  titulo: textoCortado(MAX_TITULO),
+  url: z.string().trim().url(),
+}).transform((f): FonteEstimativa => ({ titulo: f.titulo || f.url, url: f.url }));
+
+/**
+ * O valor da estimativa está nos números. Unidade comprida demais, confiança fora
+ * do enum ou uma fonte com link quebrado são defeito de forma: cortar ou descartar
+ * aquele pedaço é melhor do que jogar fora uma faixa de preço boa — era o que
+ * acontecia, e ainda com a mensagem crua do zod em inglês na tela.
+ */
 export function criarResultadoSchema(msgFaixa = "A faixa deve respeitar mínimo ≤ médio ≤ máximo.",
                                      msgSemValor = "A IA não encontrou um valor médio utilizável.") {
+  const valor = z.coerce.number({ invalid_type_error: msgSemValor }).finite(msgSemValor).min(0, msgSemValor);
   return z.object({
-  unidade_ref: z.string().trim().min(1).max(60).default("unidade"),
-  valor_min: z.coerce.number().finite().min(0),
-  valor_medio: z.coerce.number().finite().min(0),
-  valor_max: z.coerce.number().finite().min(0),
-  confianca: z.enum(["baixa", "media", "alta"]).default("media"),
-  premissas: z.array(z.string().trim().min(1).max(300)).max(10).default([]),
-  fontes: z.array(z.object({
-    titulo: z.string().trim().min(1).max(200),
-    url: z.string().trim().url(),
-  })).max(10).default([]),
-  observacao: z.string().trim().max(500).nullable().default(null),
+    unidade_ref: textoCortado(MAX_UNIDADE).transform((s) => s || "unidade"),
+    valor_min: valor,
+    valor_medio: valor,
+    valor_max: valor,
+    confianca: z.enum(["baixa", "media", "alta"]).catch("media"),
+    premissas: z.unknown().transform((v) =>
+      (Array.isArray(v) ? v : [])
+        .map((x) => (typeof x === "string" ? x.trim().slice(0, MAX_PREMISSA) : ""))
+        .filter(Boolean)
+        .slice(0, MAX_ITENS)),
+    fontes: z.unknown().transform((v) =>
+      (Array.isArray(v) ? v : [])
+        .map((x) => fonteSchema.safeParse(x))
+        .flatMap((r) => (r.success ? [r.data] : []))
+        .slice(0, MAX_ITENS)),
+    observacao: textoCortado(MAX_OBSERVACAO).transform((s) => s || null),
   }).superRefine((r, ctx) => {
     if (!(r.valor_min <= r.valor_medio && r.valor_medio <= r.valor_max)) ctx.addIssue({ code: "custom", message: msgFaixa });
     if (r.valor_medio <= 0) ctx.addIssue({ code: "custom", message: msgSemValor });
   });
 }
+
+/** Schema com as mensagens padrão (em português); as telas usam criarResultadoSchema(d). */
+export const resultadoSchema = criarResultadoSchema();
 
 export function montarPrompt(e: EntradaEstimativa): string {
   const simbolo = LABEL_MOEDA[e.moeda];
