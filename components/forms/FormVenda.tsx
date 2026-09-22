@@ -1,27 +1,37 @@
 "use client";
 import { useState } from "react";
-import { useFormState } from "react-dom";
 import { criarVenda } from "@/app/actions/vendas";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Mensagem } from "@/components/ui/Mensagem";
+import { useAcaoFormulario, type EstadoFormulario } from "@/components/ui/useAcaoFormulario";
+import { useHoje } from "@/components/ui/useHoje";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
-import { formatadores, hojeISO } from "@/lib/format";
-import { CATEGORIAS_RECEITA, UNIDADES_VOLUME, type ActionState, type Moeda } from "@/lib/types";
+import { formatadores } from "@/lib/format";
+import { CATEGORIAS_RECEITA, UNIDADES_VOLUME, type Moeda } from "@/lib/types";
 
-export function FormVenda({ projetoId, moeda }: { projetoId: string; moeda: Moeda }) {
+interface Props { projetoId: string; moeda: Moeda }
+
+export function FormVenda(props: Props) {
+  const [estado, formAction] = useAcaoFormulario(criarVenda);
+  // A key remonta os campos (e o estado local de volume/preço) após cada venda registrada.
+  return <Campos key={estado.versao} {...props} estado={estado} formAction={formAction} />;
+}
+
+function Campos({ projetoId, moeda, estado, formAction }:
+  Props & { estado: EstadoFormulario; formAction: (fd: FormData) => void }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
-  const [estado, formAction] = useFormState(criarVenda, { ok: false } as ActionState);
+  const hoje = useHoje();
   const [vol, setVol] = useState(0);
   const [preco, setPreco] = useState(0);
 
   return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-6" key={estado.sucesso ?? "form"}>
+    <form action={formAction} className="grid gap-4 sm:grid-cols-6">
       <input type="hidden" name="projeto_id" value={projetoId} />
       <div className="sm:col-span-2">
         <label className="rotulo" htmlFor="data">{d.vendas.dataVenda}</label>
-        <input id="data" name="data" type="date" required className="campo" defaultValue={hojeISO()} />
+        <input id="data" name="data" type="date" required className="campo" defaultValue={hoje} />
       </div>
       <div className="sm:col-span-2">
         <label className="rotulo" htmlFor="categoria">{d.vendas.categoriaReceita}</label>

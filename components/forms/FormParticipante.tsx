@@ -1,16 +1,16 @@
 "use client";
-import { useFormState } from "react-dom";
 import { criarParticipante } from "@/app/actions/participantes";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Mensagem } from "@/components/ui/Mensagem";
+import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
-import { TIPOS_PARTICIPANTE, type ActionState } from "@/lib/types";
+import { TIPOS_PARTICIPANTE } from "@/lib/types";
 
 export function FormParticipante({ projetoId, disponivel }: { projetoId: string; disponivel: number }) {
   const { d } = useI18n();
-  const [estado, formAction] = useFormState(criarParticipante, { ok: false } as ActionState);
+  const [estado, formAction] = useAcaoFormulario(criarParticipante);
   return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-6" key={estado.sucesso ?? "form"}>
+    <form action={formAction} className="grid gap-4 sm:grid-cols-6" key={estado.versao}>
       <input type="hidden" name="projeto_id" value={projetoId} />
       <div className="sm:col-span-3">
         <label className="rotulo" htmlFor="p_nome">{d.parceria.nomeParticipante}</label>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extrairJson, interpretarResposta, montarPrompt } from "@/lib/ia/estimativa";
+import { extrairJson, interpretarResposta, montarPrompt, textoFinal } from "@/lib/ia/estimativa";
 import { desvioVsMedia, normalizarItem } from "@/lib/calculos";
 
 const bom = `{"unidade_ref":"unidade","valor_min":400000,"valor_medio":520000,"valor_max":700000,"confianca":"media",
@@ -30,6 +30,28 @@ describe("Parser da resposta da IA", () => {
   it("rejeita fontes com URL inválida e texto sem JSON", () => {
     expect(() => interpretarResposta(bom.replace("https://exemplo.com/a", "site-a"))).toThrow();
     expect(() => extrairJson("sem json aqui")).toThrow(/não contém JSON/);
+  });
+  it("JSON malformado devolve a mensagem traduzida, não o SyntaxError em inglês", () => {
+    expect(() => extrairJson('{"valor_min": 1, "valor_medio": }', "Sem JSON.")).toThrow("Sem JSON.");
+  });
+  it("junta os blocos de texto após a última busca (a API fatia o texto ao citar fontes)", () => {
+    const content = [
+      { type: "text", text: "Vou pesquisar preços de barcaças." },
+      { type: "server_tool_use", name: "web_search" },
+      { type: "web_search_tool_result" },
+      { type: "text", text: "Achei duas fontes; refinando." },
+      { type: "server_tool_use", name: "web_search" },
+      { type: "web_search_tool_result" },
+      { type: "text", text: '{"unidade_ref":"unidade","valor_min":400000,' },
+      { type: "text", text: '"valor_medio":520000,"valor_max":700000,"confianca":"media",' },
+      { type: "text", text: '"premissas":["Fonte X"],"fontes":[],"observacao":null}' },
+    ];
+    expect(interpretarResposta(textoFinal(content)).valor_medio).toBe(520000);
+    // Sem busca nenhuma: usa todo o texto
+    expect(textoFinal([{ type: "text", text: bom }])).toBe(bom);
+    // JSON veio antes da última busca (modelo respondeu e ainda buscou): cai para o texto completo
+    const cedo = [{ type: "text", text: bom }, { type: "server_tool_use" }, { type: "web_search_tool_result" }, { type: "text", text: "Confirmado." }];
+    expect(interpretarResposta(textoFinal(cedo)).valor_min).toBe(400000);
   });
   it("aplica defaults para campos opcionais", () => {
     const r = interpretarResposta('{"valor_min":1,"valor_medio":2,"valor_max":3}');

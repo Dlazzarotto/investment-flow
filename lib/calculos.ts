@@ -3,7 +3,7 @@
  * A agregação mensal contínua é feita no banco por public.fluxo_mensal(); aqui
  * ficam KPIs, break-even e rateio por participação.
  */
-import type { FluxoMensal, Investimento, Participante, Projeto, Venda } from "./types";
+import type { FluxoMensal, Investimento, Participante, Projeto, TipoParticipante, Venda } from "./types";
 
 export interface Kpis {
   investimentoTotal: number;
@@ -43,9 +43,13 @@ export function alocacaoPorCategoria(investimentos: Pick<Investimento, "categori
     .sort((a, b) => b.valor - a.valor);
 }
 
+/** Papel de uma linha do rateio: o dono do projeto, um participante cadastrado ou o percentual ainda não alocado. */
+export type TipoRateio = TipoParticipante | "dono" | "restante";
+
 export interface Rateio {
+  /** Nome do participante; vazio nas linhas "dono" e "restante" (a tela e a exportação usam o dicionário). */
   nome: string;
-  tipo: string;
+  tipo: TipoRateio;
   percentual: number;
   saldoAtribuivel: number;
   investimentoAtribuivel: number;
@@ -54,23 +58,23 @@ export interface Rateio {
 
 /**
  * Rateia investimento, receita e saldo pela participação de cada parte.
- * A primeira linha é sempre a participação do dono do projeto ("Você").
- * A última linha ("Não alocado") só aparece se a soma for < 100 %.
+ * A primeira linha é sempre a participação do dono do projeto (tipo "dono").
+ * A última linha (tipo "restante") só aparece se a soma for < 100 %.
  */
 export function ratearParticipacoes(projeto: Pick<Projeto, "participacao_pct">,
                                     participantes: Pick<Participante, "nome" | "tipo" | "percentual">[],
                                     kpis: Kpis): Rateio[] {
-  const linha = (nome: string, tipo: string, pct: number): Rateio => ({
+  const linha = (nome: string, tipo: TipoRateio, pct: number): Rateio => ({
     nome, tipo, percentual: pct,
     saldoAtribuivel: arred(kpis.saldo * pct / 100),
     investimentoAtribuivel: arred(kpis.investimentoTotal * pct / 100),
     receitaAtribuivel: arred(kpis.receitaTotal * pct / 100),
   });
-  const linhas = [linha("Você", "dono", Number(projeto.participacao_pct))];
+  const linhas = [linha("", "dono", Number(projeto.participacao_pct))];
   for (const p of participantes) linhas.push(linha(p.nome, p.tipo, Number(p.percentual)));
   const alocado = soma(linhas.map((l) => l.percentual));
   const restante = arred(100 - alocado);
-  if (restante > 0.001) linhas.push(linha("Não alocado", "restante", restante));
+  if (restante > 0.001) linhas.push(linha("", "restante", restante));
   return linhas;
 }
 

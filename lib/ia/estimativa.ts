@@ -10,6 +10,10 @@ import type { Confianca, FonteEstimativa, Moeda } from "@/lib/types";
 
 export const MODELO_PADRAO = "claude-sonnet-4-6";
 export const MAX_BUSCAS = 5;
+/** Texto entre buscas e chamadas de ferramenta também consomem max_tokens; 2000 truncava o JSON final. */
+export const MAX_TOKENS = 8192;
+/** Quantas vezes retomar um turno pausado pelo servidor (stop_reason "pause_turn"). */
+const MAX_RETOMADAS = 2;
 
 export interface EntradaEstimativa {
   item: string;
@@ -78,13 +82,17 @@ export function montarPrompt(e: EntradaEstimativa): string {
   ].join("\n");
 }
 
-/** Extrai o JSON do último bloco de texto da resposta (tolera cercas ```json e texto ao redor). */
+/** Extrai o JSON do texto (tolera cercas ```json e texto ao redor); JSON malformado vira a mesma mensagem traduzida. */
 export function extrairJson(texto: string, msgSemJson = "A resposta da IA não contém JSON."): unknown {
   const semCerca = texto.replace(/```(?:json)?/gi, "").trim();
   const ini = semCerca.indexOf("{");
   const fim = semCerca.lastIndexOf("}");
   if (ini < 0 || fim <= ini) throw new Error(msgSemJson);
-  return JSON.parse(semCerca.slice(ini, fim + 1));
+  try {
+    return JSON.parse(semCerca.slice(ini, fim + 1));
+  } catch {
+    throw new Error(msgSemJson);
+  }
 }
 
 export function interpretarResposta(texto: string, d?: Dicionario): ResultadoEstimativa {
@@ -94,38 +102,53 @@ export function interpretarResposta(texto: string, d?: Dicionario): ResultadoEst
   return parsed.data;
 }
 
-interface BlocoConteudo { type: string; text?: string }
+/** Bloco de conteúdo da Messages API (texto, server_tool_use, web_search_tool_result…). */
+export interface BlocoConteudo { type: string; text?: string }
+
+/**
+ * Texto da resposta final: os blocos de texto depois do último resultado de busca, concatenados.
+ * Com citações a API divide a resposta em vários blocos "text" contíguos, então o JSON pode vir fatiado.
+ * Se essa parte não tiver JSON, cai para todo o texto (o modelo às vezes responde antes da última busca).
+ */
+export function textoFinal(content: BlocoConteudo[]): string {
+  const ultimoNaoTexto = content.map((b) => b.type).lastIndexOf("web_search_tool_result");
+  const finais = content.slice(ultimoNaoTexto + 1).filter((b) => b.type === "text" && b.text).map((b) => b.text!);
+  const juntos = finais.join("");
+  if (juntos.includes("{")) return juntos;
+  return content.filter((b) => b.type === "text" && b.text).map((b) => b.text!).join("");
+}
+
+interface RespostaMessages { content?: BlocoConteudo[]; stop_reason?: string }
 
 /** Chama a Claude Messages API com a ferramenta de busca na web e devolve o resultado interpretado. */
 export async function estimarValorMedio(e: EntradaEstimativa, d: Dicionario): Promise<{ resultado: ResultadoEstimativa; modelo: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error(d.ia.semChave);
   const modelo = process.env.ANTHROPIC_MODEL || MODELO_PADRAO;
+  const tools = [{ type: "web_search_20250305", name: "web_search", max_uses: MAX_BUSCAS }];
+  const messages: { role: "user" | "assistant"; content: string | BlocoConteudo[] }[] = [{ role: "user", content: montarPrompt(e) }];
+  const inicio = Date.now();
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: modelo,
-      max_tokens: 2000,
-      messages: [{ role: "user", content: montarPrompt(e) }],
-      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: MAX_BUSCAS }],
-    }),
-    signal: AbortSignal.timeout(55_000),
-  });
-
-  if (!resp.ok) {
-    const corpo = await resp.text().catch(() => "");
-    throw new Error(fmtTexto(d.ia.apiErro, { status: resp.status, corpo: corpo.slice(0, 300) }));
+  let resposta: RespostaMessages;
+  for (let tentativa = 0; ; tentativa++) {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model: modelo, max_tokens: MAX_TOKENS, messages, tools }),
+      signal: AbortSignal.timeout(Math.max(5_000, 55_000 - (Date.now() - inicio))),
+    });
+    if (!resp.ok) {
+      const corpo = await resp.text().catch(() => "");
+      throw new Error(fmtTexto(d.ia.apiErro, { status: resp.status, corpo: corpo.slice(0, 300) }));
+    }
+    resposta = (await resp.json()) as RespostaMessages;
+    // "pause_turn": o servidor interrompeu o laço de buscas; reenviar o histórico faz ele retomar de onde parou.
+    if (resposta.stop_reason !== "pause_turn" || tentativa >= MAX_RETOMADAS) break;
+    messages.push({ role: "assistant", content: resposta.content ?? [] });
   }
-  const dados = (await resp.json()) as { content?: BlocoConteudo[] };
-  const textos = (dados.content ?? []).filter((b) => b.type === "text" && b.text).map((b) => b.text!.trim());
-  if (textos.length === 0) throw new Error(d.ia.semTexto);
-  // O JSON final vem no último bloco de texto (os anteriores são raciocínio entre buscas).
-  const ultimoComJson = [...textos].reverse().find((t) => t.includes("{")) ?? textos[textos.length - 1];
-  return { resultado: interpretarResposta(ultimoComJson, d), modelo };
+
+  if (resposta.stop_reason === "max_tokens") throw new Error(d.ia.truncada);
+  const texto = textoFinal(resposta.content ?? []);
+  if (!texto.trim()) throw new Error(d.ia.semTexto);
+  return { resultado: interpretarResposta(texto, d), modelo };
 }

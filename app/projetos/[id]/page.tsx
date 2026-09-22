@@ -5,11 +5,10 @@ import { GraficoFluxo } from "@/components/charts/GraficoFluxo";
 import { GraficoBreakeven } from "@/components/charts/GraficoBreakeven";
 import { GraficoAlocacao } from "@/components/charts/GraficoAlocacao";
 import { listarInvestimentos, listarParticipantes, listarVendas, obterFluxoMensal, obterProjeto } from "@/lib/consultas";
-import { alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes } from "@/lib/calculos";
+import { alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes, type Rateio, type TipoRateio } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
-import type { TipoParticipante } from "@/lib/types";
 
 export default async function DashboardPage({ params }: { params: { id: string } }) {
   const { locale, d } = obterD();
@@ -26,8 +25,9 @@ export default async function DashboardPage({ params }: { params: { id: string }
   const semDados = investimentos.length === 0 && vendas.length === 0;
   const tomSaldo = kpis.saldo > 0 ? "gain" : kpis.saldo < 0 ? "loss" : "neutro";
   const m = projeto.moeda;
-  const papel = (tipo: string) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
-    : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo as TipoParticipante];
+  const papel = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
+    : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo];
+  const nomeParte = (r: Rateio) => r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome;
 
   return (
     <>
@@ -81,9 +81,9 @@ export default async function DashboardPage({ params }: { params: { id: string }
                 <table className="tabela">
                   <thead><tr><th>{d.dashboard.parte}</th><th>{d.dashboard.papel}</th><th className="num">%</th><th className="num">{d.dashboard.saldoAtribuivel}</th></tr></thead>
                   <tbody>
-                    {rateio.map((r) => (
-                      <tr key={r.nome + r.tipo} className={r.tipo === "restante" ? "text-stone" : ""}>
-                        <td className="font-medium">{r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome}</td>
+                    {rateio.map((r, i) => (
+                      <tr key={`${r.tipo}-${i}`} className={r.tipo === "restante" ? "text-stone" : ""}>
+                        <td className="font-medium">{nomeParte(r)}</td>
                         <td>{papel(r.tipo)}</td>
                         <td className="num">{f.numero(r.percentual, 2)}</td>
                         <td className={`num ${r.saldoAtribuivel < 0 ? "text-loss" : ""}`}>{f.moeda(r.saldoAtribuivel, m)}</td>

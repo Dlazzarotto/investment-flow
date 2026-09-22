@@ -1,26 +1,36 @@
 "use client";
 import { useState } from "react";
-import { useFormState } from "react-dom";
 import { criarInvestimento } from "@/app/actions/investimentos";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { EstimadorIA } from "@/components/forms/EstimadorIA";
+import { useAcaoFormulario, type EstadoFormulario } from "@/components/ui/useAcaoFormulario";
+import { useHoje } from "@/components/ui/useHoje";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
-import { formatadores, hojeISO } from "@/lib/format";
-import { CATEGORIAS_INVESTIMENTO, type ActionState, type Moeda } from "@/lib/types";
+import { formatadores } from "@/lib/format";
+import { CATEGORIAS_INVESTIMENTO, type Moeda } from "@/lib/types";
 
-export function FormInvestimento({ projetoId, moeda, iaDisponivel }: { projetoId: string; moeda: Moeda; iaDisponivel: boolean }) {
+interface Props { projetoId: string; moeda: Moeda; iaDisponivel: boolean }
+
+export function FormInvestimento(props: Props) {
+  const [estado, formAction] = useAcaoFormulario(criarInvestimento);
+  // A key remonta os campos (e o estado local: item, valor unitário, quantidade) após cada salvamento.
+  return <Campos key={estado.versao} {...props} estado={estado} formAction={formAction} />;
+}
+
+function Campos({ projetoId, moeda, iaDisponivel, estado, formAction }:
+  Props & { estado: EstadoFormulario; formAction: (fd: FormData) => void }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
-  const [estado, formAction] = useFormState(criarInvestimento, { ok: false } as ActionState);
+  const hoje = useHoje();
   const [item, setItem] = useState("");
   const [qtd, setQtd] = useState(1);
   const [unit, setUnit] = useState<string>("");
   const unitNum = Number(unit) || 0;
 
   return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-6" key={estado.sucesso ?? "form"}>
+    <form action={formAction} className="grid gap-4 sm:grid-cols-6">
       <input type="hidden" name="projeto_id" value={projetoId} />
       <div className="sm:col-span-4">
         <label className="rotulo" htmlFor="item">{d.investimentos.item}</label>
@@ -47,7 +57,7 @@ export function FormInvestimento({ projetoId, moeda, iaDisponivel }: { projetoId
       </div>
       <div className="sm:col-span-2">
         <label className="rotulo" htmlFor="data">{d.investimentos.dataAporte}</label>
-        <input id="data" name="data" type="date" required className="campo" defaultValue={hojeISO()} />
+        <input id="data" name="data" type="date" required className="campo" defaultValue={hoje} />
       </div>
       <div className="flex flex-wrap items-center gap-4 sm:col-span-6">
         <SubmitButton>{d.investimentos.salvar}</SubmitButton>

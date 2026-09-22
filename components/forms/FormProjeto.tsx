@@ -6,7 +6,7 @@ import { Mensagem } from "@/components/ui/Mensagem";
 import { useI18n } from "@/lib/i18n/client";
 import { LABEL_MOEDA } from "@/lib/labels";
 import { MOEDAS, TIPOS_PARCERIA, type ActionState, type Projeto } from "@/lib/types";
-import { hojeISO } from "@/lib/format";
+import { useHoje } from "@/components/ui/useHoje";
 
 /** Cria (sem `projeto`) ou edita a estrutura da parceria (com `projeto`). */
 export function FormProjeto({ action, projeto }:
@@ -14,6 +14,7 @@ export function FormProjeto({ action, projeto }:
   const { d } = useI18n();
   const [estado, formAction] = useFormState(action, { ok: false } as ActionState);
   const [tipo, setTipo] = useState(projeto?.tipo_parceria ?? "sociedade_direta");
+  const hoje = useHoje();
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
       {projeto && <input type="hidden" name="id" value={projeto.id} />}
@@ -27,7 +28,7 @@ export function FormProjeto({ action, projeto }:
       </div>
       <div>
         <label className="rotulo" htmlFor="data_inicio">{d.projetos.dataInicio}</label>
-        <input id="data_inicio" name="data_inicio" type="date" required className="campo" defaultValue={projeto?.data_inicio ?? hojeISO()} />
+        <input id="data_inicio" name="data_inicio" type="date" required className="campo" defaultValue={projeto?.data_inicio ?? hoje} />
       </div>
       <div>
         <label className="rotulo" htmlFor="moeda">{d.projetos.moeda}</label>

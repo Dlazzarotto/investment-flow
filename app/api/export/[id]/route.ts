@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas, obterFluxoMensal, obterProjeto } from "@/lib/consultas";
-import { calcularKpis, desvioVsMedia, encontrarBreakeven, normalizarItem, ratearParticipacoes } from "@/lib/calculos";
+import { calcularKpis, desvioVsMedia, encontrarBreakeven, normalizarItem, ratearParticipacoes, type Rateio, type TipoRateio } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
-import type { TipoParticipante } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +18,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   ]);
   const kpis = calcularKpis(investimentos, vendas);
   const slug = projeto.nome.normalize("NFD").replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "").toLowerCase() || "projeto";
-  const papel = (tipo: string) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
-    : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo as TipoParticipante];
+  const papel = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
+    : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo];
+  const nomeParte = (r: Rateio) => r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome;
 
   if (formato === "csv") {
     const linhas: (string | number)[][] = [
-      ["tipo", "id", "data", "descricao", "categoria", "quantidade", "unidade", "preco_unitario", "valor"],
+      [x.tipo, x.id, x.data, x.descricao, x.categoria, x.quantidade, x.unidade, x.precoUnitario, x.valor],
       ...investimentos.map((i) => [x.tipoInvestimento, i.id, i.data, i.item, d.enums.categoriaInvestimento[i.categoria],
         Number(i.quantidade), "", Number(i.valor_unitario), Number(i.valor_total)]),
       ...vendas.map((v) => [x.tipoReceita, v.id, v.data, x.venda, d.enums.categoriaReceita[v.categoria],
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     { header: x.recAtrib, key: "rec", width: 22 }, { header: x.saldoAtrib, key: "saldo", width: 20 },
   ];
   for (const r of ratearParticipacoes(projeto, participantes, kpis)) {
-    part.addRow({ nome: r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome,
+    part.addRow({ nome: nomeParte(r),
       tipo: papel(r.tipo), pct: r.percentual, inv: r.investimentoAtribuivel, rec: r.receitaAtribuivel, saldo: r.saldoAtribuivel });
   }
 

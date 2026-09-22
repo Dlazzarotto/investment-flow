@@ -5,49 +5,70 @@ import {
   CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
+/** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
+const MAX_QUANTIDADE = 1e11;
+const MAX_VALOR = 1e14;
+
+/** "AAAA-MM-DD" que existe de fato no calendário (o Date do V8 aceitaria 2026-02-30 como 2 de março). */
+export function ehDataISO(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const t = Date.parse(`${s}T00:00:00Z`);
+  return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === s;
+}
+
 export function criarSchemas(d: Dicionario) {
   const v = d.validacao;
-  const dataISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, v.dataInvalida);
-  const numeroPositivo = (campo: string) =>
+  const dataISO = z.string().refine(ehDataISO, v.dataInvalida);
+  const numeroPositivo = (campo: string, max: number) =>
     z.coerce.number({ invalid_type_error: fmtTexto(v.numero, { campo }) })
-      .finite().gt(0, fmtTexto(v.maiorZero, { campo }));
+      .finite(fmtTexto(v.valorAlto, { campo }))
+      .gt(0, fmtTexto(v.maiorZero, { campo }))
+      .lt(max, fmtTexto(v.valorAlto, { campo }));
   const percentual = z.coerce.number({ invalid_type_error: v.pctNumero }).min(0, v.pctNegativo).max(100, v.pctMax);
   const enumMsg = (msg: string) => ({ errorMap: () => ({ message: msg }) });
+  const uuid = z.string().uuid(v.idInvalido);
 
   return {
     projeto: z.object({
       nome: z.string().trim().min(1, v.nomeProjeto).max(120, v.nomeLongo),
-      descricao: z.string().trim().max(2000).optional().transform((x) => x || null),
+      descricao: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
       data_inicio: dataISO,
       moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
       tipo_parceria: z.enum(TIPOS_PARCERIA, enumMsg(v.tipoParceriaInvalido)),
       participacao_pct: percentual,
     }),
     participante: z.object({
-      projeto_id: z.string().uuid(),
+      projeto_id: uuid,
       nome: z.string().trim().min(1, v.nomeParticipante).max(120, v.nomeLongo),
       tipo: z.enum(TIPOS_PARTICIPANTE, enumMsg(v.tipoParticipanteInvalido)),
       percentual: percentual.gt(0, v.pctMaiorZero),
-      contato: z.string().trim().max(200).optional().transform((x) => x || null),
+      contato: z.string().trim().max(200, v.contatoLongo).optional().transform((x) => x || null),
     }),
     investimento: z.object({
-      projeto_id: z.string().uuid(),
+      projeto_id: uuid,
       item: z.string().trim().min(1, v.itemObrigatorio).max(160, v.nomeLongo),
       categoria: z.enum(CATEGORIAS_INVESTIMENTO, enumMsg(v.categoriaInvalida)),
-      quantidade: numeroPositivo(v.quantidade),
-      valor_unitario: numeroPositivo(v.valorUnitario),
+      quantidade: numeroPositivo(v.quantidade, MAX_QUANTIDADE),
+      valor_unitario: numeroPositivo(v.valorUnitario, MAX_VALOR),
       data: dataISO,
     }),
     venda: z.object({
-      projeto_id: z.string().uuid(),
+      projeto_id: uuid,
       categoria: z.enum(CATEGORIAS_RECEITA, enumMsg(v.categoriaInvalida)),
-      volume: numeroPositivo(v.volume),
-      unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40),
-      preco_unitario: numeroPositivo(v.precoUnitario),
+      volume: numeroPositivo(v.volume, MAX_QUANTIDADE),
+      unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
+      preco_unitario: numeroPositivo(v.precoUnitario, MAX_VALOR),
       data: dataISO,
     }),
-    id: z.object({ id: z.string().uuid(), projeto_id: z.string().uuid() }),
+    id: z.object({ id: uuid, projeto_id: uuid }),
+    /** Identificador isolado (edição/exclusão de projeto). */
+    uuid,
   };
+}
+
+/** Só aceita caminhos internos para redirecionar após o login: "//evil.com" e "/\evil.com" seriam externos. */
+export function caminhoInterno(v: unknown, padrao = "/projetos"): string {
+  return typeof v === "string" && /^\/(?![/\\])/.test(v) ? v : padrao;
 }
 
 /** Converte FormData em objeto simples. */

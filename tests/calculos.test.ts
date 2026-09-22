@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes, totalParticipacao } from "@/lib/calculos";
-import { criarSchemas } from "@/lib/validacao";
-import { formatadores } from "@/lib/format";
+import { caminhoInterno, criarSchemas } from "@/lib/validacao";
+import { formatadores, hojeISO } from "@/lib/format";
 import { obterDicionario } from "@/lib/i18n";
 const { projeto: projetoSchema, participante: participanteSchema, investimento: investimentoSchema, venda: vendaSchema } = criarSchemas(obterDicionario("pt"));
 const { data: fmtData, mesCurto: fmtMesCurto, mesLongo: fmtMesLongo, moeda: fmtMoeda, pct: fmtPct } = formatadores("pt");
@@ -56,18 +56,18 @@ describe("Break-even e alocação", () => {
 
 describe("Participação", () => {
   const k = calcularKpis([...inv], ven);
-  it("rateia saldo/investimento/receita por %; dono primeiro; sem linha restante quando soma 100", () => {
+  it("rateia saldo/investimento/receita por %; dono primeiro (sem nome — a tela traduz); sem linha restante quando soma 100", () => {
     const r = ratearParticipacoes({ participacao_pct: 40 },
       [{ nome: "Mineradora X", tipo: "parceiro_jv", percentual: 35 }, { nome: "Fundo Y", tipo: "investidor", percentual: 25 }], k);
-    expect(r.map((x) => x.nome)).toEqual(["Você", "Mineradora X", "Fundo Y"]);
+    expect(r.map((x) => [x.tipo, x.nome])).toEqual([["dono", ""], ["parceiro_jv", "Mineradora X"], ["investidor", "Fundo Y"]]);
     expect(r[0].saldoAtribuivel).toBe(592_000);
     expect(r[1].investimentoAtribuivel).toBe(735_000);
     expect(r[2].receitaAtribuivel).toBe(895_000);
     expect(r.reduce((s, x) => s + x.saldoAtribuivel, 0)).toBeCloseTo(k.saldo, 2);
   });
-  it("adiciona 'Não alocado' quando a soma é < 100", () => {
+  it("adiciona a linha 'restante' quando a soma é < 100", () => {
     const r = ratearParticipacoes({ participacao_pct: 60 }, [], k);
-    expect(r.at(-1)).toMatchObject({ nome: "Não alocado", percentual: 40, saldoAtribuivel: 592_000 });
+    expect(r.at(-1)).toMatchObject({ tipo: "restante", nome: "", percentual: 40, saldoAtribuivel: 592_000 });
     expect(totalParticipacao({ participacao_pct: 60 }, [{ percentual: 15.5 }])).toBe(75.5);
   });
 });
@@ -94,6 +94,24 @@ describe("Validação (zod)", () => {
     expect(vendaSchema.safeParse({ ...v, preco_unitario: "-1" }).success).toBe(false);
     expect(vendaSchema.safeParse({ ...v, data: "01/03/2026" }).success).toBe(false);
   });
+  it("datas precisam existir no calendário e valores respeitam os limites do banco (numeric)", () => {
+    const i = { projeto_id: uuid, item: "Barcaças", categoria: "logistica", quantidade: "4", valor_unitario: "250000", data: "2026-01-20" };
+    expect(investimentoSchema.safeParse({ ...i, data: "2026-02-30" }).error?.issues[0].message).toBe("Informe uma data válida.");
+    expect(investimentoSchema.safeParse({ ...i, data: "2026-13-01" }).success).toBe(false);
+    expect(investimentoSchema.safeParse({ ...i, data: "2028-02-29" }).success).toBe(true);
+    expect(investimentoSchema.safeParse({ ...i, valor_unitario: "1e14" }).error?.issues[0].message).toBe("Valor unitário é grande demais.");
+    expect(investimentoSchema.safeParse({ ...i, quantidade: "Infinity" }).success).toBe(false);
+    expect(investimentoSchema.safeParse({ ...i, projeto_id: "abc" }).error?.issues[0].message).toBe("Identificador inválido.");
+    expect(projetoSchema.safeParse({ nome: "P", data_inicio: "2026-01-01", moeda: "USD", tipo_parceria: "investidor", participacao_pct: "10", descricao: "x".repeat(2001) })
+      .error?.issues[0].message).toBe("Descrição muito longa (máx. 2000 caracteres).");
+  });
+  it("redirecionamento pós-login só aceita caminho interno", () => {
+    expect(caminhoInterno("/projetos/abc")).toBe("/projetos/abc");
+    expect(caminhoInterno("//evil.com")).toBe("/projetos");
+    expect(caminhoInterno("/\\evil.com")).toBe("/projetos");
+    expect(caminhoInterno("https://evil.com")).toBe("/projetos");
+    expect(caminhoInterno(null)).toBe("/projetos");
+  });
   it("participante: percentual > 0 e <= 100", () => {
     const p = { projeto_id: uuid, nome: "Fundo Y", tipo: "investidor", percentual: "25" };
     expect(participanteSchema.safeParse(p).success).toBe(true);
@@ -110,5 +128,11 @@ describe("Formatação", () => {
     expect(fmtMoeda(1234.5, "USD")).toMatch(/US\$\s?1\.234,50/);
     expect(fmtPct(null)).toBe("—");
     expect(fmtPct(0.7048)).toBe("70,5 %");
+  });
+  it("hojeISO usa o dia local, não o dia em UTC", () => {
+    // 22:30 local no Brasil (UTC−3) já é 01:30 do dia seguinte em UTC
+    const noite = new Date(2026, 8, 22, 22, 30);
+    expect(hojeISO(noite)).toBe("2026-09-22");
+    expect(hojeISO(new Date(2026, 0, 5))).toBe("2026-01-05");
   });
 });

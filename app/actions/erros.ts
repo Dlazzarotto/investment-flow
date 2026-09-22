@@ -14,6 +14,8 @@ export function traduzirErroBanco(err: PostgrestError, entidade: Entidade, d: Di
     }
     return d.banco.travas;
   }
+  // numeric_value_out_of_range: estoura numeric(16,2)/numeric(18,2) (ex.: quantidade × valor unitário enorme)
+  if (err.code === "22003") return d.banco.foraDaFaixa;
   if (err.code === "42501" || err.code === "PGRST301") return d.comum.semPermissao;
   return fmtTexto(d.banco.falha, { entidade: nome, msg: err.message });
 }

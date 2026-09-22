@@ -71,5 +71,6 @@ describe("Mensagens traduzidas", () => {
     expect(traduzirErroBanco(err("P0001", "A soma das participações do projeto ultrapassa 100% (total: 101.00 %)."), "participante", obterDicionario("es")))
       .toBe("La suma de las participaciones supera el 100 % (total: 101.00 %). Ajuste los porcentajes.");
     expect(traduzirErroBanco(err("42501"), "venda", obterDicionario("zh"))).toBe("您没有执行此操作的权限。");
+    expect(traduzirErroBanco(err("22003", "numeric field overflow"), "investimento", obterDicionario("en"))).toMatch(/^Value outside the range/);
   });
 });

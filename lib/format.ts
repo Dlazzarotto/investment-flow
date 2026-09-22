@@ -32,6 +32,8 @@ export function formatadores(locale: Locale) {
 }
 export type Formatadores = ReturnType<typeof formatadores>;
 
-export function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10);
+/** Hoje ("AAAA-MM-DD") no fuso local de quem executa — toISOString() daria o dia em UTC, que à noite já é amanhã no Brasil. */
+export function hojeISO(agora = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${agora.getFullYear()}-${p(agora.getMonth() + 1)}-${p(agora.getDate())}`;
 }

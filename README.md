@@ -21,9 +21,9 @@ app/
   actions/                            # server actions (zod → Supabase → revalidate)
 lib/                                  # types, validacao (zod, mensagens traduzidas), calculos, format (por idioma), consultas, supabase/
 lib/i18n/                             # config (pt/en/es/zh), dicionarios/*.ts, server.ts (cookie/Accept-Language), client.tsx (provider)
-components/                           # Shell, seletor, nav, forms, charts (Recharts), ui
-tests/calculos.test.ts                # 12 testes (vitest): KPIs, break-even, rateio, zod, formatação
-tests/ia.test.ts                      # 10 testes: parser/validação da resposta da IA, prompt, desvio vs média
+components/                           # Shell, seletor, nav, forms, charts (Recharts), ui (useHoje, useAcaoFormulario)
+tests/calculos.test.ts                # 15 testes (vitest): KPIs, break-even, rateio, zod (datas reais, limites do banco), redirect seguro, formatação
+tests/ia.test.ts                      # 12 testes: parser/validação da resposta da IA (blocos fatiados, JSON malformado), prompt, desvio vs média
 tests/i18n.test.ts                    # 9 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
 tests/schema.test.sql                 # testes do banco (psql): colunas geradas, fluxo mensal, trava 100 %, RLS, cascata
 tests/schema2.test.sql                # testes da migration 0002
@@ -71,7 +71,7 @@ tests/schema2.test.sql                # testes da migration 0002
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (31 testes)
+npm test            # vitest (36 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):
