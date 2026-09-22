@@ -13,9 +13,13 @@ const config: Config = {
         loss: "#C8412B",
       },
       fontFamily: { sans: ["var(--font-plex)", "system-ui", "sans-serif"] },
+      // Regra de design: nenhum texto visível abaixo de 18 px (o usuário opera no celular).
+      // `sm` e `xs` existem só para o texto secundário não quebrar se alguém usar a classe —
+      // valem 18 px de propósito. A hierarquia vem de peso e cor (text-stone), não de tamanho.
       fontSize: {
+        xs: ["18px", "1.5"],
+        sm: ["18px", "1.5"],
         base: ["18px", "1.55"],
-        sm: ["16px", "1.5"],
         lg: ["21px", "1.4"],
         xl: ["26px", "1.25"],
         "2xl": ["34px", "1.15"],

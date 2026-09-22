@@ -8,6 +8,7 @@ por projeto. Reescrita da v1 (Streamlit/SQLite) na stack Next.js 14 · TypeScrip
 ```
 supabase/migrations/0001_schema.sql   # enums, tabelas, colunas geradas, trigger ≤100 %, RLS, fluxo_mensal()
 supabase/migrations/0002_estimativas_ia.sql  # estimativas de valor médio (IA), RLS, ultimas_estimativas()
+supabase/migrations/0003_participacao_lock.sql # trava de 100 % com lock na linha do projeto (sem corrida)
 app/
   login/                              # e-mail + senha (Supabase Auth)
   projetos/page.tsx                   # lista + criar projeto (nome, moeda, tipo de parceria, sua %)
@@ -16,17 +17,19 @@ app/
   projetos/[id]/investimentos/        # formulário + tabela com exclusão
   projetos/[id]/vendas/               # formulário + tabela com exclusão
   projetos/[id]/participantes/        # estrutura da parceria, participantes, exclusão do projeto
-  api/export/[id]/route.ts            # ?formato=csv | xlsx (6 abas, inclui Estimativas IA)
+  api/export/[id]/route.ts            # ?formato=csv (separador/decimal do idioma) | xlsx (6 abas, inclui Estimativas IA)
   api/ia/estimar/route.ts             # POST — valor médio de mercado do item via Claude API + busca na web
   actions/                            # server actions (zod → Supabase → revalidate)
-lib/                                  # types, validacao (zod, mensagens traduzidas), calculos, format (por idioma), consultas, supabase/
+lib/                                  # types, validacao (zod, mensagens traduzidas), calculos, format (por idioma), csv (por idioma), consultas, supabase/
 lib/i18n/                             # config (pt/en/es/zh), dicionarios/*.ts, server.ts (cookie/Accept-Language), client.tsx (provider)
 components/                           # Shell, seletor, nav, forms, charts (Recharts), ui (useHoje, useAcaoFormulario)
 tests/calculos.test.ts                # 15 testes (vitest): KPIs, break-even, rateio, zod (datas reais, limites do banco), redirect seguro, formatação
 tests/ia.test.ts                      # 12 testes: parser/validação da resposta da IA (blocos fatiados, JSON malformado), prompt, desvio vs média
 tests/i18n.test.ts                    # 9 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
 tests/schema.test.sql                 # testes do banco (psql): colunas geradas, fluxo mensal, trava 100 %, RLS, cascata
+tests/csv.test.ts                     # 6 testes: separador e decimal por idioma, aspas, BOM, diretiva sep=
 tests/schema2.test.sql                # testes da migration 0002
+tests/schema3.test.sql                # testes da migration 0003 (trava preservada; roteiro de concorrência)
 ```
 
 ## Idiomas (pt · en · es · zh)
@@ -61,7 +64,7 @@ tests/schema2.test.sql                # testes da migration 0002
 
 ## Configuração
 
-1. **Supabase** → SQL Editor → execute `supabase/migrations/0001_schema.sql` e depois `0002_estimativas_ia.sql` (idempotentes).
+1. **Supabase** → SQL Editor → execute `supabase/migrations/0001_schema.sql`, `0002_estimativas_ia.sql` e `0003_participacao_lock.sql` (idempotentes, nesta ordem).
    Em Authentication → Providers → Email, desative "Confirm email" se quiser entrar sem confirmação.
 2. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `ANTHROPIC_API_KEY`.
 3. `npm install` · `npm run dev` → http://localhost:3000
@@ -71,8 +74,8 @@ tests/schema2.test.sql                # testes da migration 0002
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (36 testes)
+npm test            # vitest (42 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):
-`psql -v ON_ERROR_STOP=1 -f tests/schema.test.sql` — roda em transação e desfaz tudo.
+`psql -v ON_ERROR_STOP=1 -f tests/schema.test.sql` — roda em transação e desfaz tudo (idem `schema2`/`schema3`).

@@ -3,12 +3,13 @@ import ExcelJS from "exceljs";
 import { listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas, obterFluxoMensal, obterProjeto } from "@/lib/consultas";
 import { calcularKpis, desvioVsMedia, encontrarBreakeven, normalizarItem, ratearParticipacoes, type Rateio, type TipoRateio } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
+import { montarCsv } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
 
 /** GET /api/export/[id]?formato=csv|xlsx — exporta os dados do projeto no idioma atual (RLS garante o dono). */
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const { d } = obterD();
+  const { locale, d } = obterD();
   const x = d.exportacao;
   const formato = req.nextUrl.searchParams.get("formato") === "xlsx" ? "xlsx" : "csv";
   const projeto = await obterProjeto(params.id);
@@ -30,8 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       ...vendas.map((v) => [x.tipoReceita, v.id, v.data, x.venda, d.enums.categoriaReceita[v.categoria],
         Number(v.volume), v.unidade, Number(v.preco_unitario), Number(v.receita_total)]),
     ];
-    const csv = "\uFEFF" + linhas.map((l) => l.map(celulaCsv).join(",")).join("\r\n");
-    return new NextResponse(csv, {
+    return new NextResponse(montarCsv(linhas, locale), {
       headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${slug}_dados.csv"` },
     });
   }
@@ -120,9 +120,4 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       "Content-Disposition": `attachment; filename="${slug}_relatorio.xlsx"`,
     },
   });
-}
-
-function celulaCsv(v: string | number): string {
-  const s = String(v);
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }

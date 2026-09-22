@@ -14,13 +14,16 @@ Gestão de aportes (Capex/Opex), vendas/receitas, parceria (tipo + % de particip
 ```
 supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100 %, RLS, fluxo_mensal())
                        0002_estimativas_ia.sql (estimativas de mercado por IA, ultimas_estimativas())
+                       0003_participacao_lock.sql (trava de 100 % com lock — sem corrida)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, vendas/, participantes/ (layout.tsx = Shell)
 app/api/export/[id]    CSV/XLSX no idioma atual;  app/api/ia/estimar  POST valor médio de mercado
 lib/i18n/              config.ts, dicionarios/{pt,en,es,zh}.ts, server.ts (obterD), client.tsx (useI18n)
 lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchemas(d)), calculos.ts (puro),
-                       format.ts (formatadores(locale) — Intl, datas em UTC), consultas.ts (leituras)
-components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, forms/, charts/, ui/
+                       format.ts (formatadores(locale) — Intl, datas em UTC), csv.ts (CSV por idioma),
+                       consultas.ts (leituras, com cache() por requisição)
+components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, forms/, charts/ (estilo.ts = cores e
+                       fontes dos gráficos), ui/ (useHoje, useAcaoFormulario)
 tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); schema*.test.sql (psql)
 ```
 
@@ -29,7 +32,7 @@ tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); sche
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 36 testes, todos devem passar
+npm test          # vitest — 42 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -44,7 +47,7 @@ Ambiente: `.env.local` com `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANO
 4. **Regras de negócio no banco:** `valor_total`/`receita_total` são colunas geradas; participação total ≤ 100 % é trigger; RLS por `projetos.owner_id = auth.uid()`. A UI valida antes (zod) e traduz o erro depois (`app/actions/erros.ts`).
 5. **Cálculos puros** em `lib/calculos.ts` com teste; agregação mensal contínua é `public.fluxo_mensal()` no Postgres.
 6. **Antes de entregar:** `typecheck`, `test` e `build` limpos. Não defender o que existe — auditar e corrigir.
-7. **Design:** navy `#2D3278`, laranja `#F47B20`, texto ≥ 18 px, alvos de toque ≥ 48 px, mobile-first (o usuário opera muito pelo celular). Sem bibliotecas de UI novas sem necessidade.
+7. **Design:** navy `#2D3278`, laranja `#F47B20`, texto ≥ 18 px, alvos de toque ≥ 48 px, mobile-first (o usuário opera muito pelo celular). Sem bibliotecas de UI novas sem necessidade. A escala do Tailwind já garante o piso: `xs`/`sm`/`base` valem 18 px e a hierarquia vem de peso e cor, não de tamanho; nos gráficos o piso está em `components/charts/estilo.ts` (`FONTE`).
 
 ## Decisões já tomadas (não reabrir sem pedido)
 

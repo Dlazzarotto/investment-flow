@@ -3,8 +3,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { formatadores } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/client";
 import type { FluxoMensal, Moeda } from "@/lib/types";
-
-const NAVY = "#2D3278", ORANGE = "#F47B20";
+import { EIXO, ESPACO_ROTULO, ESTILO_LEGENDA, ESTILO_TOOLTIP, GRADE, LARGURA_EIXO_Y, MARGEM, NAVY, ORANGE, TICK } from "./estilo";
 
 /** Gráfico 1 — Investimentos vs Receitas por mês. */
 export function GraficoFluxo({ fluxo, moeda }: { fluxo: FluxoMensal[]; moeda: Moeda }) {
@@ -12,16 +11,17 @@ export function GraficoFluxo({ fluxo, moeda }: { fluxo: FluxoMensal[]; moeda: Mo
   const f = formatadores(locale);
   const dados = fluxo.map((x) => ({ ...x, rotulo: f.mesCurto(x.mes) }));
   return (
-    <div className="h-72 w-full sm:h-80">
+    <div className="h-80 w-full sm:h-96">
       <ResponsiveContainer>
-        <BarChart data={dados} margin={{ top: 8, right: 8, left: 8, bottom: 0 }} barGap={2}>
-          <CartesianGrid vertical={false} stroke="#E4E5EC" />
-          <XAxis dataKey="rotulo" tick={{ fontSize: 14 }} tickLine={false} axisLine={{ stroke: "#D9DBE4" }} />
-          <YAxis tick={{ fontSize: 13 }} tickLine={false} axisLine={false} width={64}
+        <BarChart data={dados} margin={MARGEM} barGap={2}>
+          <CartesianGrid vertical={false} stroke={GRADE} />
+          <XAxis dataKey="rotulo" tick={TICK} tickLine={false} axisLine={{ stroke: EIXO }}
+                 interval="preserveStartEnd" minTickGap={ESPACO_ROTULO} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={LARGURA_EIXO_Y}
                  tickFormatter={(v) => f.moeda(Number(v), moeda, true)} />
           <Tooltip formatter={(v: number, nome: string) => [f.moeda(v, moeda), nome]}
-                   labelFormatter={(l) => String(l)} contentStyle={{ fontSize: 15 }} />
-          <Legend wrapperStyle={{ fontSize: 15 }} />
+                   labelFormatter={(l) => String(l)} contentStyle={ESTILO_TOOLTIP} />
+          <Legend wrapperStyle={ESTILO_LEGENDA} />
           <Bar dataKey="investimento" name={d.dashboard.serieInvestimentos} fill={ORANGE} radius={[3, 3, 0, 0]} />
           <Bar dataKey="receita" name={d.dashboard.serieReceitas} fill={NAVY} radius={[3, 3, 0, 0]} />
         </BarChart>
