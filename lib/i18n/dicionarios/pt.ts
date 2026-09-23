@@ -180,7 +180,7 @@ export const pt = {
     tipoParticipanteInvalido: "Tipo de participante inválido.", pctMaiorZero: "Percentual deve ser maior que zero.",
     itemObrigatorio: "O nome do item é obrigatório.", categoriaInvalida: "Categoria inválida.", unidadeObrigatoria: "A unidade é obrigatória.",
     dadosInvalidos: "Dados inválidos.", quantidade: "Quantidade", valorUnitario: "Valor unitário", volume: "Volume", precoUnitario: "Preço unitário",
-    nomeObrigatorio: "O nome é obrigatório.", commodityObrigatorio: "Informe o commodity.", modoInvalido: "Modo inválido.",
+    nomeObrigatorio: "O nome é obrigatório.", commodityObrigatorio: "Informe o commodity.", modoInvalido: "Modo inválido.", modalInvalido: "Modal da etapa inválido.",
     grupoInvalido: "Grupo de custo inválido.", driverInvalido: "Forma de rateio inválida.", producaoDiaria: "Produção diária",
     margemMax: "A margem alvo precisa ser menor que 100 %.", capacidadeObrigatoria: "Informe quantas toneladas cabem na viagem.",
     papelInvalido: "Papel inválido.", emailInvalido: "Informe um e-mail válido.",

@@ -180,7 +180,7 @@ export const en: Dicionario = {
     tipoParticipanteInvalido: "Invalid participant type.", pctMaiorZero: "Percentage must be greater than zero.",
     itemObrigatorio: "Item name is required.", categoriaInvalida: "Invalid category.", unidadeObrigatoria: "Unit is required.",
     dadosInvalidos: "Invalid data.", quantidade: "Quantity", valorUnitario: "Unit value", volume: "Volume", precoUnitario: "Unit price",
-    nomeObrigatorio: "Name is required.", commodityObrigatorio: "Enter the commodity.", modoInvalido: "Invalid mode.",
+    nomeObrigatorio: "Name is required.", commodityObrigatorio: "Enter the commodity.", modoInvalido: "Invalid mode.", modalInvalido: "Invalid stage mode.",
     grupoInvalido: "Invalid cost group.", driverInvalido: "Invalid allocation basis.", producaoDiaria: "Daily output",
     margemMax: "The target margin must be below 100 %.", capacidadeObrigatoria: "Enter how many tonnes fit in one trip.",
     papelInvalido: "Invalid role.", emailInvalido: "Enter a valid email.",

@@ -246,13 +246,12 @@ export const DRIVERS_CUSTO = [
 ] as const;
 export type DriverCusto = (typeof DRIVERS_CUSTO)[number];
 
+/** Custeio do projeto — um por projeto; nome e moeda vêm do próprio projeto. */
 export interface EstimativaCusto {
   id: string;
   projeto_id: string;
-  nome: string;
   commodity: string;
   modo: ModoEstimativa;
-  moeda: Moeda;
   unidade: string;
   volume_total: number;
   producao_diaria: number;
@@ -263,12 +262,22 @@ export interface EstimativaCusto {
   atualizado_em: string;
 }
 
-/** Etapa da cadeia (mina → porto → barcaça → porto final → navio). */
-export interface EstimativaEtapa {
+export const MODAIS_ETAPA = [
+  "extracao", "beneficiamento", "rodoviario", "ferroviario", "fluvial", "maritimo",
+  "portuario", "armazenagem", "documentacao", "outro",
+] as const;
+export type ModalEtapa = (typeof MODAIS_ETAPA)[number];
+
+/**
+ * Etapa da cadeia logística do PROJETO (mina → porto → barcaça → porto final →
+ * navio). A rota é do projeto; o custeio dele percorre sempre as mesmas etapas.
+ */
+export interface ProjetoEtapa {
   id: string;
-  estimativa_id: string;
+  projeto_id: string;
   ordem: number;
   nome: string;
+  modal: ModalEtapa;
   origem: string | null;
   destino: string | null;
   /** País da etapa — define a legislação usada na sugestão de salário. */

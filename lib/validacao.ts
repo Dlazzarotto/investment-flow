@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
-  DRIVERS_CUSTO, GRUPOS_CUSTO, MODOS_ESTIMATIVA, TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -112,10 +112,8 @@ export function criarSchemas(d: Dicionario) {
     }),
     estimativa: z.object({
       projeto_id: uuid,
-      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
       commodity: z.string().trim().min(1, v.commodityObrigatorio).max(120, v.nomeLongo),
       modo: z.enum(MODOS_ESTIMATIVA, enumMsg(v.modoInvalido)),
-      moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
       unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
       volume_total: numeroPositivo(v.volume, MAX_QUANTIDADE),
       producao_diaria: custoOpcional(v.producaoDiaria),
@@ -144,6 +142,16 @@ export function criarSchemas(d: Dicionario) {
       if (i.driver === "por_viagem" && i.capacidade === null) {
         ctx.addIssue({ code: "custom", path: ["capacidade"], message: v.capacidadeObrigatoria });
       }
+    }),
+    etapa: z.object({
+      projeto_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
+      modal: z.enum(MODAIS_ETAPA, enumMsg(v.modalInvalido)),
+      origem: z.string().trim().max(160, v.nomeLongo).optional().transform((x) => x || null),
+      destino: z.string().trim().max(160, v.nomeLongo).optional().transform((x) => x || null),
+      pais: z.string().trim().max(80, v.nomeLongo).optional().transform((x) => x || null),
+      ordem: z.coerce.number().int().min(0).max(999).catch(0),
+      observacoes: z.string().trim().max(1000, v.descricaoLonga).optional().transform((x) => x || null),
     }),
     id: z.object({ id: uuid, projeto_id: uuid }),
     /** Identificador isolado (edição/exclusão de projeto). */

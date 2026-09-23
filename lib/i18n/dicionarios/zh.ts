@@ -180,7 +180,7 @@ export const zh: Dicionario = {
     tipoParticipanteInvalido: "参与方类型无效。", pctMaiorZero: "百分比必须大于零。",
     itemObrigatorio: "项目名称为必填项。", categoriaInvalida: "类别无效。", unidadeObrigatoria: "单位为必填项。",
     dadosInvalidos: "数据无效。", quantidade: "数量", valorUnitario: "单价", volume: "销量", precoUnitario: "单价",
-    nomeObrigatorio: "名称为必填项。", commodityObrigatorio: "请填写商品。", modoInvalido: "模式无效。",
+    nomeObrigatorio: "名称为必填项。", commodityObrigatorio: "请填写商品。", modoInvalido: "模式无效。", modalInvalido: "环节方式无效。",
     grupoInvalido: "成本组无效。", driverInvalido: "分摊方式无效。", producaoDiaria: "日产量",
     margemMax: "目标毛利率必须小于 100%。", capacidadeObrigatoria: "请填写单次运输可装载的吨数。",
     papelInvalido: "角色无效。", emailInvalido: "请输入有效的邮箱。",
