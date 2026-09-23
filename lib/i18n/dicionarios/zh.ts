@@ -10,7 +10,7 @@ export const zh: Dicionario = {
     semPermissao: "您没有执行此操作的权限。",
     editar: "编辑", cancelar: "取消", salvar: "保存", acoes: "操作", alteracaoSalva: "修改已保存。",
   },
-  nav: { conta: "我的账户", plataforma: "平台", custeio: "成本核算", aportes: "出资", carteira: "我的投资组合", dashboard: "仪表盘", investimentos: "投资", vendas: "销售", despesas: "费用", parceria: "合作",
+  nav: { geral: "通用", abrirMenu: "打开菜单", conta: "我的账户", plataforma: "平台", custeio: "成本核算", aportes: "出资", carteira: "我的投资组合", dashboard: "仪表盘", investimentos: "投资", vendas: "销售", despesas: "费用", parceria: "合作",
     projetoAtivo: "当前项目", escolha: "选择项目…", secoes: "项目板块" },
   login: {
     esqueciSenha: "忘记密码",

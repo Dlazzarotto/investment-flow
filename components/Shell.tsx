@@ -1,47 +1,86 @@
-import Image from "next/image";
-import Link from "next/link";
 import { sair } from "@/app/actions/auth";
 import { obterD } from "@/lib/i18n/server";
+import { obterUsuario } from "@/lib/consultas";
+import { Lateral, type GrupoNav } from "./Lateral";
 import { SeletorProjeto } from "./SeletorProjeto";
 import { SeletorIdioma } from "./SeletorIdioma";
-import { NavProjeto } from "./NavProjeto";
 import type { Projeto } from "@/lib/types";
 
-/** Barra superior navy com seletor global de projeto, idioma e abas; área de conteúdo. */
-export function Shell({ projetos, projetoAtual, verInvestimentos = false, temCarteira = false, ehMaster = false, children }:
-  { projetos: Projeto[]; projetoAtual?: Projeto; verInvestimentos?: boolean; temCarteira?: boolean;
-    ehMaster?: boolean; children: React.ReactNode }) {
+interface Props {
+  projetos: Projeto[];
+  projetoAtual?: Projeto;
+  verInvestimentos?: boolean;
+  temCarteira?: boolean;
+  ehMaster?: boolean;
+  /** Nome da empresa, sob a marca. */
+  empresa?: string | null;
+  children: React.ReactNode;
+}
+
+/**
+ * Moldura da aplicação: barra lateral com marca, contexto e navegação; o
+ * conteúdo ao lado.
+ *
+ * A navegação do projeto passou das abas do topo para a lateral. Em abas ela
+ * competia por espaço com o seletor de projeto e já não cabia seção nova —
+ * justamente o que a reorganização vai acrescentar (clientes, fornecedores,
+ * commodities, documentos).
+ */
+export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
+                              temCarteira = false, ehMaster = false, empresa, children }: Props) {
   const { locale, d } = obterD();
+  const usuario = await obterUsuario();
+  const base = projetoAtual ? `/projetos/${projetoAtual.id}` : null;
+
+  const grupos: GrupoNav[] = [];
+
+  if (base && projetoAtual) {
+    grupos.push({
+      titulo: projetoAtual.nome,
+      itens: [
+        { href: base, rotulo: d.nav.dashboard, icone: "📊", exato: true },
+        // Investimentos é assunto de dono e admin (0006): somem para os demais.
+        ...(verInvestimentos ? [
+          { href: `${base}/investimentos`, rotulo: d.nav.investimentos, icone: "🏗️" },
+          { href: `${base}/aportes`, rotulo: d.nav.aportes, icone: "🤝" },
+        ] : []),
+        { href: `${base}/vendas`, rotulo: d.nav.vendas, icone: "📦" },
+        { href: `${base}/despesas`, rotulo: d.nav.despesas, icone: "🧾" },
+        { href: `${base}/custeio`, rotulo: d.nav.custeio, icone: "🧮" },
+        { href: `${base}/participantes`, rotulo: d.nav.parceria, icone: "👥" },
+      ],
+    });
+  }
+
+  grupos.push({
+    titulo: base ? d.nav.geral : undefined,
+    itens: [
+      { href: "/projetos", rotulo: d.projetos.meus, icone: "🗂️", exato: true },
+      ...(temCarteira ? [{ href: "/carteira", rotulo: d.nav.carteira, icone: "💼" }] : []),
+      ...(ehMaster ? [{ href: "/master", rotulo: d.nav.plataforma, icone: "🏢" }] : []),
+      { href: "/conta", rotulo: d.nav.conta, icone: "👤" },
+    ],
+  });
+
   return (
-    <div className="min-h-screen">
-      <header className="bg-navy text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-          <Link href="/projetos" className="flex min-h-touch items-center gap-2 text-lg font-semibold tracking-tight">
-            {/* Azulejo branco: o azul do símbolo se perde contra o navy do cabeçalho.
-                alt vazio porque o nome vem escrito ao lado — repetir só atrapalha o leitor de tela. */}
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white">
-              <Image src="/icone.png" alt="" width={208} height={208} priority className="h-8 w-8" />
-            </span>
-            {d.comum.app}
-          </Link>
-          <div className="min-w-0 flex-1">
-            {projetos.length > 0 && <SeletorProjeto projetos={projetos} atualId={projetoAtual?.id} />}
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      <Lateral
+        empresa={empresa} usuario={usuario?.email} grupos={grupos}
+        seletor={projetos.length > 0 ? <SeletorProjeto projetos={projetos} atualId={projetoAtual?.id} /> : undefined}
+        rodape={
+          <div className="flex flex-wrap items-center gap-2">
+            <SeletorIdioma atual={locale} />
+            <form action={sair}>
+              <button type="submit" className="btn min-h-touch px-3 text-sm text-white/80 hover:text-white">
+                {d.comum.sair}
+              </button>
+            </form>
           </div>
-          {ehMaster && (
-            <Link href="/master" className="btn min-h-touch px-3 text-sm text-white/85 hover:text-white">{d.nav.plataforma}</Link>
-          )}
-          {temCarteira && (
-            <Link href="/carteira" className="btn min-h-touch px-3 text-sm text-white/85 hover:text-white">{d.nav.carteira}</Link>
-          )}
-          <Link href="/conta" className="btn min-h-touch px-3 text-sm text-white/85 hover:text-white">{d.nav.conta}</Link>
-          <SeletorIdioma atual={locale} />
-          <form action={sair}>
-            <button type="submit" className="btn min-h-touch px-3 text-sm text-white/80 hover:text-white">{d.comum.sair}</button>
-          </form>
-        </div>
-        {projetoAtual && <NavProjeto projetoId={projetoAtual.id} verInvestimentos={verInvestimentos} />}
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+        }
+      />
+      <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-5xl">{children}</div>
+      </main>
     </div>
   );
 }

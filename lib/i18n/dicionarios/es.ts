@@ -10,7 +10,7 @@ export const es: Dicionario = {
     semPermissao: "Sin permiso para esta operación.",
     editar: "Editar", cancelar: "Cancelar", salvar: "Guardar", acoes: "Acciones", alteracaoSalva: "Cambio guardado.",
   },
-  nav: { conta: "Mi cuenta", plataforma: "Plataforma", custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
+  nav: { geral: "General", abrirMenu: "Abrir menú", conta: "Mi cuenta", plataforma: "Plataforma", custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
     projetoAtivo: "Proyecto activo", escolha: "Elija un proyecto…", secoes: "Secciones del proyecto" },
   login: {
     esqueciSenha: "Olvidé mi contraseña",

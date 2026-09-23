@@ -22,7 +22,7 @@ export default async function MasterPage() {
   const t = d.master;
 
   return (
-    <Shell projetos={projetos} ehMaster>
+    <Shell projetos={projetos} ehMaster empresa={null}>
       <h1 className="text-2xl">{t.titulo}</h1>
       <p className="mt-1 text-stone">{t.subtitulo}</p>
 
