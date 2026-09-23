@@ -229,3 +229,50 @@ export interface ProjetoMembro {
   papel: PapelMembro;
   criado_em: string;
 }
+
+/** Modo da estimativa: produzir e vender, ou comprar e repassar. */
+export const MODOS_ESTIMATIVA = ["producao_propria", "revenda"] as const;
+export type ModoEstimativa = (typeof MODOS_ESTIMATIVA)[number];
+
+export const GRUPOS_CUSTO = [
+  "producao", "pessoal", "logistica_interna", "porto", "frete", "tributos", "administrativo", "outros",
+] as const;
+export type GrupoCusto = (typeof GRUPOS_CUSTO)[number];
+
+/** Como o valor do item vira custo por unidade de produto (ver lib/custeio.ts). */
+export const DRIVERS_CUSTO = [
+  "por_unidade", "por_dia", "por_mes", "por_lote", "pct_custo", "pct_receita",
+] as const;
+export type DriverCusto = (typeof DRIVERS_CUSTO)[number];
+
+export interface EstimativaCusto {
+  id: string;
+  projeto_id: string;
+  nome: string;
+  commodity: string;
+  modo: ModoEstimativa;
+  moeda: Moeda;
+  unidade: string;
+  volume_total: number;
+  producao_diaria: number;
+  dias_mes: number;
+  margem_alvo_pct: number;
+  observacoes: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface EstimativaItem {
+  id: string;
+  estimativa_id: string;
+  grupo: GrupoCusto;
+  nome: string;
+  driver: DriverCusto;
+  valor: number;
+  quantidade: number;
+  /** 'ia' marca o que o modelo sugeriu e ainda não foi confirmado por gente. */
+  origem: "manual" | "ia";
+  fonte: string | null;
+  ordem: number;
+  criado_em: string;
+}
