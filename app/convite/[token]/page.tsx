@@ -35,7 +35,7 @@ export default async function ConvitePage({ params }: { params: { token: string 
       <MolduraEntrada titulo={d.acesso.conviteRecebido} texto={d.login.criarContaTexto}>
         <div className="grid gap-3">
           <Link href={`/criar-conta?next=${encodeURIComponent(volta)}`} className="btn-primario">
-            {d.login.irCadastro}
+            {d.login.criarAcesso}
           </Link>
           <Link href={`/login?next=${encodeURIComponent(volta)}`} className="btn-quieto">
             {d.login.irEntrar}

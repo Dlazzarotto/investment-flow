@@ -23,7 +23,7 @@ export const zh: Dicionario = {
     criarContaTitulo: "创建账户", criarContaTexto: "请使用收到邀请的那个邮箱 — 系统按邮箱识别您的权限。",
     marca: "Investment-Flow System", subtitulo: "按项目管理投资、收入与合作。",
     email: "电子邮箱", senha: "密码", entrar: "登录", criarConta: "创建账户", verificando: "验证中…",
-    irCadastro: "还没有账户 — 创建", irEntrar: "已有账户 — 登录",
+    criarAcesso: "创建我的账号", irEntrar: "已有账户 — 登录",
     credenciais: "邮箱或密码错误。", contaCriada: "账户已创建。请确认收到的邮件后登录。",
     emailInvalido: "请输入有效的邮箱。", senhaCurta: "密码至少需要 6 个字符。",
     falhaCadastro: "无法创建账户：{msg}", jaCadastrado: "该邮箱已注册账户。",

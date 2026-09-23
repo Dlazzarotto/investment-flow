@@ -23,7 +23,7 @@ export const es: Dicionario = {
     criarContaTitulo: "Crear su cuenta", criarContaTexto: "Use el mismo correo que recibió la invitación — es por él que se reconoce su acceso.",
     marca: "Investment-Flow System", subtitulo: "Inversiones, ingresos y alianzas por proyecto.",
     email: "Correo electrónico", senha: "Contraseña", entrar: "Entrar", criarConta: "Crear cuenta", verificando: "Verificando…",
-    irCadastro: "No tengo cuenta — crear", irEntrar: "Ya tengo cuenta — entrar",
+    criarAcesso: "Crear mi acceso", irEntrar: "Ya tengo cuenta — entrar",
     credenciais: "Correo o contraseña incorrectos.", contaCriada: "Cuenta creada. Confirme el correo recibido para entrar.",
     emailInvalido: "Ingrese un correo válido.", senhaCurta: "La contraseña debe tener al menos 6 caracteres.",
     falhaCadastro: "No se pudo crear la cuenta: {msg}", jaCadastrado: "Ya existe una cuenta con este correo.",

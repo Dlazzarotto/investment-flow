@@ -23,7 +23,7 @@ export const pt = {
     criarContaTitulo: "Criar sua conta", criarContaTexto: "Use o mesmo e-mail que recebeu o convite — é por ele que o acesso é reconhecido.",
     marca: "Investment-Flow System", subtitulo: "Investimentos, receitas e parcerias por projeto.",
     email: "E-mail", senha: "Senha", entrar: "Entrar", criarConta: "Criar conta", verificando: "Verificando…",
-    irCadastro: "Não tenho conta — criar", irEntrar: "Já tenho conta — entrar",
+    criarAcesso: "Criar meu acesso", irEntrar: "Já tenho conta — entrar",
     credenciais: "E-mail ou senha incorretos.", contaCriada: "Conta criada. Confirme o e-mail recebido para entrar.",
     emailInvalido: "Informe um e-mail válido.", senhaCurta: "A senha deve ter pelo menos 6 caracteres.",
     falhaCadastro: "Não foi possível criar a conta: {msg}", jaCadastrado: "Já existe uma conta com este e-mail.",
