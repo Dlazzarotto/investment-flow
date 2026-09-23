@@ -6,38 +6,54 @@ import type { DriverCusto, EstimativaItem, GrupoCusto } from "@/lib/types";
 const p = { volume_total: 10_000, producao_diaria: 500, dias_mes: 30, margem_alvo_pct: 0 };
 
 let n = 0;
-function item(grupo: GrupoCusto, nome: string, driver: DriverCusto, valor: number, quantidade = 1): EstimativaItem {
+function item(grupo: GrupoCusto, nome: string, driver: DriverCusto, valor: number,
+              quantidade = 1, capacidade: number | null = null, etapa_id: string | null = null): EstimativaItem {
   n += 1;
   return {
-    id: `i${n}`, estimativa_id: "e1", grupo, nome, driver, valor, quantidade,
+    id: `i${n}`, estimativa_id: "e1", etapa_id, grupo, nome, driver, valor, quantidade, capacidade,
     origem: "manual", fonte: null, ordem: n, criado_em: "2026-01-01T00:00:00Z",
   };
 }
 
+/** Atalho para converterItem sem repetir capacidade: null em todo teste. */
+function conv(driver: DriverCusto, valor: number, quantidade = 1, capacidade: number | null = null) {
+  return converterItem({ driver, valor, quantidade, capacidade }, p);
+}
+
 describe("Conversão de cada driver para custo por tonelada", () => {
   it("por_unidade usa o valor direto, multiplicado pela quantidade", () => {
-    expect(converterItem({ driver: "por_unidade", valor: 12, quantidade: 1 }, p).porUnidade).toBe(12);
-    expect(converterItem({ driver: "por_unidade", valor: 12, quantidade: 3 }, p).porUnidade).toBe(36);
+    expect(conv("por_unidade", 12).porUnidade).toBe(12);
+    expect(conv("por_unidade", 12, 3).porUnidade).toBe(36);
   });
   it("por_dia divide pela produção diária — 3 operadores a 300/dia com 500 t/dia = 1,80/t", () => {
-    expect(converterItem({ driver: "por_dia", valor: 300, quantidade: 3 }, p).porUnidade).toBeCloseTo(1.8, 10);
+    expect(conv("por_dia", 300, 3).porUnidade).toBeCloseTo(1.8, 10);
   });
   it("por_mes divide pelos dias do mês e pela produção diária", () => {
     // 150.000/mês ÷ 30 dias = 5.000/dia ÷ 500 t/dia = 10/t
-    expect(converterItem({ driver: "por_mes", valor: 150_000, quantidade: 1 }, p).porUnidade).toBeCloseTo(10, 10);
+    expect(conv("por_mes", 150_000).porUnidade).toBeCloseTo(10, 10);
   });
   it("por_lote divide pelo volume total do lote", () => {
-    expect(converterItem({ driver: "por_lote", valor: 50_000, quantidade: 1 }, p).porUnidade).toBe(5);
+    expect(conv("por_lote", 50_000).porUnidade).toBe(5);
   });
   it("percentuais não viram R$/t sozinhos: dependem do custo ou do preço", () => {
-    expect(converterItem({ driver: "pct_custo", valor: 10, quantidade: 1 }, p).porUnidade).toBeNull();
-    expect(converterItem({ driver: "pct_receita", valor: 10, quantidade: 1 }, p).porUnidade).toBeNull();
+    expect(conv("pct_custo", 10).porUnidade).toBeNull();
+    expect(conv("pct_receita", 10).porUnidade).toBeNull();
     expect(ehPercentual("pct_receita")).toBe(true);
     expect(ehPercentual("por_dia")).toBe(false);
   });
+  it("por_viagem divide pela capacidade — frete de 2.400 por caminhão de 30 t = 80/t", () => {
+    expect(conv("por_viagem", 2_400, 1, 30).porUnidade).toBe(80);
+    // barcaça de 1.500 t a 45.000 por viagem = 30/t
+    expect(conv("por_viagem", 45_000, 1, 1_500).porUnidade).toBe(30);
+  });
+  it("por_viagem sem capacidade fica marcado em vez de virar zero", () => {
+    const r = conv("por_viagem", 2_400, 1, null);
+    expect(r.porUnidade).toBeNull();
+    expect(r.impedimento).toBe("sem_capacidade");
+  });
   it("custo por dia sem produção diária não vira zero em silêncio — fica marcado", () => {
-    const semProducao = { ...p, producao_diaria: 0 };
-    const r = converterItem({ driver: "por_dia", valor: 300, quantidade: 1 }, semProducao);
+    const r = converterItem({ driver: "por_dia", valor: 300, quantidade: 1, capacidade: null },
+                            { ...p, producao_diaria: 0 });
     expect(r.porUnidade).toBeNull();
     expect(r.impedimento).toBe("sem_producao_diaria");
   });
@@ -110,6 +126,23 @@ describe("Cálculo reverso: do custo para o preço", () => {
       { grupo: "porto", valor: 2 },
     ]);
     expect(r.custoUnitario).toBe(42);
+  });
+
+  it("soma o custo por etapa da cadeia, e o que está fora de etapa fica separado", () => {
+    const r = calcularCusteio([
+      item("producao", "Extração", "por_unidade", 30, 1, null, "etapa-mina"),
+      item("pessoal", "Equipe da mina", "por_dia", 5_000, 1, null, "etapa-mina"),
+      item("logistica_interna", "Caminhão até Porto Bush", "por_viagem", 2_400, 1, 30, "etapa-terrestre"),
+      item("administrativo", "Escritório", "por_mes", 30_000),
+    ], p);
+    const porEtapa = Object.fromEntries(r.porEtapa.map((e) => [e.etapaId ?? "sem_etapa", e.valor]));
+    // mina: 30/t de extração + 5.000/dia ÷ 500 t/dia = 10/t → 40/t
+    expect(porEtapa["etapa-mina"]).toBe(40);
+    // terrestre: 2.400 por caminhão de 30 t = 80/t
+    expect(porEtapa["etapa-terrestre"]).toBe(80);
+    // administrativo não pertence a etapa: 30.000/mês ÷ 30 ÷ 500 = 2/t
+    expect(porEtapa["sem_etapa"]).toBe(2);
+    expect(r.custoUnitario).toBe(122);
   });
 
   it("estimativa vazia não quebra", () => {

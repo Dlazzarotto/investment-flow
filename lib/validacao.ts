@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
-  TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  DRIVERS_CUSTO, GRUPOS_CUSTO, MODOS_ESTIMATIVA, TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -109,6 +109,41 @@ export function criarSchemas(d: Dicionario) {
       papel: z.enum(PAPEIS_MEMBRO, enumMsg(v.papelInvalido)),
       dias: z.coerce.number().int().min(1).max(90).catch(7),
       max_usos: z.coerce.number().int().min(1).max(50).catch(1),
+    }),
+    estimativa: z.object({
+      projeto_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
+      commodity: z.string().trim().min(1, v.commodityObrigatorio).max(120, v.nomeLongo),
+      modo: z.enum(MODOS_ESTIMATIVA, enumMsg(v.modoInvalido)),
+      moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
+      unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
+      volume_total: numeroPositivo(v.volume, MAX_QUANTIDADE),
+      producao_diaria: custoOpcional(v.producaoDiaria),
+      dias_mes: z.coerce.number().int().min(1).max(31).catch(30),
+      // 100 % de margem seria preço infinito — o limite é aberto de propósito.
+      margem_alvo_pct: z.coerce.number({ invalid_type_error: v.pctNumero })
+        .min(0, v.pctNegativo).max(99.99, v.margemMax).catch(0),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+    }),
+    estimativaItem: z.object({
+      estimativa_id: uuid,
+      grupo: z.enum(GRUPOS_CUSTO, enumMsg(v.grupoInvalido)),
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
+      driver: z.enum(DRIVERS_CUSTO, enumMsg(v.driverInvalido)),
+      valor: custoOpcional(v.valorDespesa),
+      quantidade: numeroPositivo(v.quantidade, MAX_QUANTIDADE),
+      capacidade: z.union([z.literal(""), z.coerce.number().positive().lt(MAX_QUANTIDADE)])
+        .optional().transform((x) => (typeof x === "number" ? x : null)),
+      origem: z.enum(["manual", "ia"]).catch("manual"),
+      fonte: z.string().trim().max(500).optional().transform((x) => x || null),
+    }).superRefine((i, ctx) => {
+      // O banco repete essas duas travas; aqui a mensagem sai traduzida.
+      if ((i.driver === "pct_custo" || i.driver === "pct_receita") && i.valor > 100) {
+        ctx.addIssue({ code: "custom", path: ["valor"], message: v.pctMax });
+      }
+      if (i.driver === "por_viagem" && i.capacidade === null) {
+        ctx.addIssue({ code: "custom", path: ["capacidade"], message: v.capacidadeObrigatoria });
+      }
     }),
     id: z.object({ id: uuid, projeto_id: uuid }),
     /** Identificador isolado (edição/exclusão de projeto). */

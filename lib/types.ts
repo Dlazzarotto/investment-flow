@@ -235,13 +235,14 @@ export const MODOS_ESTIMATIVA = ["producao_propria", "revenda"] as const;
 export type ModoEstimativa = (typeof MODOS_ESTIMATIVA)[number];
 
 export const GRUPOS_CUSTO = [
-  "producao", "pessoal", "logistica_interna", "porto", "frete", "tributos", "administrativo", "outros",
+  "producao", "pessoal", "manutencao", "arrendamento", "logistica_interna", "porto", "frete",
+  "tributos", "taxas_licencas", "administrativo", "outros",
 ] as const;
 export type GrupoCusto = (typeof GRUPOS_CUSTO)[number];
 
 /** Como o valor do item vira custo por unidade de produto (ver lib/custeio.ts). */
 export const DRIVERS_CUSTO = [
-  "por_unidade", "por_dia", "por_mes", "por_lote", "pct_custo", "pct_receita",
+  "por_unidade", "por_dia", "por_mes", "por_viagem", "por_lote", "pct_custo", "pct_receita",
 ] as const;
 export type DriverCusto = (typeof DRIVERS_CUSTO)[number];
 
@@ -262,14 +263,32 @@ export interface EstimativaCusto {
   atualizado_em: string;
 }
 
+/** Etapa da cadeia (mina → porto → barcaça → porto final → navio). */
+export interface EstimativaEtapa {
+  id: string;
+  estimativa_id: string;
+  ordem: number;
+  nome: string;
+  origem: string | null;
+  destino: string | null;
+  /** País da etapa — define a legislação usada na sugestão de salário. */
+  pais: string | null;
+  observacoes: string | null;
+  criado_em: string;
+}
+
 export interface EstimativaItem {
   id: string;
   estimativa_id: string;
+  /** Null para custo que não pertence a etapa nenhuma (administrativo, tributo). */
+  etapa_id: string | null;
   grupo: GrupoCusto;
   nome: string;
   driver: DriverCusto;
   valor: number;
   quantidade: number;
+  /** Toneladas por viagem; só o driver por_viagem usa. */
+  capacidade: number | null;
   /** 'ia' marca o que o modelo sugeriu e ainda não foi confirmado por gente. */
   origem: "manual" | "ia";
   fonte: string | null;

@@ -30,6 +30,7 @@ export type ParametrosEstimativa = Pick<
 
 export interface ItemCalculado {
   id: string;
+  etapaId: string | null;
   grupo: GrupoCusto;
   nome: string;
   driver: DriverCusto;
@@ -37,7 +38,7 @@ export interface ItemCalculado {
   /** Custo por unidade de produto. Null quando o driver não pode ser convertido. */
   porUnidade: number | null;
   /** Motivo de não ter dado para converter (ex.: produção diária zerada). */
-  impedimento: "sem_producao_diaria" | null;
+  impedimento: "sem_producao_diaria" | "sem_capacidade" | null;
 }
 
 export interface ResultadoCusteio {
@@ -68,6 +69,8 @@ export interface ResultadoCusteio {
   itensIgnorados: ItemCalculado[];
   /** Custo por unidade somado por grupo, para a quebra na tela. */
   porGrupo: { grupo: GrupoCusto; valor: number }[];
+  /** Custo por unidade somado por etapa da cadeia; etapaId null = fora de etapa. */
+  porEtapa: { etapaId: string | null; valor: number }[];
 }
 
 /**
@@ -76,7 +79,7 @@ export interface ResultadoCusteio {
  * por dia, por exemplo. Nesse caso o item não entra na soma e a tela avisa,
  * em vez de silenciosamente virar zero.
  */
-export function converterItem(item: Pick<EstimativaItem, "driver" | "valor" | "quantidade">,
+export function converterItem(item: Pick<EstimativaItem, "driver" | "valor" | "quantidade" | "capacidade">,
                               p: ParametrosEstimativa): { porUnidade: number | null; impedimento: ItemCalculado["impedimento"] } {
   const valor = Number(item.valor) * Number(item.quantidade);
   const producaoDiaria = Number(p.producao_diaria);
@@ -95,6 +98,13 @@ export function converterItem(item: Pick<EstimativaItem, "driver" | "valor" | "q
         ? { porUnidade: porDia / producaoDiaria, impedimento: null }
         : { porUnidade: null, impedimento: "sem_producao_diaria" };
     }
+    case "por_viagem": {
+      // R$ por viagem ÷ toneladas que cabem nela — caminhão, barcaça ou navio.
+      const capacidade = Number(item.capacidade ?? 0);
+      return capacidade > 0
+        ? { porUnidade: valor / capacidade, impedimento: null }
+        : { porUnidade: null, impedimento: "sem_capacidade" };
+    }
     case "por_lote":
       return volume > 0 ? { porUnidade: valor / volume, impedimento: null } : { porUnidade: null, impedimento: null };
     // Percentuais não viram R$/t sozinhos: dependem do custo ou do preço.
@@ -107,7 +117,8 @@ export function converterItem(item: Pick<EstimativaItem, "driver" | "valor" | "q
 export function calcularCusteio(itens: EstimativaItem[], p: ParametrosEstimativa): ResultadoCusteio {
   const calculados: ItemCalculado[] = itens.map((i) => {
     const { porUnidade, impedimento } = converterItem(i, p);
-    return { id: i.id, grupo: i.grupo, nome: i.nome, driver: i.driver, origem: i.origem, porUnidade, impedimento };
+    return { id: i.id, etapaId: i.etapa_id, grupo: i.grupo, nome: i.nome, driver: i.driver,
+             origem: i.origem, porUnidade, impedimento };
   });
 
   const absolutos = calculados.filter((c) => !ehPercentual(c.driver));
@@ -131,9 +142,11 @@ export function calcularCusteio(itens: EstimativaItem[], p: ParametrosEstimativa
   const volume = Number(p.volume_total);
 
   const grupos = new Map<GrupoCusto, number>();
+  const etapas = new Map<string | null, number>();
   for (const c of absolutos) {
     if (c.porUnidade === null) continue;
     grupos.set(c.grupo, (grupos.get(c.grupo) ?? 0) + c.porUnidade);
+    etapas.set(c.etapaId, (etapas.get(c.etapaId) ?? 0) + c.porUnidade);
   }
 
   return {
@@ -153,6 +166,8 @@ export function calcularCusteio(itens: EstimativaItem[], p: ParametrosEstimativa
     porGrupo: [...grupos.entries()]
       .map(([grupo, valor]) => ({ grupo, valor: arred4(valor) }))
       .sort((a, b) => b.valor - a.valor),
+    // Ordem da cadeia é responsabilidade da tela (tem os nomes); aqui só a soma.
+    porEtapa: [...etapas.entries()].map(([etapaId, valor]) => ({ etapaId, valor: arred4(valor) })),
   };
 }
 
