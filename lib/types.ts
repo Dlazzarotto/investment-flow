@@ -229,3 +229,85 @@ export interface ProjetoMembro {
   papel: PapelMembro;
   criado_em: string;
 }
+
+/** Modo da estimativa: produzir e vender, ou comprar e repassar. */
+export const MODOS_ESTIMATIVA = ["producao_propria", "revenda"] as const;
+export type ModoEstimativa = (typeof MODOS_ESTIMATIVA)[number];
+
+export const GRUPOS_CUSTO = [
+  "producao", "pessoal", "manutencao", "arrendamento", "logistica_interna", "porto", "frete",
+  "tributos", "taxas_licencas", "administrativo", "outros",
+] as const;
+export type GrupoCusto = (typeof GRUPOS_CUSTO)[number];
+
+/** Como o valor do item vira custo por unidade de produto (ver lib/custeio.ts). */
+export const DRIVERS_CUSTO = [
+  "por_unidade", "por_dia", "por_mes", "por_viagem", "por_lote", "pct_custo", "pct_receita",
+] as const;
+export type DriverCusto = (typeof DRIVERS_CUSTO)[number];
+
+/**
+ * Uma precificação do projeto. Há várias por projeto: o mesmo projeto vende para
+ * clientes diferentes, cada um com seu lote, sua moeda e sua margem alvo.
+ */
+export interface EstimativaCusto {
+  id: string;
+  projeto_id: string;
+  nome: string;
+  commodity: string;
+  /** Para quem é a proposta; opcional. */
+  cliente: string | null;
+  modo: ModoEstimativa;
+  moeda: Moeda;
+  unidade: string;
+  volume_total: number;
+  producao_diaria: number;
+  dias_mes: number;
+  margem_alvo_pct: number;
+  observacoes: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export const MODAIS_ETAPA = [
+  "extracao", "beneficiamento", "rodoviario", "ferroviario", "fluvial", "maritimo",
+  "portuario", "armazenagem", "documentacao", "outro",
+] as const;
+export type ModalEtapa = (typeof MODAIS_ETAPA)[number];
+
+/**
+ * Etapa da cadeia logística do PROJETO (mina → porto → barcaça → porto final →
+ * navio). A rota é do projeto; o custeio dele percorre sempre as mesmas etapas.
+ */
+export interface ProjetoEtapa {
+  id: string;
+  projeto_id: string;
+  ordem: number;
+  nome: string;
+  modal: ModalEtapa;
+  origem: string | null;
+  destino: string | null;
+  /** País da etapa — define a legislação usada na sugestão de salário. */
+  pais: string | null;
+  observacoes: string | null;
+  criado_em: string;
+}
+
+export interface EstimativaItem {
+  id: string;
+  estimativa_id: string;
+  /** Null para custo que não pertence a etapa nenhuma (administrativo, tributo). */
+  etapa_id: string | null;
+  grupo: GrupoCusto;
+  nome: string;
+  driver: DriverCusto;
+  valor: number;
+  quantidade: number;
+  /** Toneladas por viagem; só o driver por_viagem usa. */
+  capacidade: number | null;
+  /** 'ia' marca o que o modelo sugeriu e ainda não foi confirmado por gente. */
+  origem: "manual" | "ia";
+  fonte: string | null;
+  ordem: number;
+  criado_em: string;
+}

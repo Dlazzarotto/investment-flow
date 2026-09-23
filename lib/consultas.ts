@@ -7,8 +7,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
-  Aporte, CarteiraItem, Convite, Despesa, EstimativaIA, FluxoMensal, Investimento, Organizacao,
-  OrganizacaoMembro, PapelNoProjeto, Participante, Projeto, ProjetoMembro, ResumoProjeto, Venda,
+  Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
+  OrganizacaoMembro, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -191,3 +191,39 @@ export const listarCarteira = cache(async (): Promise<CarteiraItem[]> => {
     saida_total: Number(r.saida_total), saldo: Number(r.saldo), saldo_atribuivel: Number(r.saldo_atribuivel),
   }));
 });
+
+export const listarEstimativas = cache(async (projetoId: string): Promise<EstimativaCusto[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("estimativas_custo").select("*")
+    .eq("projeto_id", projetoId).order("criado_em", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EstimativaCusto[];
+});
+
+/** Estimativa pelo id; 404 quando não existe ou o RLS esconde. */
+export const obterEstimativa = cache(async (id: string): Promise<EstimativaCusto> => {
+  if (!UUID.test(id)) notFound();
+  const supabase = createClient();
+  const { data, error } = await supabase.from("estimativas_custo").select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) notFound();
+  return data as EstimativaCusto;
+});
+
+export const listarItensEstimativa = cache(async (estimativaId: string): Promise<EstimativaItem[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("estimativa_itens").select("*")
+    .eq("estimativa_id", estimativaId).order("grupo").order("ordem").order("criado_em");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EstimativaItem[];
+});
+
+export const listarEtapas = cache(async (projetoId: string): Promise<ProjetoEtapa[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("projeto_etapas").select("*")
+    .eq("projeto_id", projetoId).order("ordem").order("criado_em");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ProjetoEtapa[];
+});
+
+
