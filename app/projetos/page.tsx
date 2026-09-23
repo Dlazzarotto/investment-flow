@@ -27,7 +27,7 @@ export default async function ProjetosPage() {
   const operacionais = projetos.filter((p) => p.owner_id === usuario?.id || !carteira.some((c) => c.projeto_id === p.id));
   if (operacionais.length === 0 && carteira.length > 0 && !org) redirect("/carteira");
   return (
-    <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master}>
+    <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org?.organizacao.nome}>
       {suspenso && (
         <p role="alert" className="mb-6 rounded-md border-l-4 border-loss bg-red-50 px-4 py-3">
           <strong className="text-loss">{d.comum.acessoSuspenso}</strong>

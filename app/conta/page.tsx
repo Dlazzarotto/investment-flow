@@ -1,6 +1,6 @@
 import { Shell } from "@/components/Shell";
 import { FormAlterarSenha } from "@/components/forms/FormAlterarSenha";
-import { ehMaster, listarCarteira, listarProjetos, obterUsuario } from "@/lib/consultas";
+import { ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterUsuario } from "@/lib/consultas";
 import { obterD } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -8,12 +8,12 @@ export const dynamic = "force-dynamic";
 /** Conta do próprio usuário. Ninguém troca a senha de outra pessoa por aqui. */
 export default async function ContaPage() {
   const { d } = obterD();
-  const [projetos, usuario, carteira, master] = await Promise.all([
-    listarProjetos(), obterUsuario(), listarCarteira(), ehMaster(),
+  const [projetos, usuario, carteira, master, org] = await Promise.all([
+    listarProjetos(), obterUsuario(), listarCarteira(), ehMaster(), minhaOrganizacao(),
   ]);
 
   return (
-    <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master}>
+    <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org?.organizacao.nome}>
       <h1 className="text-2xl">{d.conta.titulo}</h1>
       <p className="mt-1 text-stone">{d.conta.subtitulo}</p>
 

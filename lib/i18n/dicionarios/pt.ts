@@ -10,7 +10,7 @@ export const pt = {
     semPermissao: "Sem permissão para esta operação.",
     editar: "Editar", cancelar: "Cancelar", salvar: "Salvar", acoes: "Ações", alteracaoSalva: "Alteração salva.",
   },
-  nav: { conta: "Minha conta", plataforma: "Plataforma", custeio: "Custeio", aportes: "Aportes", carteira: "Minha carteira", dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", despesas: "Despesas", parceria: "Parceria",
+  nav: { geral: "Geral", abrirMenu: "Abrir menu", conta: "Minha conta", plataforma: "Plataforma", custeio: "Custeio", aportes: "Aportes", carteira: "Minha carteira", dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", despesas: "Despesas", parceria: "Parceria",
     projetoAtivo: "Projeto ativo", escolha: "Escolha um projeto…", secoes: "Seções do projeto" },
   login: {
     esqueciSenha: "Esqueci minha senha",
