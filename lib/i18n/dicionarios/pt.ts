@@ -9,7 +9,7 @@ export const pt = {
     semPermissao: "Sem permissão para esta operação.",
     editar: "Editar", cancelar: "Cancelar", salvar: "Salvar", acoes: "Ações", alteracaoSalva: "Alteração salva.",
   },
-  nav: { plataforma: "Plataforma", custeio: "Custeio", aportes: "Aportes", carteira: "Minha carteira", dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", despesas: "Despesas", parceria: "Parceria",
+  nav: { conta: "Minha conta", plataforma: "Plataforma", custeio: "Custeio", aportes: "Aportes", carteira: "Minha carteira", dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", despesas: "Despesas", parceria: "Parceria",
     projetoAtivo: "Projeto ativo", escolha: "Escolha um projeto…", secoes: "Seções do projeto" },
   login: {
     esqueciSenha: "Esqueci minha senha",
@@ -303,6 +303,13 @@ export const pt = {
     contrato: "Contrato", linkAcesso: "Link para o administrador criar o acesso",
     copiado: "Link copiado.", copiar: "Copiar link",
     naoSouMaster: "Esta área é da administração da plataforma.",
+  },
+  conta: {
+    titulo: "Minha conta", subtitulo: "Seu acesso ao sistema.",
+    alterarSenha: "Alterar senha", senhaAtual: "Senha atual",
+    senhaAtualErrada: "Senha atual incorreta.", senhaIgual: "A senha nova precisa ser diferente da atual.",
+    senhaAlterada: "Senha alterada. Ela já vale para os próximos acessos.",
+    dica: "Se você compartilhou sua senha com alguém, troque aqui — a antiga deixa de valer na hora.",
   },
   enums: {
     planoEmpresa: { avaliacao: "Avaliação", boutique: "Boutique (até 10 assentos)", consolidada: "Consolidada (sem teto)" },

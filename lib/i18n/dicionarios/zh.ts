@@ -9,7 +9,7 @@ export const zh: Dicionario = {
     semPermissao: "您没有执行此操作的权限。",
     editar: "编辑", cancelar: "取消", salvar: "保存", acoes: "操作", alteracaoSalva: "修改已保存。",
   },
-  nav: { plataforma: "平台", custeio: "成本核算", aportes: "出资", carteira: "我的投资组合", dashboard: "仪表盘", investimentos: "投资", vendas: "销售", despesas: "费用", parceria: "合作",
+  nav: { conta: "我的账户", plataforma: "平台", custeio: "成本核算", aportes: "出资", carteira: "我的投资组合", dashboard: "仪表盘", investimentos: "投资", vendas: "销售", despesas: "费用", parceria: "合作",
     projetoAtivo: "当前项目", escolha: "选择项目…", secoes: "项目板块" },
   login: {
     esqueciSenha: "忘记密码",
@@ -303,6 +303,13 @@ export const zh: Dicionario = {
     contrato: "套餐", linkAcesso: "供管理员创建账号的链接",
     copiado: "链接已复制。", copiar: "复制链接",
     naoSouMaster: "本区域仅限平台管理方访问。",
+  },
+  conta: {
+    titulo: "我的账户", subtitulo: "您的系统访问权限。",
+    alterarSenha: "修改密码", senhaAtual: "当前密码",
+    senhaAtualErrada: "当前密码不正确。", senhaIgual: "新密码必须与当前密码不同。",
+    senhaAlterada: "密码已修改，下次登录即生效。",
+    dica: "若您曾向他人透露密码，请在此修改 — 旧密码会立即失效。",
   },
   enums: {
     planoEmpresa: { avaliacao: "试用", boutique: "精品版（最多 10 席）", consolidada: "旗舰版（不限席）" },

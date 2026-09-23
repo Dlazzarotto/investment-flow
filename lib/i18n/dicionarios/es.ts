@@ -9,7 +9,7 @@ export const es: Dicionario = {
     semPermissao: "Sin permiso para esta operación.",
     editar: "Editar", cancelar: "Cancelar", salvar: "Guardar", acoes: "Acciones", alteracaoSalva: "Cambio guardado.",
   },
-  nav: { plataforma: "Plataforma", custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
+  nav: { conta: "Mi cuenta", plataforma: "Plataforma", custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
     projetoAtivo: "Proyecto activo", escolha: "Elija un proyecto…", secoes: "Secciones del proyecto" },
   login: {
     esqueciSenha: "Olvidé mi contraseña",
@@ -303,6 +303,13 @@ export const es: Dicionario = {
     contrato: "Contrato", linkAcesso: "Enlace para que el administrador cree su acceso",
     copiado: "Enlace copiado.", copiar: "Copiar enlace",
     naoSouMaster: "Esta área es de la administración de la plataforma.",
+  },
+  conta: {
+    titulo: "Mi cuenta", subtitulo: "Su acceso al sistema.",
+    alterarSenha: "Cambiar contraseña", senhaAtual: "Contraseña actual",
+    senhaAtualErrada: "Contraseña actual incorrecta.", senhaIgual: "La contraseña nueva debe ser distinta de la actual.",
+    senhaAlterada: "Contraseña cambiada. Vale desde el próximo acceso.",
+    dica: "Si compartió su contraseña con alguien, cámbiela aquí — la anterior deja de valer de inmediato.",
   },
   enums: {
     planoEmpresa: { avaliacao: "Evaluación", boutique: "Boutique (hasta 10 asientos)", consolidada: "Consolidada (sin tope)" },

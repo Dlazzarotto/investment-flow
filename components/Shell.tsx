@@ -33,6 +33,7 @@ export function Shell({ projetos, projetoAtual, verInvestimentos = false, temCar
           {temCarteira && (
             <Link href="/carteira" className="btn min-h-touch px-3 text-sm text-white/85 hover:text-white">{d.nav.carteira}</Link>
           )}
+          <Link href="/conta" className="btn min-h-touch px-3 text-sm text-white/85 hover:text-white">{d.nav.conta}</Link>
           <SeletorIdioma atual={locale} />
           <form action={sair}>
             <button type="submit" className="btn min-h-touch px-3 text-sm text-white/80 hover:text-white">{d.comum.sair}</button>

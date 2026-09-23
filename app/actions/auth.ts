@@ -107,3 +107,36 @@ function origemDaRequisicao(): string {
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}`;
 }
+
+/**
+ * Troca a senha de quem já está logado.
+ *
+ * Exige a senha atual de propósito: sem isso, um computador deixado aberto —
+ * ou uma sessão esquecida no celular — basta para tomar a conta, porque a nova
+ * senha invalida o acesso do dono legítimo.
+ */
+export async function alterarSenha(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const atual = String(fd.get("senha_atual") ?? "");
+  const nova = String(fd.get("senha") ?? "");
+  if (nova.length < 6) return { ok: false, erro: d.login.senhaCurta };
+  if (nova !== String(fd.get("repetir") ?? "")) return { ok: false, erro: d.login.senhasDiferentes };
+  if (nova === atual) return { ok: false, erro: d.conta.senhaIgual };
+
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return { ok: false, erro: d.comum.semPermissao };
+
+  // Conferir a senha atual entrando de novo é o caminho que o Supabase oferece;
+  // a sessão resultante é do mesmo usuário, então nada se perde.
+  const { error: erroAtual } = await supabase.auth.signInWithPassword({ email: user.email, password: atual });
+  if (erroAtual) return { ok: false, erro: d.conta.senhaAtualErrada };
+
+  const { error } = await supabase.auth.updateUser({ password: nova });
+  if (error) {
+    if (error.code === "weak_password") return { ok: false, erro: d.login.senhaFraca };
+    if (error.code === "same_password") return { ok: false, erro: d.conta.senhaIgual };
+    return { ok: false, erro: fmtTexto(d.login.falhaCadastro, { msg: error.message }) };
+  }
+  return { ok: true, sucesso: d.conta.senhaAlterada };
+}

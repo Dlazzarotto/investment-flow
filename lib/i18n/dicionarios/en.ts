@@ -9,7 +9,7 @@ export const en: Dicionario = {
     semPermissao: "You don't have permission for this operation.",
     editar: "Edit", cancelar: "Cancel", salvar: "Save", acoes: "Actions", alteracaoSalva: "Change saved.",
   },
-  nav: { plataforma: "Platform", custeio: "Costing", aportes: "Contributions", carteira: "My portfolio", dashboard: "Dashboard", investimentos: "Investments", vendas: "Sales", despesas: "Expenses", parceria: "Partnership",
+  nav: { conta: "My account", plataforma: "Platform", custeio: "Costing", aportes: "Contributions", carteira: "My portfolio", dashboard: "Dashboard", investimentos: "Investments", vendas: "Sales", despesas: "Expenses", parceria: "Partnership",
     projetoAtivo: "Active project", escolha: "Choose a project…", secoes: "Project sections" },
   login: {
     esqueciSenha: "I forgot my password",
@@ -303,6 +303,13 @@ export const en: Dicionario = {
     contrato: "Contract", linkAcesso: "Link for the administrator to create their access",
     copiado: "Link copied.", copiar: "Copy link",
     naoSouMaster: "This area belongs to the platform administration.",
+  },
+  conta: {
+    titulo: "My account", subtitulo: "Your access to the system.",
+    alterarSenha: "Change password", senhaAtual: "Current password",
+    senhaAtualErrada: "Current password is incorrect.", senhaIgual: "The new password must differ from the current one.",
+    senhaAlterada: "Password changed. It applies from your next sign-in.",
+    dica: "If you shared your password with anyone, change it here — the old one stops working immediately.",
   },
   enums: {
     planoEmpresa: { avaliacao: "Trial", boutique: "Boutique (up to 10 seats)", consolidada: "Consolidated (no cap)" },
