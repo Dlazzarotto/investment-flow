@@ -12,7 +12,7 @@ export const es: Dicionario = {
   nav: { custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
     projetoAtivo: "Proyecto activo", escolha: "Elija un proyecto…", secoes: "Secciones del proyecto" },
   login: {
-    marca: "Peace on Tax · herramientas", subtitulo: "Inversiones, ingresos y alianzas por proyecto.",
+    marca: "Investment-Flow System", subtitulo: "Inversiones, ingresos y alianzas por proyecto.",
     email: "Correo electrónico", senha: "Contraseña", entrar: "Entrar", criarConta: "Crear cuenta", verificando: "Verificando…",
     irCadastro: "No tengo cuenta — crear", irEntrar: "Ya tengo cuenta — entrar",
     credenciais: "Correo o contraseña incorrectos.", contaCriada: "Cuenta creada. Confirme el correo recibido para entrar.",

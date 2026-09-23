@@ -12,7 +12,7 @@ export const zh: Dicionario = {
   nav: { custeio: "成本核算", aportes: "出资", carteira: "我的投资组合", dashboard: "仪表盘", investimentos: "投资", vendas: "销售", despesas: "费用", parceria: "合作",
     projetoAtivo: "当前项目", escolha: "选择项目…", secoes: "项目板块" },
   login: {
-    marca: "Peace on Tax · 工具", subtitulo: "按项目管理投资、收入与合作。",
+    marca: "Investment-Flow System", subtitulo: "按项目管理投资、收入与合作。",
     email: "电子邮箱", senha: "密码", entrar: "登录", criarConta: "创建账户", verificando: "验证中…",
     irCadastro: "还没有账户 — 创建", irEntrar: "已有账户 — 登录",
     credenciais: "邮箱或密码错误。", contaCriada: "账户已创建。请确认收到的邮件后登录。",
