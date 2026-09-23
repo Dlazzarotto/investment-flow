@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  EmpresaPlataforma, Fatura, OrganizacaoMembro, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
+  Cliente, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -269,4 +269,23 @@ export const acessoSuspenso = cache(async (): Promise<boolean> => {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("meu_acesso_suspenso");
   return !error && data === true;
+});
+
+/** Clientes da empresa do usuário; vazio quando ele não tem organização. */
+export const listarClientes = cache(async (organizacaoId?: string): Promise<Cliente[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("clientes").select("*")
+    .eq("organizacao_id", organizacaoId).order("nome");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Cliente[];
+});
+
+export const listarFornecedores = cache(async (organizacaoId?: string): Promise<Fornecedor[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("fornecedores").select("*")
+    .eq("organizacao_id", organizacaoId).order("nome");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Fornecedor[];
 });

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
-  DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -35,6 +35,9 @@ export function criarSchemas(d: Dicionario) {
       .catch(0);
   const enumMsg = (msg: string) => ({ errorMap: () => ({ message: msg }) });
   const uuid = z.string().uuid(v.idInvalido);
+  /** Campo de texto opcional: vazio vira null em vez de string em branco. */
+  const textoOpcional = (max: number) =>
+    z.string().trim().max(max, v.nomeLongo).optional().transform((x) => x || null);
 
   return {
     projeto: z.object({
@@ -155,6 +158,35 @@ export function criarSchemas(d: Dicionario) {
       pais: z.string().trim().max(80, v.nomeLongo).optional().transform((x) => x || null),
       ordem: z.coerce.number().int().min(0).max(999).catch(0),
       observacoes: z.string().trim().max(1000, v.descricaoLonga).optional().transform((x) => x || null),
+    }),
+    cliente: z.object({
+      organizacao_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
+      // Vem de checkboxes, então chega como lista; nenhum tipo marcado é válido.
+      tipos: z.array(z.enum(TIPOS_CLIENTE, enumMsg(v.tipoClienteInvalido))).default([]),
+      documento: textoOpcional(40),
+      email: z.string().trim().max(320, v.nomeLongo).optional().transform((x) => x || null)
+        .refine((x) => x === null || z.string().email().safeParse(x).success, v.emailInvalido),
+      telefone: textoOpcional(40),
+      pais: textoOpcional(80),
+      endereco: textoOpcional(300),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+      ativo: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
+    }),
+    fornecedor: z.object({
+      organizacao_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
+      servico: z.enum(GRUPOS_CUSTO, enumMsg(v.grupoInvalido)),
+      // Vazio = não transporta; o modal só faz sentido para quem leva carga.
+      modal: z.union([z.literal(""), z.enum(MODAIS_ETAPA)]).optional()
+        .transform((x) => (x ? x : null)),
+      documento: textoOpcional(40),
+      email: z.string().trim().max(320, v.nomeLongo).optional().transform((x) => x || null)
+        .refine((x) => x === null || z.string().email().safeParse(x).success, v.emailInvalido),
+      telefone: textoOpcional(40),
+      pais: textoOpcional(80),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+      ativo: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
     }),
     empresa: z.object({
       nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),

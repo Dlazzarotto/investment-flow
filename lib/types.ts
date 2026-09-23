@@ -380,3 +380,46 @@ export interface PainelPlataforma {
   em_atraso: number;
   recebido_mes: number;
 }
+
+/**
+ * Cadastros comerciais da EMPRESA (0014). São da organização e não do projeto:
+ * o mesmo comprador aparece em vários embarques, e repetir o cadastro por
+ * projeto seria garantir que os dados divergem.
+ */
+export const TIPOS_CLIENTE = ["investidor", "comprador", "vendedor", "monetizador"] as const;
+export type TipoCliente = (typeof TIPOS_CLIENTE)[number];
+
+export interface Cliente {
+  id: string;
+  organizacao_id: string;
+  nome: string;
+  /** Um cliente pode ser mais de uma coisa — quem compra também investe. */
+  tipos: TipoCliente[];
+  documento: string | null;
+  email: string | null;
+  telefone: string | null;
+  pais: string | null;
+  endereco: string | null;
+  observacoes: string | null;
+  ativo: boolean;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface Fornecedor {
+  id: string;
+  organizacao_id: string;
+  nome: string;
+  /** O que fornece, no mesmo vocabulário do custeio. */
+  servico: GrupoCusto;
+  /** Só para quem transporta; null nos demais. */
+  modal: ModalEtapa | null;
+  documento: string | null;
+  email: string | null;
+  telefone: string | null;
+  pais: string | null;
+  observacoes: string | null;
+  ativo: boolean;
+  criado_em: string;
+  atualizado_em: string;
+}
