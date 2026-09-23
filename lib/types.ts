@@ -311,3 +311,27 @@ export interface EstimativaItem {
   ordem: number;
   criado_em: string;
 }
+
+/** Faixas de licenciamento da plataforma (0009). */
+export const PLANOS_EMPRESA = ["avaliacao", "boutique", "consolidada"] as const;
+export type PlanoEmpresa = (typeof PLANOS_EMPRESA)[number];
+
+/**
+ * Uma empresa vista pelo master (public.empresas_da_plataforma()).
+ * Traz CONTAGEM, nunca conteúdo: quantos projetos existem, não quais.
+ */
+export interface EmpresaPlataforma {
+  id: string;
+  nome: string;
+  plano: PlanoEmpresa;
+  /** null = sem teto de assentos. */
+  assentos: number | null;
+  ativa: boolean;
+  vigencia_ate: string | null;
+  /** ativa e dentro da vigência. */
+  em_dia: boolean;
+  assentos_usados: number;
+  projetos: number;
+  admins: string[];
+  criado_em: string;
+}

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
-  DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -155,6 +155,25 @@ export function criarSchemas(d: Dicionario) {
       pais: z.string().trim().max(80, v.nomeLongo).optional().transform((x) => x || null),
       ordem: z.coerce.number().int().min(0).max(999).catch(0),
       observacoes: z.string().trim().max(1000, v.descricaoLonga).optional().transform((x) => x || null),
+    }),
+    empresa: z.object({
+      nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),
+      email_adm: z.string().trim().toLowerCase().email(v.emailInvalido).max(320, v.nomeLongo),
+      plano: z.enum(PLANOS_EMPRESA, enumMsg(v.planoInvalido)),
+      // Vazio = sem teto de assentos, que é a faixa consolidada.
+      assentos: z.union([z.literal(""), z.coerce.number().int().min(1).max(10_000)])
+        .optional().transform((x) => (typeof x === "number" ? x : null)),
+      vigencia_ate: z.union([z.literal(""), z.string().refine(ehDataISO, v.dataInvalida)])
+        .optional().transform((x) => x || null),
+    }),
+    contrato: z.object({
+      id: uuid,
+      plano: z.enum(PLANOS_EMPRESA, enumMsg(v.planoInvalido)),
+      assentos: z.union([z.literal(""), z.coerce.number().int().min(1).max(10_000)])
+        .optional().transform((x) => (typeof x === "number" ? x : null)),
+      ativa: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
+      vigencia_ate: z.union([z.literal(""), z.string().refine(ehDataISO, v.dataInvalida)])
+        .optional().transform((x) => x || null),
     }),
     id: z.object({ id: uuid, projeto_id: uuid }),
     /** Identificador isolado (edição/exclusão de projeto). */
