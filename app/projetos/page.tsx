@@ -4,7 +4,7 @@ import { Shell } from "@/components/Shell";
 import { FormProjeto } from "@/components/forms/FormProjeto";
 import { Vazio } from "@/components/ui/Vazio";
 import { criarProjeto } from "@/app/actions/projetos";
-import { listarCarteira, listarProjetos, minhaOrganizacao, obterUsuario } from "@/lib/consultas";
+import { ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterUsuario } from "@/lib/consultas";
 import { FormAdicionarSocio, FormCriarOrganizacao } from "@/components/forms/FormOrganizacao";
 import { BotaoRemoverSocio } from "@/components/BotaoRemoverSocio";
 import { obterD } from "@/lib/i18n/server";
@@ -16,7 +16,9 @@ export const dynamic = "force-dynamic";
 export default async function ProjetosPage() {
   const { locale, d } = obterD();
   const f = formatadores(locale);
-  const [projetos, usuario, org, carteira] = await Promise.all([listarProjetos(), obterUsuario(), minhaOrganizacao(), listarCarteira()]);
+  const [projetos, usuario, org, carteira, master] = await Promise.all([
+    listarProjetos(), obterUsuario(), minhaOrganizacao(), listarCarteira(), ehMaster(),
+  ]);
   const emailAtual = (usuario?.email ?? "").trim().toLowerCase();
   // Quem só é investidor (nenhum projeto operacional próprio ou compartilhado) vive na carteira.
   // Projeto que você criou conta sempre: o dono pode estar em participantes para
@@ -24,7 +26,7 @@ export default async function ProjetosPage() {
   const operacionais = projetos.filter((p) => p.owner_id === usuario?.id || !carteira.some((c) => c.projeto_id === p.id));
   if (operacionais.length === 0 && carteira.length > 0 && !org) redirect("/carteira");
   return (
-    <Shell projetos={projetos} temCarteira={carteira.length > 0}>
+    <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master}>
       <h1 className="text-2xl">{d.projetos.titulo}</h1>
       <p className="mt-1 text-stone">{d.projetos.subtitulo}</p>
       <section className="secao">

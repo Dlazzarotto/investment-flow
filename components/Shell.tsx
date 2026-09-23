@@ -8,8 +8,9 @@ import { NavProjeto } from "./NavProjeto";
 import type { Projeto } from "@/lib/types";
 
 /** Barra superior navy com seletor global de projeto, idioma e abas; área de conteúdo. */
-export function Shell({ projetos, projetoAtual, verInvestimentos = false, temCarteira = false, children }:
-  { projetos: Projeto[]; projetoAtual?: Projeto; verInvestimentos?: boolean; temCarteira?: boolean; children: React.ReactNode }) {
+export function Shell({ projetos, projetoAtual, verInvestimentos = false, temCarteira = false, ehMaster = false, children }:
+  { projetos: Projeto[]; projetoAtual?: Projeto; verInvestimentos?: boolean; temCarteira?: boolean;
+    ehMaster?: boolean; children: React.ReactNode }) {
   const { locale, d } = obterD();
   return (
     <div className="min-h-screen">
@@ -26,6 +27,9 @@ export function Shell({ projetos, projetoAtual, verInvestimentos = false, temCar
           <div className="min-w-0 flex-1">
             {projetos.length > 0 && <SeletorProjeto projetos={projetos} atualId={projetoAtual?.id} />}
           </div>
+          {ehMaster && (
+            <Link href="/master" className="btn min-h-touch px-3 text-sm text-white/85 hover:text-white">{d.nav.plataforma}</Link>
+          )}
           {temCarteira && (
             <Link href="/carteira" className="btn min-h-touch px-3 text-sm text-white/85 hover:text-white">{d.nav.carteira}</Link>
           )}

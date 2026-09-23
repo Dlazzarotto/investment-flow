@@ -25,11 +25,16 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      itens de custo com driver de rateio; pode_ver_custeio() exclui o investidor)
                        0009_plataforma_empresa_historico.sql (conta master, empresa com plano/assentos/logo,
                                                      trava de contrato, trilha de auditoria) — etapa 1 da v4
+                       0010_master_empresas.sql (master cria empresa e senta o ADM: criar_empresa(),
+                                                     empresas_da_plataforma())
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
                        preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
+app/master/            painel da plataforma: liberar empresa, contrato (plano/assentos/vigência), administradores
+app/login, /criar-conta, /esqueci-senha, /redefinir-senha, /auth/confirmar, /convite/[token]
+                       telas de fora da aplicação; todas usam components/MolduraEntrada
 app/api/export/[id]    CSV/XLSX no idioma atual;  app/api/ia/estimar  POST valor médio de mercado
 app/api/ia/custo       POST custo de cargo (pela legislação do país da etapa) ou de serviço, já na base do driver
 lib/i18n/              config.ts, dicionarios/{pt,en,es,zh}.ts, server.ts (obterD), client.tsx (useI18n)

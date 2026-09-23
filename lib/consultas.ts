@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  OrganizacaoMembro, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
+  EmpresaPlataforma, OrganizacaoMembro, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -227,3 +227,19 @@ export const listarEtapas = cache(async (projetoId: string): Promise<ProjetoEtap
 });
 
 
+
+/** O usuário é da administração da plataforma? (public.eh_master) */
+export const ehMaster = cache(async (): Promise<boolean> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("eh_master");
+  // Falha aqui não é motivo para quebrar a tela: sem master, só não aparece o link.
+  return !error && data === true;
+});
+
+/** Painel do master: uma linha por empresa, com contrato e uso. */
+export const listarEmpresas = cache(async (): Promise<EmpresaPlataforma[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("empresas_da_plataforma");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmpresaPlataforma[];
+});
