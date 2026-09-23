@@ -259,3 +259,14 @@ export const listarFaturas = cache(async (): Promise<Fatura[]> => {
   if (error) throw new Error(error.message);
   return (data ?? []) as Fatura[];
 });
+
+/**
+ * O acesso está suspenso por contrato? A tela precisa saber para EXPLICAR:
+ * sem isso, a suspensão aparece como lista vazia e o cliente pensa que perdeu
+ * os dados.
+ */
+export const acessoSuspenso = cache(async (): Promise<boolean> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("meu_acesso_suspenso");
+  return !error && data === true;
+});

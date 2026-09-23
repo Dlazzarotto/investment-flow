@@ -2,6 +2,7 @@ import type { Dicionario } from "./pt";
 export const zh: Dicionario = {
   meta: { titulo: "Investment-Flow System", descricao: "按项目管理投资、收入与合作" },
   comum: {
+    acessoSuspenso: "访问已暂停", acessoSuspensoTexto: "该公司的套餐已暂停或已过期。历史数据仍在，但在结清前无法录入或修改任何内容。", 
     app: "投资", sair: "退出", idioma: "语言", salvando: "保存中…", excluir: "删除", remover: "移除",
     total: "合计", data: "日期", categoria: "类别", unidade: "单位", contato: "联系方式", nome: "名称",
     verProjetos: "查看我的项目", tentarDeNovo: "重试", erroTitulo: "出了点问题",

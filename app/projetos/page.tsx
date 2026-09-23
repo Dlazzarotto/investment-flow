@@ -4,7 +4,7 @@ import { Shell } from "@/components/Shell";
 import { FormProjeto } from "@/components/forms/FormProjeto";
 import { Vazio } from "@/components/ui/Vazio";
 import { criarProjeto } from "@/app/actions/projetos";
-import { ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterUsuario } from "@/lib/consultas";
+import { acessoSuspenso, ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterUsuario } from "@/lib/consultas";
 import { FormAdicionarSocio, FormCriarOrganizacao } from "@/components/forms/FormOrganizacao";
 import { BotaoRemoverSocio } from "@/components/BotaoRemoverSocio";
 import { obterD } from "@/lib/i18n/server";
@@ -19,6 +19,7 @@ export default async function ProjetosPage() {
   const [projetos, usuario, org, carteira, master] = await Promise.all([
     listarProjetos(), obterUsuario(), minhaOrganizacao(), listarCarteira(), ehMaster(),
   ]);
+  const suspenso = await acessoSuspenso();
   const emailAtual = (usuario?.email ?? "").trim().toLowerCase();
   // Quem só é investidor (nenhum projeto operacional próprio ou compartilhado) vive na carteira.
   // Projeto que você criou conta sempre: o dono pode estar em participantes para
@@ -27,6 +28,12 @@ export default async function ProjetosPage() {
   if (operacionais.length === 0 && carteira.length > 0 && !org) redirect("/carteira");
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master}>
+      {suspenso && (
+        <p role="alert" className="mb-6 rounded-md border-l-4 border-loss bg-red-50 px-4 py-3">
+          <strong className="text-loss">{d.comum.acessoSuspenso}</strong>
+          <span className="mt-1 block">{d.comum.acessoSuspensoTexto}</span>
+        </p>
+      )}
       <h1 className="text-2xl">{d.projetos.titulo}</h1>
       <p className="mt-1 text-stone">{d.projetos.subtitulo}</p>
       <section className="secao">

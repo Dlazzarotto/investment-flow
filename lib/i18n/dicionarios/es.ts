@@ -2,6 +2,7 @@ import type { Dicionario } from "./pt";
 export const es: Dicionario = {
   meta: { titulo: "Investment-Flow System", descricao: "Inversiones, ingresos y alianzas por proyecto" },
   comum: {
+    acessoSuspenso: "Acceso suspendido", acessoSuspensoTexto: "El contrato de esta empresa está suspendido o con la vigencia vencida. El historial sigue aquí, pero no se puede registrar ni modificar nada hasta regularizar.", 
     app: "Aportes", sair: "Salir", idioma: "Idioma", salvando: "Guardando…", excluir: "Eliminar", remover: "Quitar",
     total: "Total", data: "Fecha", categoria: "Categoría", unidade: "Unidad", contato: "Contacto", nome: "Nombre",
     verProjetos: "Ver mis proyectos", tentarDeNovo: "Intentar de nuevo", erroTitulo: "Algo salió mal",
