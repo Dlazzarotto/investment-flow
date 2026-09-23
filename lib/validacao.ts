@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
-  DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -166,9 +166,22 @@ export function criarSchemas(d: Dicionario) {
       vigencia_ate: z.union([z.literal(""), z.string().refine(ehDataISO, v.dataInvalida)])
         .optional().transform((x) => x || null),
     }),
+    fatura: z.object({
+      organizacao_id: uuid,
+      tipo: z.enum(TIPOS_FATURA, enumMsg(v.tipoFaturaInvalido)),
+      competencia: dataISO,
+      descricao: z.string().trim().max(200, v.nomeLongo).optional().transform((x) => x || null),
+      valor: numeroPositivo(v.valor, MAX_VALOR),
+      moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
+      vencimento: dataISO,
+    }),
     contrato: z.object({
       id: uuid,
       plano: z.enum(PLANOS_EMPRESA, enumMsg(v.planoInvalido)),
+      mensalidade: custoOpcional(v.mensalidade),
+      setup: custoOpcional(v.setup),
+      moeda_cobranca: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
+      dia_vencimento: z.coerce.number().int().min(1).max(28).catch(10),
       assentos: z.union([z.literal(""), z.coerce.number().int().min(1).max(10_000)])
         .optional().transform((x) => (typeof x === "number" ? x : null)),
       ativa: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),

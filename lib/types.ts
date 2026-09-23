@@ -330,8 +330,53 @@ export interface EmpresaPlataforma {
   vigencia_ate: string | null;
   /** ativa e dentro da vigência. */
   em_dia: boolean;
+  /** Tem fatura vencida e em aberto. */
+  em_debito: boolean;
   assentos_usados: number;
   projetos: number;
   admins: string[];
+  mensalidade: number;
+  setup: number;
+  moeda_cobranca: Moeda;
+  dia_vencimento: number;
+  /** Soma das faturas em aberto, vencidas ou não. */
+  aberto: number;
+  /** A parte de `aberto` que já venceu. */
+  atrasado: number;
+  proximo_vencimento: string | null;
   criado_em: string;
+}
+
+export const TIPOS_FATURA = ["mensalidade", "setup", "outro"] as const;
+export type TipoFatura = (typeof TIPOS_FATURA)[number];
+
+/** Uma cobrança da plataforma a uma empresa (0011). */
+export interface Fatura {
+  id: string;
+  organizacao_id: string;
+  tipo: TipoFatura;
+  /** Mês de referência, sempre no dia 1 (trigger do banco). */
+  competencia: string;
+  descricao: string | null;
+  valor: number;
+  moeda: Moeda;
+  vencimento: string;
+  /** null = em aberto. */
+  pago_em: string | null;
+  criado_em: string;
+}
+
+/**
+ * Panorama macro da plataforma, UMA LINHA POR MOEDA — somar BRL com USD num
+ * número só daria um valor que não existe. As contagens repetem em toda linha.
+ */
+export interface PainelPlataforma {
+  moeda: Moeda;
+  ativas: number;
+  inativas: number;
+  em_debito: number;
+  contrato_mensal: number;
+  a_receber: number;
+  em_atraso: number;
+  recebido_mes: number;
 }

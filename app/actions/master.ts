@@ -78,3 +78,60 @@ export async function removerAdmin(fd: FormData): Promise<void> {
   if (error) throw new Error(traduzirErroBanco(error, "empresa", d));
   revalidatePath("/master");
 }
+
+// ---------------------------------------------------------------------------
+// Faturamento
+// ---------------------------------------------------------------------------
+
+export async function criarFatura(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).fatura.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+
+  const supabase = createClient();
+  const { error } = await supabase.from("faturas").insert(parsed.data);
+  // 23505: já existe a mensalidade daquele mês — o índice único é quem garante.
+  if (error) return { ok: false, erro: error.code === "23505" ? d.master.faturaDuplicada : traduzirErroBanco(error, "fatura", d) };
+
+  revalidatePath("/master");
+  return { ok: true, sucesso: d.master.faturaCriada };
+}
+
+/** Liga e desliga a baixa: informar o pagamento e desfazer usam o mesmo caminho. */
+export async function alternarPagamento(fd: FormData): Promise<void> {
+  const { d } = obterD();
+  const schemas = criarSchemas(d);
+  const id = schemas.uuid.safeParse(fd.get("id"));
+  if (!id.success) return;
+  const pagar = String(fd.get("pago") ?? "") === "1";
+
+  const supabase = createClient();
+  const { error } = await supabase.from("faturas")
+    .update({ pago_em: pagar ? String(fd.get("hoje") ?? "").slice(0, 10) || null : null })
+    .eq("id", id.data);
+  if (error) throw new Error(traduzirErroBanco(error, "fatura", d));
+  revalidatePath("/master");
+}
+
+export async function excluirFatura(fd: FormData): Promise<void> {
+  const { d } = obterD();
+  const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
+  if (!id.success) return;
+  const supabase = createClient();
+  const { error } = await supabase.from("faturas").delete().eq("id", id.data);
+  if (error) throw new Error(traduzirErroBanco(error, "fatura", d));
+  revalidatePath("/master");
+}
+
+/** Emite a mensalidade do mês de quem está em dia. Rodar duas vezes não duplica. */
+export async function gerarMensalidades(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const competencia = String(fd.get("competencia") ?? "").slice(0, 10) || null;
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("gerar_mensalidades",
+    competencia ? { p_competencia: competencia } : {});
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "fatura", d) };
+
+  revalidatePath("/master");
+  return { ok: true, sucesso: fmtTexto(d.master.mensalidadesGeradas, { n: Number(data ?? 0) }) };
+}

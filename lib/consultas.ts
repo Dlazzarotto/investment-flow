@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  EmpresaPlataforma, OrganizacaoMembro, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
+  EmpresaPlataforma, Fatura, OrganizacaoMembro, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -242,4 +242,20 @@ export const listarEmpresas = cache(async (): Promise<EmpresaPlataforma[]> => {
   const { data, error } = await supabase.rpc("empresas_da_plataforma");
   if (error) throw new Error(error.message);
   return (data ?? []) as EmpresaPlataforma[];
+});
+
+/** Panorama macro da plataforma (uma linha por moeda). */
+export const obterPainelPlataforma = cache(async (): Promise<PainelPlataforma[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("painel_plataforma");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PainelPlataforma[];
+});
+
+/** Todas as faturas, para a tela agrupar por empresa sem uma consulta por ficha. */
+export const listarFaturas = cache(async (): Promise<Fatura[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("faturas").select("*").order("vencimento", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Fatura[];
 });
