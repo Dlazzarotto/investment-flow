@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { FormEmpresa } from "@/components/master/FormEmpresa";
-import { CartaoEmpresa } from "@/components/master/CartaoEmpresa";
-import { Vazio } from "@/components/ui/Vazio";
-import { ehMaster, listarEmpresas, listarProjetos } from "@/lib/consultas";
+import { PainelMaster } from "@/components/master/PainelMaster";
+import { ehMaster, listarEmpresas, listarFaturas, listarProjetos, obterPainelPlataforma } from "@/lib/consultas";
 import { obterD } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +16,9 @@ export default async function MasterPage() {
   const { d } = obterD();
   if (!(await ehMaster())) notFound();
 
-  const [empresas, projetos] = await Promise.all([listarEmpresas(), listarProjetos()]);
+  const [empresas, projetos, painel, faturas] = await Promise.all([
+    listarEmpresas(), listarProjetos(), obterPainelPlataforma(), listarFaturas(),
+  ]);
   const t = d.master;
 
   return (
@@ -25,20 +26,11 @@ export default async function MasterPage() {
       <h1 className="text-2xl">{t.titulo}</h1>
       <p className="mt-1 text-stone">{t.subtitulo}</p>
 
+      <PainelMaster painel={painel} empresas={empresas} faturas={faturas} />
+
       <section className="secao">
         <h2>{t.nova}</h2>
         <FormEmpresa />
-      </section>
-
-      <section className="secao">
-        <h2>{t.lista}</h2>
-        {empresas.length === 0 ? (
-          <Vazio titulo={t.vazioTitulo} texto={t.vazioTexto} />
-        ) : (
-          <div className="grid gap-4">
-            {empresas.map((e) => <CartaoEmpresa key={e.id} empresa={e} />)}
-          </div>
-        )}
       </section>
     </Shell>
   );

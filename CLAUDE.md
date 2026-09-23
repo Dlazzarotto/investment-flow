@@ -27,12 +27,15 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      trava de contrato, trilha de auditoria) — etapa 1 da v4
                        0010_master_empresas.sql (master cria empresa e senta o ADM: criar_empresa(),
                                                      empresas_da_plataforma())
+                       0011_faturamento_plataforma.sql (mensalidade/setup/vencimento na empresa, tabela faturas,
+                                                     painel_plataforma() por moeda, gerar_mensalidades())
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
                        preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
-app/master/            painel da plataforma: liberar empresa, contrato (plano/assentos/vigência), administradores
+app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
+                       clicável filtra a lista), liberar empresa, contrato, faturas e administradores
 app/login, /criar-conta, /esqueci-senha, /redefinir-senha, /auth/confirmar, /convite/[token]
                        telas de fora da aplicação; todas usam components/MolduraEntrada
 app/api/export/[id]    CSV/XLSX no idioma atual;  app/api/ia/estimar  POST valor médio de mercado
@@ -120,6 +123,11 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   valor) em vez de ter descrição livre: o nome fica do outro lado da chave, onde o RLS não deixa ele chegar.
   Consequência de ordem: **fornecedores precisam existir antes de a visão do investidor ser liberada.**
 - **Histórico desde já** (`historico` + `tg_historico`): o que não foi gravado no dia não volta.
+- **Dinheiro é somado por moeda.** `painel_plataforma()` devolve UMA LINHA POR MOEDA; somar BRL com USD num
+  widget só dá um número que não existe. Com uma moeda só, a tela lê a primeira linha e fica igual a um painel
+  simples. BRL sempre entra na lista, senão o painel sem empresas devolveria zero linhas e a tela ficaria branca.
+- **Migrations com função usam delimitador nomeado** (`$fn$`, `$ck$`), nunca `$$`: o editor de SQL do Supabase
+  quebra a instrução no primeiro `;` de dentro do corpo e devolve "unterminated dollar-quoted string".
 
 ### Custeio — cálculo reverso (0008, etapa 1 fechada)
 

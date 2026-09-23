@@ -1,44 +1,62 @@
 "use client";
 import { useState } from "react";
-import { adicionarAdmin, atualizarContrato, removerAdmin } from "@/app/actions/master";
+import {
+  adicionarAdmin, alternarPagamento, atualizarContrato, excluirFatura, removerAdmin,
+} from "@/app/actions/master";
+import { FormFatura } from "./FormFatura";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
+import { useHoje } from "@/components/ui/useHoje";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
-import { PLANOS_EMPRESA, type EmpresaPlataforma } from "@/lib/types";
+import { MOEDAS, PLANOS_EMPRESA, type EmpresaPlataforma, type Fatura } from "@/lib/types";
 
-/** Uma empresa: contrato, uso e quem administra. */
-export function CartaoEmpresa({ empresa: e }: { empresa: EmpresaPlataforma }) {
+/** Uma empresa: contrato, cobrança, uso e quem administra. */
+export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlataforma; faturas: Fatura[] }) {
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const t = d.master;
-  const [aberto, setAberto] = useState(false);
+  const [aba, setAba] = useState<"nenhuma" | "contrato" | "faturas">("nenhuma");
 
   const vencida = !e.em_dia && e.ativa;
   const uso = e.assentos === null ? `${e.assentos_usados} / ${t.semTeto}` : `${e.assentos_usados} / ${e.assentos}`;
   const cheio = e.assentos !== null && e.assentos_usados >= e.assentos;
 
   return (
-    <article className="rounded-md border border-stone-light bg-white p-4">
+    <article className={`rounded-md border bg-white p-4 ${e.em_debito ? "border-loss" : "border-stone-light"}`}>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-lg text-navy">{e.nome}</h3>
           <p className="text-stone">
             {d.enums.planoEmpresa[e.plano]}
+            {Number(e.mensalidade) > 0
+              ? ` · ${f.moeda(Number(e.mensalidade), e.moeda_cobranca)}/${t.mensalidade.toLowerCase()}`
+              : ` · ${t.semCobranca}`}
             {e.vigencia_ate && ` · ${t.vigencia} ${f.data(e.vigencia_ate)}`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {!e.ativa && <Selo texto={t.suspensa} tom="loss" />}
-          {vencida && <Selo texto={t.vencida} tom="loss" />}
+          {!e.ativa && <Selo texto={t.suspensa} />}
+          {vencida && <Selo texto={t.vencida} />}
+          {e.em_debito && <Selo texto={t.emDebito} />}
           <p className="text-stone">
             {t.uso}: <span className={`num font-semibold ${cheio ? "text-loss" : "text-navy"}`}>{uso}</span>
           </p>
           <p className="text-stone">{t.projetos}: <span className="num font-semibold text-navy">{e.projetos}</span></p>
         </div>
       </header>
+
+      {Number(e.aberto) > 0 && (
+        <p className="mt-3 text-stone">
+          {t.aberto}: <span className="num font-semibold text-navy">{f.moeda(Number(e.aberto), e.moeda_cobranca)}</span>
+          {Number(e.atrasado) > 0 && (
+            <> · {t.emAtraso}: <span className="num font-semibold text-loss">{f.moeda(Number(e.atrasado), e.moeda_cobranca)}</span></>
+          )}
+          {e.proximo_vencimento && <> · {t.proximoVencimento}: <span className="num">{f.data(e.proximo_vencimento)}</span></>}
+        </p>
+      )}
 
       <div className="mt-4 border-t border-stone-light pt-4">
         <p className="text-sm font-semibold text-navy">{t.admins}</p>
@@ -58,22 +76,91 @@ export function CartaoEmpresa({ empresa: e }: { empresa: EmpresaPlataforma }) {
         <FormAdmin organizacaoId={e.id} />
       </div>
 
-      <div className="mt-4 border-t border-stone-light pt-4">
-        {aberto ? (
-          <FormContrato empresa={e} aoFechar={() => setAberto(false)} />
-        ) : (
-          <button type="button" className="btn-quieto" onClick={() => setAberto(true)}>{t.contrato}</button>
-        )}
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-stone-light pt-4">
+        <button type="button" className="btn-quieto"
+                onClick={() => setAba(aba === "contrato" ? "nenhuma" : "contrato")}>{t.contrato}</button>
+        <button type="button" className="btn-quieto"
+                onClick={() => setAba(aba === "faturas" ? "nenhuma" : "faturas")}>
+          {t.faturas} ({faturas.length})
+        </button>
       </div>
+
+      {aba === "contrato" && <div className="mt-4"><FormContrato empresa={e} aoFechar={() => setAba("nenhuma")} /></div>}
+      {aba === "faturas" && <Faturas empresa={e} faturas={faturas} />}
     </article>
   );
 }
 
-function Selo({ texto, tom }: { texto: string; tom: "loss" | "gain" }) {
+function Selo({ texto }: { texto: string }) {
+  return <span className="rounded bg-red-50 px-2 py-0.5 text-sm text-loss">{texto}</span>;
+}
+
+function Faturas({ empresa: e, faturas }: { empresa: EmpresaPlataforma; faturas: Fatura[] }) {
+  const { d, locale } = useI18n();
+  const f = formatadores(locale);
+  const t = d.master;
+  const hoje = useHoje();
+
   return (
-    <span className={`rounded px-2 py-0.5 text-sm ${tom === "loss" ? "bg-red-50 text-loss" : "bg-green-50 text-gain"}`}>
-      {texto}
-    </span>
+    <div className="mt-4">
+      {faturas.length === 0 ? (
+        <p className="text-stone">{t.semFaturas}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="tabela">
+            <thead>
+              <tr>
+                <th>{t.competencia}</th><th>{t.tipoFatura}</th><th>{t.vencimento}</th>
+                <th className="num">{t.valorFatura}</th><th>{d.comum.acoes}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {faturas.map((x) => {
+                const pago = x.pago_em !== null;
+                const atrasada = !pago && x.vencimento < hoje;
+                return (
+                  <tr key={x.id}>
+                    <td className="whitespace-nowrap">{f.mesLongo(x.competencia)}</td>
+                    <td>
+                      {d.enums.tipoFatura[x.tipo]}
+                      {x.descricao && <span className="block text-sm text-stone">{x.descricao}</span>}
+                    </td>
+                    <td className="whitespace-nowrap">
+                      {f.data(x.vencimento)}
+                      <span className={`block text-sm ${pago ? "text-gain" : atrasada ? "text-loss" : "text-stone"}`}>
+                        {pago ? `${t.pago} ${f.data(x.pago_em!)}` : atrasada ? t.vencido : t.emAberto}
+                      </span>
+                    </td>
+                    <td className="num font-semibold">{f.moeda(Number(x.valor), x.moeda)}</td>
+                    <td>
+                      <div className="flex flex-wrap gap-2">
+                        <form action={alternarPagamento}>
+                          <input type="hidden" name="id" value={x.id} />
+                          <input type="hidden" name="pago" value={pago ? "0" : "1"} />
+                          <input type="hidden" name="hoje" value={hoje} />
+                          <button type="submit" className="btn-quieto px-3">
+                            {pago ? t.desfazerPago : t.marcarPago}
+                          </button>
+                        </form>
+                        <form action={excluirFatura}
+                              onSubmit={(ev) => {
+                                const msg = fmtTexto(t.excluirFaturaConfirma, { valor: f.moeda(Number(x.valor), x.moeda) });
+                                if (!window.confirm(msg)) ev.preventDefault();
+                              }}>
+                          <input type="hidden" name="id" value={x.id} />
+                          <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <FormFatura organizacaoId={e.id} moedaPadrao={e.moeda_cobranca} diaVencimento={e.dia_vencimento} />
+    </div>
   );
 }
 
@@ -116,6 +203,27 @@ function FormContrato({ empresa: e, aoFechar }: { empresa: EmpresaPlataforma; ao
         <label className="rotulo" htmlFor={`vigencia-${e.id}`}>{t.vigencia}</label>
         <input id={`vigencia-${e.id}`} name="vigencia_ate" type="date" className="campo"
                defaultValue={e.vigencia_ate ?? ""} />
+      </div>
+      <div className="sm:col-span-2">
+        <label className="rotulo" htmlFor={`mensalidade-${e.id}`}>{t.mensalidade}</label>
+        <input id={`mensalidade-${e.id}`} name="mensalidade" type="number" inputMode="decimal" min="0" step="0.01"
+               className="campo num" defaultValue={Number(e.mensalidade)} />
+      </div>
+      <div className="sm:col-span-2">
+        <label className="rotulo" htmlFor={`setup-${e.id}`}>{t.setup}</label>
+        <input id={`setup-${e.id}`} name="setup" type="number" inputMode="decimal" min="0" step="0.01"
+               className="campo num" defaultValue={Number(e.setup ?? 0)} />
+      </div>
+      <div className="sm:col-span-1">
+        <label className="rotulo" htmlFor={`moedac-${e.id}`}>{t.moedaCobranca}</label>
+        <select id={`moedac-${e.id}`} name="moeda_cobranca" className="campo" defaultValue={e.moeda_cobranca}>
+          {MOEDAS.map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </div>
+      <div className="sm:col-span-1">
+        <label className="rotulo" htmlFor={`dia-${e.id}`}>{t.diaVencimento}</label>
+        <input id={`dia-${e.id}`} name="dia_vencimento" type="number" inputMode="numeric" min="1" max="28"
+               className="campo num" defaultValue={e.dia_vencimento} />
       </div>
       <label className="flex min-h-touch items-center gap-3 sm:col-span-6">
         <input type="checkbox" name="ativa" defaultChecked={e.ativa} className="h-6 w-6 accent-navy" />
