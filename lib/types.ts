@@ -457,3 +457,26 @@ export interface CommodityParametro {
   ordem: number;
   criado_em: string;
 }
+
+/**
+ * Painel da empresa — o dashboard do ADM (0016). Uma linha POR MOEDA: projeto
+ * em USD e projeto em BRL somados no mesmo widget dariam um número inexistente.
+ * As contagens repetem em toda linha.
+ */
+export interface PainelEmpresa {
+  moeda: Moeda;
+  clientes: number;
+  clientes_ativos: number;
+  fornecedores: number;
+  commodities: number;
+  projetos: number;
+  investimento: number;
+  receita: number;
+  custo_vendas: number;
+  despesas: number;
+  /** investimento + custo_vendas + despesas (regra das três saídas). */
+  saida: number;
+  saldo: number;
+  receita_mes: number;
+  vendas_qtd: number;
+}

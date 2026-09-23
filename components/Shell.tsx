@@ -40,6 +40,7 @@ export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
   const grupos: GrupoNav[] = [{
     titulo: d.nav.geral,
     itens: [
+      { href: "/painel", rotulo: d.nav.painel, icone: "📊", exato: true },
       { href: "/projetos", rotulo: d.projetos.titulo, icone: "🗂️", exato: true },
       { href: "/clientes", rotulo: d.nav.clientes, icone: "🤝" },
       { href: "/fornecedores", rotulo: d.nav.fornecedores, icone: "🚚" },

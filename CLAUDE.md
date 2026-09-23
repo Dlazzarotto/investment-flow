@@ -33,11 +33,13 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      cadeia logística. A 0012 truncou no editor — a 0013 é o resto)
                        0014_clientes_fornecedores.sql (cadastros comerciais da empresa — etapa 2 da v4)
                        0015_commodities.sql (catálogo + parâmetros de qualidade com ajuste_por_ponto — etapa 3)
+                       0016_painel_empresa.sql (painel_empresa(): consolidado da empresa, uma linha por moeda)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
                        preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
+app/painel/            dashboard do ADM: a EMPRESA inteira. É a página de entrada (/, pós-login e caminhoInterno)
 app/clientes, /fornecedores, /commodities  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
                        custeio (grupo_custo, modal_etapa) para o lançamento herdar sem tradução no meio
 app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
@@ -131,6 +133,16 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   valor) em vez de ter descrição livre: o nome fica do outro lado da chave, onde o RLS não deixa ele chegar.
   Consequência de ordem: **fornecedores precisam existir antes de a visão do investidor ser liberada.**
 - **Histórico desde já** (`historico` + `tg_historico`): o que não foi gravado no dia não volta.
+- **O ADM trabalha no nível da EMPRESA.** A página de entrada é `/painel` (consolidado: clientes, fornecedores,
+  commodities, projetos, receita, saída, saldo). O projeto é um CAMPO do lançamento, não um lugar onde ele
+  precisa entrar — a visão por projeto é do investidor.
+- **A cadeia comercial, como o usuário a descreveu:** LOI + CIS abrem o **cliente** → o cliente vira
+  **estimativa** → a estimativa gera a **SCO** → a SCO diz se o contrato é de **1 ano ou 1 carga**. Contrato de
+  1 ano tem vários **embarques**, e é dos embarques que saem "a embarcar" e "a receber". Nada disso existe
+  ainda: por isso o painel avisa na tela em vez de mostrar zero.
+- **Valor em moeda não quebra linha.** O espaço que o `Intl` põe em "US$ 2.980.000,00" é não-quebrável, então
+  o texto transborda em vez de quebrar. Cartão de KPI com dinheiro usa `text-lg`, ocupa a largura inteira no
+  celular e só vira 4 colunas em `xl`. Conferir com `scrollWidth > clientWidth` de 360 a 1920 px.
 - **Dinheiro é somado por moeda.** `painel_plataforma()` devolve UMA LINHA POR MOEDA; somar BRL com USD num
   widget só dá um número que não existe. Com uma moeda só, a tela lê a primeira linha e fica igual a um painel
   simples. BRL sempre entra na lista, senão o painel sem empresas devolveria zero linhas e a tela ficaria branca.

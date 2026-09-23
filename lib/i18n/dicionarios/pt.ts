@@ -10,7 +10,7 @@ export const pt = {
     semPermissao: "Sem permissão para esta operação.",
     editar: "Editar", cancelar: "Cancelar", salvar: "Salvar", acoes: "Ações", alteracaoSalva: "Alteração salva.",
   },
-  nav: { commodities: "Commodities", clientes: "Clientes", fornecedores: "Fornecedores", geral: "Geral", abrirMenu: "Abrir menu", conta: "Minha conta", plataforma: "Plataforma", custeio: "Custeio", aportes: "Aportes", carteira: "Minha carteira", dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", despesas: "Despesas", parceria: "Parceria",
+  nav: { painel: "Painel", commodities: "Commodities", clientes: "Clientes", fornecedores: "Fornecedores", geral: "Geral", abrirMenu: "Abrir menu", conta: "Minha conta", plataforma: "Plataforma", custeio: "Custeio", aportes: "Aportes", carteira: "Minha carteira", dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", despesas: "Despesas", parceria: "Parceria",
     projetoAtivo: "Projeto ativo", escolha: "Escolha um projeto…", secoes: "Seções do projeto" },
   login: {
     esqueciSenha: "Esqueci minha senha",
@@ -340,6 +340,16 @@ export const pt = {
     semFornecedores: "Nenhum fornecedor", semFornecedoresTexto: "Cadastre quem presta serviço ou fornece mercadoria.",
     semEmpresa: "Sem empresa", semEmpresaTexto: "Clientes e fornecedores pertencem a uma empresa. Crie a sua na tela de projetos para começar.",
     inativo: "Inativo", semTipo: "Sem tipo",
+  },
+  painel: {
+    titulo: "Painel da empresa", subtitulo: "A operação inteira de {nome}: carteira, resultado e o que está em aberto.",
+    carteira: "Carteira", resultado: "Resultado consolidado",
+    ativos: "{n} ativo(s)", vendasQtd: "{n} venda(s)",
+    receita: "Receita", receitaMes: "Receita no mês", saida: "Saída",
+    saidaNota: "Investimento + custo das vendas + despesas", saldo: "Saldo",
+    semEmpresa: "Sem empresa", semEmpresaTexto: "O painel consolida os dados de uma empresa. Crie a sua na tela de projetos para começar.",
+    faltaTitulo: "A receber e a embarcar ainda não aparecem aqui",
+    faltaTexto: "Esses dois números saem do CONTRATO, e o contrato nasce da SCO: LOI e CIS abrem o cliente, o cliente vira estimativa, a estimativa gera a SCO, e é a SCO que diz se é de 1 ano ou de 1 carga. Contrato de 1 ano tem vários embarques; é dos embarques que sai o que falta embarcar e o que falta receber. Mostrar zero antes disso seria pior do que dizer isto.",
   },
   enums: {
     tipoCliente: { investidor: "Investidor", comprador: "Comprador", vendedor: "Vendedor", monetizador: "Monetizador" },

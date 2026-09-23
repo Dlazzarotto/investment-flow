@@ -258,10 +258,12 @@ describe("Validação (zod)", () => {
   });
   it("redirecionamento pós-login só aceita caminho interno", () => {
     expect(caminhoInterno("/projetos/abc")).toBe("/projetos/abc");
-    expect(caminhoInterno("//evil.com")).toBe("/projetos");
-    expect(caminhoInterno("/\\evil.com")).toBe("/projetos");
-    expect(caminhoInterno("https://evil.com")).toBe("/projetos");
-    expect(caminhoInterno(null)).toBe("/projetos");
+    // O padrão virou /painel (o ADM entra no painel da empresa); o que este
+    // teste guarda é que caminho EXTERNO nunca passa.
+    expect(caminhoInterno("//evil.com")).toBe("/painel");
+    expect(caminhoInterno("/\\evil.com")).toBe("/painel");
+    expect(caminhoInterno("https://evil.com")).toBe("/painel");
+    expect(caminhoInterno(null)).toBe("/painel");
   });
   it("participante: percentual > 0 e <= 100", () => {
     const p = { projeto_id: uuid, nome: "Fundo Y", tipo: "investidor", percentual: "25" };

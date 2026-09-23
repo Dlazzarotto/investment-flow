@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, Commodity, CommodityParametro, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
+  Cliente, Commodity, CommodityParametro, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
+  PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -307,4 +308,13 @@ export const listarParametros = cache(async (commodityIds: string[]): Promise<Co
     .in("commodity_id", commodityIds).order("ordem").order("nome");
   if (error) throw new Error(error.message);
   return (data ?? []) as CommodityParametro[];
+});
+
+/** Painel consolidado da empresa (uma linha por moeda); vazio sem organização. */
+export const obterPainelEmpresa = cache(async (organizacaoId?: string): Promise<PainelEmpresa[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("painel_empresa", { p_organizacao_id: organizacaoId });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PainelEmpresa[];
 });

@@ -255,7 +255,7 @@ export function criarSchemas(d: Dicionario) {
 }
 
 /** Só aceita caminhos internos para redirecionar após o login: "//evil.com" e "/\evil.com" seriam externos. */
-export function caminhoInterno(v: unknown, padrao = "/projetos"): string {
+export function caminhoInterno(v: unknown, padrao = "/painel"): string {
   return typeof v === "string" && /^\/(?![/\\])/.test(v) ? v : padrao;
 }
 
