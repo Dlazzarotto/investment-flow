@@ -22,15 +22,22 @@ export async function atualizarSessao(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
-  const rotaPublica = pathname.startsWith("/login");
 
-  if (!user && !rotaPublica) {
+  // Porta de entrada: dispensa sessão, e quem já está logado não tem o que fazer
+  // aqui — vai para os projetos.
+  const rotaDeEntrada = ["/login", "/criar-conta", "/esqueci-senha"].some((r) => pathname.startsWith(r));
+  // Convite é público porque quem foi convidado normalmente ainda não tem conta;
+  // /auth troca o código do e-mail por sessão e precisa rodar logado ou não —
+  // mandar quem já está logado para /projetos aqui mataria o link de recuperação.
+  const rotaAberta = rotaDeEntrada || pathname.startsWith("/convite") || pathname.startsWith("/auth");
+
+  if (!user && !rotaAberta) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
-  if (user && rotaPublica) {
+  if (user && rotaDeEntrada) {
     const url = request.nextUrl.clone();
     url.pathname = "/projetos";
     url.search = "";
