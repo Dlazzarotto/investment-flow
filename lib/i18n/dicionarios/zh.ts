@@ -1,6 +1,6 @@
 import type { Dicionario } from "./pt";
 export const zh: Dicionario = {
-  meta: { titulo: "投资管理", descricao: "按项目管理投资、收入与合作" },
+  meta: { titulo: "Investment-Flow System", descricao: "按项目管理投资、收入与合作" },
   comum: {
     app: "投资", sair: "退出", idioma: "语言", salvando: "保存中…", excluir: "删除", remover: "移除",
     total: "合计", data: "日期", categoria: "类别", unidade: "单位", contato: "联系方式", nome: "名称",

@@ -1,6 +1,6 @@
 import type { Dicionario } from "./pt";
 export const es: Dicionario = {
-  meta: { titulo: "Gestión de Aportes", descricao: "Inversiones, ingresos y alianzas por proyecto" },
+  meta: { titulo: "Investment-Flow System", descricao: "Inversiones, ingresos y alianzas por proyecto" },
   comum: {
     app: "Aportes", sair: "Salir", idioma: "Idioma", salvando: "Guardando…", excluir: "Eliminar", remover: "Quitar",
     total: "Total", data: "Fecha", categoria: "Categoría", unidade: "Unidad", contato: "Contacto", nome: "Nombre",
