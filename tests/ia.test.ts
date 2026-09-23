@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { extrairJson, interpretarResposta, montarPrompt, textoFinal } from "@/lib/ia/estimativa";
+import { montarPromptCusto } from "@/lib/ia/custo";
 import { desvioVsMedia, normalizarItem } from "@/lib/calculos";
 import { obterDicionario } from "@/lib/i18n";
 
@@ -108,5 +109,47 @@ describe("Comparação com a média", () => {
     expect(desvioVsMedia(598000, 520000)).toBe(0.15);
     expect(desvioVsMedia(468000, 520000)).toBe(-0.1);
     expect(desvioVsMedia(100, 0)).toBeNull();
+  });
+});
+
+describe("Prompt da sugestão de custo", () => {
+  const base = {
+    descricao: "Operador de escavadeira", commodity: "Minério de ferro", moeda: "USD",
+    unidadeProduto: "Toneladas", locale: "pt",
+  } as const;
+
+  it("pede a resposta na base do driver escolhido — é o que faz o número cair direto no campo", () => {
+    expect(montarPromptCusto({ ...base, tipo: "cargo", driver: "por_mes", pais: "Bolívia" }))
+      .toContain("o custo POR MÊS");
+    expect(montarPromptCusto({ ...base, tipo: "servico", driver: "por_viagem", pais: null }))
+      .toContain("o custo POR VIAGEM");
+    // a base por unidade traz a unidade do produto da estimativa, não "tonelada" fixo
+    expect(montarPromptCusto({ ...base, tipo: "servico", driver: "por_unidade", unidadeProduto: "m³" }))
+      .toContain("UMA UNIDADE DE PRODUTO (m³)");
+    expect(montarPromptCusto({ ...base, tipo: "servico", driver: "pct_receita" }))
+      .toContain("percentual (0 a 100) aplicado sobre a receita");
+  });
+
+  it("cargo pergunta o custo do empregador e deixa o adicional noturno de fora da conta", () => {
+    const p = montarPromptCusto({ ...base, tipo: "cargo", driver: "por_mes", pais: "Bolívia" });
+    expect(p).toContain("Bolívia");
+    expect(p).toContain("CUSTA PARA O EMPREGADOR");
+    expect(p).toContain("encargos");
+    // o sistema aplica o adicional noturno depois; somar aqui contaria duas vezes
+    expect(p).toContain("Não some adicional noturno");
+  });
+
+  it("serviço não pergunta salário, e sem país o modelo é avisado em vez de chutar", () => {
+    const p = montarPromptCusto({ ...base, descricao: "Frete rodoviário", tipo: "servico", driver: "por_viagem" });
+    expect(p).toContain("Frete rodoviário");
+    expect(p).not.toContain("CUSTA PARA O EMPREGADOR");
+    expect(p).toContain("não informado");
+  });
+
+  it("a resposta sai no idioma do usuário e a etapa situa a busca", () => {
+    const p = montarPromptCusto({ ...base, tipo: "servico", driver: "por_lote", etapa: "Porto Bush · Bolívia → Uruguai", locale: "zh" });
+    expect(p).toContain("Porto Bush");
+    expect(p).toContain("Simplified Chinese");
+    expect(p).toContain("SOMENTE com um objeto JSON");
   });
 });

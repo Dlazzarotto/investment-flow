@@ -21,18 +21,25 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0007_investidores_aportes.sql (organização de sócios, papel investidor, e-mail do participante,
                                                       aportes por tipo, resumo_projeto(), minha_carteira(); corrige o
                                                       RLS de INSERT…RETURNING em projetos que quebrava "criar projeto")
+                       0008_custeio_estimativas.sql (cadeia logística do projeto, estimativas de preço por cliente,
+                                                     itens de custo com driver de rateio; pode_ver_custeio() exclui o investidor)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
-app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/ (layout.tsx = Shell;
-                       investidor é redirecionado para /carteira/[id])
+app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
+                       custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
+                       preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
 app/api/export/[id]    CSV/XLSX no idioma atual;  app/api/ia/estimar  POST valor médio de mercado
+app/api/ia/custo       POST custo de cargo (pela legislação do país da etapa) ou de serviço, já na base do driver
 lib/i18n/              config.ts, dicionarios/{pt,en,es,zh}.ts, server.ts (obterD), client.tsx (useI18n)
 lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchemas(d)), calculos.ts (puro),
                        format.ts (formatadores(locale) — Intl, datas em UTC), csv.ts (CSV por idioma),
-                       consultas.ts (leituras, com cache() por requisição)
+                       consultas.ts (leituras, com cache() por requisição), custeio.ts (motor de cálculo reverso),
+                       ia/estimativa.ts (chamarClaude compartilhado) e ia/custo.ts (prompt de cargo/serviço)
 components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
-                       própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario)
-tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); schema*.test.sql (psql)
+                       própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
+                       custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
+tests/                 calculos.test.ts, custeio.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
+                       schema*.test.sql (psql)
 ```
 
 ## Comandos
@@ -40,7 +47,7 @@ tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); sche
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 68 testes, todos devem passar
+npm test          # vitest — 93 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -85,6 +92,24 @@ Ambiente: `.env.local` com `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANO
 - O vínculo do membro é pelo e-mail **confirmado** da conta: com "Confirm email" desligado no Supabase, qualquer um poderia se cadastrar com o e-mail do sócio. Manter a confirmação ligada.
 - Estimativa de IA: modelo padrão `claude-sonnet-4-6`, até 5 buscas, resposta JSON validada por zod, gravada em `estimativas_ia`; a tabela de investimentos compara valor lançado × última média por `lower(trim(item))`.
 - Fonte via `<link>` (IBM Plex Sans + Noto Sans SC) com `optimizeFonts: false` para o build não depender de rede.
+
+### Custeio — cálculo reverso (0008, etapa 1 fechada)
+
+- **A cadeia é do projeto, a estimativa é do cliente.** `projeto_etapas` guarda o percurso uma vez (mina → estrada →
+  porto → barcaça → navio); `estimativas_custo` são várias por projeto, uma por cliente/lote, cada uma com seu volume,
+  sua moeda e sua margem. Nada é fixado em país nem em commodity: `pais`, `commodity` e `unidade` são texto livre e o
+  único enum é `modal`, que existe para orientar a sugestão da IA.
+- **O preço não é uma pilha.** `P = C / (1 − r − m)`. Empilhar custo × imposto × margem dá o número errado (52,80 onde
+  o certo é 57,14 com custo 40, imposto 10 % e margem 20 %); `tests/custeio.test.ts` verifica a identidade
+  `receita − imposto − custo = margem`, não só o número.
+- **Driver é o coração do lançamento:** cada item diz como vira custo por unidade (`por_unidade`, `por_dia`, `por_mes`,
+  `por_viagem`, `por_lote`, `pct_custo`, `pct_receita`). Item sem o dado necessário (por dia sem produção diária, por
+  viagem sem capacidade) **não vira zero em silêncio**: sai da soma, aparece em "custos fora da conta" e o banco recusa
+  por check.
+- **A IA sugere na base do driver escolhido**, não um preço solto — o número cai direto no campo. Para cargo, pergunta
+  o custo do empregador pela legislação do país da etapa e deixa o adicional noturno de fora (o sistema aplica depois).
+  Nada é gravado pela rota: o valor usado marca o item com `origem: 'ia'` e a fonte, até alguém confirmar na tela.
+- `BotaoExcluir` é um `<form>`: nunca colocá-lo dentro de outro formulário.
 
 ## Ambiente do usuário
 
