@@ -2,6 +2,7 @@
 export const pt = {
   meta: { titulo: "Investment-Flow System", descricao: "Investimentos, receitas e parcerias por projeto" },
   comum: {
+    acessoSuspenso: "Acesso suspenso", acessoSuspensoTexto: "O contrato desta empresa está suspenso ou com a vigência vencida. O histórico continua aqui, mas não é possível lançar nem alterar nada até a regularização.", 
     app: "Aportes", sair: "Sair", idioma: "Idioma", salvando: "Salvando…", excluir: "Excluir", remover: "Remover",
     total: "Total", data: "Data", categoria: "Categoria", unidade: "Unidade", contato: "Contato", nome: "Nome",
     verProjetos: "Ver meus projetos", tentarDeNovo: "Tentar de novo", erroTitulo: "Algo deu errado",
