@@ -29,11 +29,16 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      empresas_da_plataforma())
                        0011_faturamento_plataforma.sql (mensalidade/setup/vencimento na empresa, tabela faturas,
                                                      painel_plataforma() por moeda, gerar_mensalidades())
+                       0012 + 0013_travas_parte2.sql (suspensão bloqueia de verdade; investidor perde despesas e
+                                                     cadeia logística. A 0012 truncou no editor — a 0013 é o resto)
+                       0014_clientes_fornecedores.sql (cadastros comerciais da empresa — etapa 2 da v4)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
                        preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
+app/clientes, /fornecedores  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
+                       custeio (grupo_custo, modal_etapa) para o lançamento herdar sem tradução no meio
 app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
                        clicável filtra a lista), liberar empresa, contrato, faturas e administradores
 app/login, /criar-conta, /esqueci-senha, /redefinir-senha, /auth/confirmar, /convite/[token]
@@ -146,6 +151,9 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   o custo do empregador pela legislação do país da etapa e deixa o adicional noturno de fora (o sistema aplica depois).
   Nada é gravado pela rota: o valor usado marca o item com `origem: 'ia'` e a fonte, até alguém confirmar na tela.
 - `BotaoExcluir` é um `<form>`: nunca colocá-lo dentro de outro formulário.
+- **O SQL Editor do Supabase trunca migration longa.** Aconteceu na 0010 e na 0012, a segunda já com etiqueta
+  nomeada. Entregar migration em BLOCOS CURTOS, cada função com etiqueta própria (`$adm$`, `$lanc$`…), e
+  conferir depois por `pg_proc`/`pg_policies` — "rodei" não é prova de que entrou inteira.
 
 ## Ambiente do usuário
 

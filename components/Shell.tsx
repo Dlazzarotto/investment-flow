@@ -56,6 +56,8 @@ export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
     titulo: base ? d.nav.geral : undefined,
     itens: [
       { href: "/projetos", rotulo: d.projetos.meus, icone: "🗂️", exato: true },
+      { href: "/clientes", rotulo: d.nav.clientes, icone: "🤝" },
+      { href: "/fornecedores", rotulo: d.nav.fornecedores, icone: "🚚" },
       ...(temCarteira ? [{ href: "/carteira", rotulo: d.nav.carteira, icone: "💼" }] : []),
       ...(ehMaster ? [{ href: "/master", rotulo: d.nav.plataforma, icone: "🏢" }] : []),
       { href: "/conta", rotulo: d.nav.conta, icone: "👤" },
