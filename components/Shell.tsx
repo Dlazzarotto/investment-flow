@@ -32,8 +32,25 @@ export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
   const usuario = await obterUsuario();
   const base = projetoAtual ? `/projetos/${projetoAtual.id}` : null;
 
-  const grupos: GrupoNav[] = [];
+  // O MENU PRINCIPAL VEM SEMPRE PRIMEIRO, com ou sem projeto aberto. Antes as
+  // seções do projeto vinham em cima e empurravam Clientes e Fornecedores para
+  // baixo da dobra — no celular era preciso rolar a gaveta para achá-los. O
+  // projeto é algo que se ESCOLHE dentro do menu, não algo que reorganiza o
+  // menu inteiro.
+  const grupos: GrupoNav[] = [{
+    titulo: d.nav.geral,
+    itens: [
+      { href: "/projetos", rotulo: d.projetos.titulo, icone: "🗂️", exato: true },
+      { href: "/clientes", rotulo: d.nav.clientes, icone: "🤝" },
+      { href: "/fornecedores", rotulo: d.nav.fornecedores, icone: "🚚" },
+      { href: "/commodities", rotulo: d.nav.commodities, icone: "⛏️" },
+      ...(temCarteira ? [{ href: "/carteira", rotulo: d.nav.carteira, icone: "💼" }] : []),
+      ...(ehMaster ? [{ href: "/master", rotulo: d.nav.plataforma, icone: "🏢" }] : []),
+      { href: "/conta", rotulo: d.nav.conta, icone: "👤" },
+    ],
+  }];
 
+  // As seções do projeto aberto entram DEPOIS, sob o nome dele.
   if (base && projetoAtual) {
     grupos.push({
       titulo: projetoAtual.nome,
@@ -51,19 +68,6 @@ export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
       ],
     });
   }
-
-  grupos.push({
-    titulo: base ? d.nav.geral : undefined,
-    itens: [
-      { href: "/projetos", rotulo: d.projetos.meus, icone: "🗂️", exato: true },
-      { href: "/clientes", rotulo: d.nav.clientes, icone: "🤝" },
-      { href: "/fornecedores", rotulo: d.nav.fornecedores, icone: "🚚" },
-      { href: "/commodities", rotulo: d.nav.commodities, icone: "⛏️" },
-      ...(temCarteira ? [{ href: "/carteira", rotulo: d.nav.carteira, icone: "💼" }] : []),
-      ...(ehMaster ? [{ href: "/master", rotulo: d.nav.plataforma, icone: "🏢" }] : []),
-      { href: "/conta", rotulo: d.nav.conta, icone: "👤" },
-    ],
-  });
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
