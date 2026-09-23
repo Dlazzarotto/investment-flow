@@ -1,6 +1,6 @@
 # Investment Dashboard — contexto para o Claude Code
 
-Gestão de aportes (Capex/Opex), vendas/receitas, parceria (tipo + % de participação) e dashboard por projeto (JVs, logística, mineração). Versão atual: 2.5. Idioma de trabalho com o usuário: português.
+Gestão de aportes (Capex/Opex), vendas/receitas, parceria (tipo + % de participação) e dashboard por projeto (JVs, logística, mineração). Versão atual: 3.0. Idioma de trabalho com o usuário: português.
 
 ## Stack
 
@@ -18,8 +18,13 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0004_projeto_membros.sql (acesso de sócios: papel leitor/editor, RLS por membro)
                        0005_custos_e_despesas.sql (custo direto da venda, tabela despesas, fluxo com saída)
                        0006_papeis_pin_convites.sql (admin/manager/escritório, PIN de autorização, convite por link)
+                       0007_investidores_aportes.sql (organização de sócios, papel investidor, e-mail do participante,
+                                                      aportes por tipo, resumo_projeto(), minha_carteira(); corrige o
+                                                      RLS de INSERT…RETURNING em projetos que quebrava "criar projeto")
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
-app/projetos/[id]/     dashboard (page.tsx), investimentos/, vendas/, despesas/, participantes/ (layout.tsx = Shell)
+app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/ (layout.tsx = Shell;
+                       investidor é redirecionado para /carteira/[id])
+app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
 app/api/export/[id]    CSV/XLSX no idioma atual;  app/api/ia/estimar  POST valor médio de mercado
 lib/i18n/              config.ts, dicionarios/{pt,en,es,zh}.ts, server.ts (obterD), client.tsx (useI18n)
 lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchemas(d)), calculos.ts (puro),
@@ -35,7 +40,7 @@ tests/                 calculos.test.ts, ia.test.ts, i18n.test.ts (vitest); sche
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 66 testes, todos devem passar
+npm test          # vitest — 68 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -54,6 +59,20 @@ Ambiente: `.env.local` com `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANO
 8. **Design:** navy `#2D3278`, laranja `#F47B20`, texto ≥ 18 px, alvos de toque ≥ 48 px, mobile-first (o usuário opera muito pelo celular). Sem bibliotecas de UI novas sem necessidade. A escala do Tailwind já garante o piso: `xs`/`sm`/`base` valem 18 px e a hierarquia vem de peso e cor, não de tamanho; nos gráficos o piso está em `components/charts/estilo.ts` (`FONTE`).
 
 ## Decisões já tomadas (não reabrir sem pedido)
+
+- **Organização (0007):** `organizacoes` + `organizacao_membros` (por e-mail confirmado). Sócio da organização = `admin`
+  em todo projeto com `organizacao_id` dela; projeto novo nasce na organização de quem cria (trigger). Ordem de
+  `papel_no_projeto`: dono → sócio da organização → `projeto_membros` → participante com e-mail (`investidor`).
+- **Investidor (0007):** basta cadastrar o e-mail na linha de `participantes` — a pessoa entra como `investidor`,
+  só leitura, e vê só a própria linha e os próprios aportes (RLS), mais vendas/despesas e os totais via
+  `resumo_projeto()` (security definer). Não vê investimentos nem membros. Vive em `/carteira`.
+- **Aportes (0007):** `aportes` (dinheiro, maquinário, crédito, serviço, direito minerário, outro) por participante,
+  com valor avaliado; trigger garante participante do mesmo projeto; só dono/admin lançam. A tela compara
+  % pactuada × % implícita pelos aportes (`resumoAportes`).
+- **Roadmap acordado com o usuário:** v3.1 catálogo de commodities (parâmetros de qualidade, ajuste vs benchmark)
+  + benchmarks Shanghai/Londres/EUA via IA+web; v3.2 motor de custo reverso (mão de obra por função, noturno +50 %,
+  produção, logística por trecho com tempo, porto/documentação, margem/incoterm → preço/t) com template gerado
+  pela IA; v3.3 consolidação por projeto e investidor.
 
 - Migração de Streamlit/SQLite (v1) para esta stack: decidida e concluída.
 - Participantes são cadastro (nome, papel, %) e continuam separados do acesso. Quem entra no projeto está em `projeto_membros`, com um de três papéis:

@@ -1,4 +1,4 @@
-# Gestão de Aportes — Next.js + Supabase + Vercel (v2.3)
+# Gestão de Aportes — Next.js + Supabase + Vercel (v3.0)
 
 Investimentos (Capex/Opex), vendas/receitas, parceria (tipo + participação %) e dashboard
 por projeto. Reescrita da v1 (Streamlit/SQLite) na stack Next.js 14 · TypeScript · Supabase · Vercel.
@@ -12,6 +12,7 @@ supabase/migrations/0003_participacao_lock.sql # trava de 100 % com lock na linh
 supabase/migrations/0004_projeto_membros.sql # acesso de sócios: projeto_membros, papel leitor/editor, RLS por membro
 supabase/migrations/0005_custos_e_despesas.sql # custo direto da venda (coluna gerada), tabela despesas, fluxo com saída
 supabase/migrations/0006_papeis_pin_convites.sql # papéis admin/manager/escritório, PIN de autorização, convites por link
+supabase/migrations/0007_investidores_aportes.sql # organização dos sócios, papel investidor, aportes, carteira
 app/
   login/                              # e-mail + senha (Supabase Auth)
   convite/[token]/                    # entrada pelo link de convite (um clique, não a visita)
@@ -22,13 +23,15 @@ app/
   projetos/[id]/vendas/               # formulário + tabela com edição na linha, custo direto e margem
   projetos/[id]/despesas/             # custeio do projeto: formulário, tabela editável e resumo por categoria
   projetos/[id]/participantes/        # estrutura da parceria, participantes, acesso de sócios, exclusão do projeto
+  projetos/[id]/aportes/              # como cada participante entrou: dinheiro, maquinário, crédito, serviço…
+  carteira/                           # visão do investidor: seus projetos, seus aportes e o saldo atribuível
   api/export/[id]/route.ts            # ?formato=csv (separador/decimal do idioma) | xlsx (7 abas, inclui Cenários e Estimativas IA)
   api/ia/estimar/route.ts             # POST — valor médio de mercado do item via Claude API + busca na web
   actions/                            # server actions (zod → Supabase → revalidate)
 lib/                                  # types, validacao (zod, mensagens traduzidas), calculos, format (por idioma), csv (por idioma), consultas, supabase/
 lib/i18n/                             # config (pt/en/es/zh), dicionarios/*.ts, server.ts (cookie/Accept-Language), client.tsx (provider)
 components/                           # Shell, seletor, nav, Cenarios, forms, tabelas (edição inline), charts (Recharts), ui
-tests/calculos.test.ts                # 31 testes (vitest): KPIs, custo/margem da venda, break-even, rateio, ROI anualizado, TIR/VPL, cenários, zod
+tests/calculos.test.ts                # 33 testes (vitest): KPIs, custo/margem da venda, break-even, rateio, ROI anualizado, TIR/VPL, cenários, zod
 tests/ia.test.ts                      # 14 testes: parser tolerante da resposta da IA (corta o longo, descarta fonte inválida), prompt, desvio
 tests/i18n.test.ts                    # 10 testes: paridade de chaves/placeholders nos 4 idiomas, Intl por locale, mensagens traduzidas
 tests/csv.test.ts                     # 6 testes: separador e decimal por idioma, aspas, BOM, diretiva sep=
@@ -38,6 +41,7 @@ tests/schema3.test.sql                # testes da migration 0003 (trava preserva
 tests/schema4.test.sql                # testes da migration 0004 (leitor, editor, e-mail não confirmado, revogação)
 tests/schema5.test.sql                # testes da migration 0005 (custo gerado, despesas, fluxo com as três saídas)
 tests/schema6.test.sql                # testes da migration 0006 (papéis, PIN, trava de tentativas, convites)
+tests/schema7.test.sql                # testes da migration 0007 (organização, investidor, aportes, carteira)
 ```
 
 ## Idiomas (pt · en · es · zh)
@@ -56,6 +60,14 @@ tests/schema6.test.sql                # testes da migration 0006 (papéis, PIN, 
 | admin | sim | sim | sim | sim |
 | manager | **não** | sim | sim | não |
 | escritorio | **não** | sim | **só com o PIN** | não |
+| investidor | **não** | **não** | **não** | não |
+
+O **investidor** entra pelo e-mail cadastrado na própria linha de `participantes` e só lê o que é dele: a
+própria participação e os próprios aportes, além das vendas e despesas do projeto (o retorno dele depende
+disso). Não vê investimentos, nem a lista de acessos, nem a divisão dos outros participantes.
+
+Os **sócios da organização** (`organizacoes` / `organizacao_membros`) são `admin` em todo projeto vinculado
+a ela, sem convite projeto a projeto.
 
 - **PIN de autorização:** é do projeto, cadastrado pelo admin, guardado com bcrypt e nunca lido de volta. Não é
   a senha de login de ninguém. Acertar abre uma janela de poucos minutos; cinco erros em 15 minutos travam as
@@ -111,9 +123,18 @@ tests/schema6.test.sql                # testes da migration 0006 (papéis, PIN, 
   do fluxo líquido (bisseção), anualizada por (1 + i)¹² − 1; só existe quando há aportes e receitas
 - Cenários: sensibilidade sobre o histórico (receita ±x %, investimento ∓y %), não projeção de futuro
 
+## v3.0 — Organização, investidores e aportes
+
+- **Organização dos sócios** (página Projetos): quem está nela administra todos os projetos vinculados.
+- **Investidor**: cadastre o e-mail na linha do participante (aba Parceria) e a pessoa entra em `/carteira`,
+  só leitura, vendo a própria participação, os próprios aportes e os totais do projeto.
+- **Aportes** (aba Aportes, dono/admin): como cada participante entrou — dinheiro, maquinário, crédito, serviço,
+  direito minerário — com comparação % pactuada × % pelos aportes. Aba "Aportes" no Excel.
+- Migration `0007_investidores_aportes.sql` (também corrige o erro ao criar projeto presente desde a 0004).
+
 ## Configuração
 
-1. **Supabase** → SQL Editor → execute `0001_schema.sql`, `0002_estimativas_ia.sql`, `0003_participacao_lock.sql`, `0004_projeto_membros.sql`, `0005_custos_e_despesas.sql` e `0006_papeis_pin_convites.sql` (idempotentes, nesta ordem).
+1. **Supabase** → SQL Editor → execute `0001_schema.sql` … `0007_investidores_aportes.sql` (idempotentes, **nesta ordem**).
    Em Authentication → Providers → Email, **mantenha "Confirm email" ligado**: o acesso de sócio é vinculado ao e-mail confirmado da conta e, sem confirmação, qualquer pessoa poderia se cadastrar com o e-mail do sócio e entrar no projeto.
 2. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `ANTHROPIC_API_KEY`.
 3. `npm install` · `npm run dev` → http://localhost:3000
@@ -123,7 +144,7 @@ tests/schema6.test.sql                # testes da migration 0006 (papéis, PIN, 
 
 ```
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (66 testes)
+npm test            # vitest (68 testes)
 npm run build       # build de produção
 ```
 Testes do banco (opcional, precisa de psql apontando para um Postgres com `auth.uid()` disponível):

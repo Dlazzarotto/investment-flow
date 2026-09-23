@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import {
-  listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas,
+  listarAportes, listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas,
   obterFluxoMensal, obterProjeto,
 } from "@/lib/consultas";
 import {
@@ -19,6 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const x = d.exportacao;
   const formato = req.nextUrl.searchParams.get("formato") === "xlsx" ? "xlsx" : "csv";
   const projeto = await obterProjeto(params.id);
+  const aportes = await listarAportes(projeto.id);
   const [investimentos, vendas, despesas, participantes, fluxo, estimativas] = await Promise.all([
     listarInvestimentos(projeto.id), listarVendas(projeto.id), listarDespesas(projeto.id),
     listarParticipantes(projeto.id), obterFluxoMensal(projeto.id), mapaUltimasEstimativas(projeto.id),
@@ -72,6 +73,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   for (const r of ratearParticipacoes(projeto, participantes, kpis)) {
     part.addRow({ nome: nomeParte(r),
       tipo: papel(r.tipo), pct: r.percentual, inv: r.investimentoAtribuivel, rec: r.receitaAtribuivel, saldo: r.saldoAtribuivel });
+  }
+
+  const apo = wb.addWorksheet(x.aportes);
+  apo.columns = [
+    { header: x.data, key: "data", width: 12 }, { header: x.participante, key: "participante", width: 30 },
+    { header: x.tipoAporte, key: "tipo", width: 24 }, { header: x.descricao, key: "descricao", width: 40 },
+    { header: x.valor, key: "valor", width: 16 }, { header: x.observacoes, key: "obs", width: 40 },
+  ];
+  const nomeParticipante = new Map(participantes.map((p) => [p.id, p.nome]));
+  for (const a of aportes) {
+    apo.addRow({ data: a.data, participante: nomeParticipante.get(a.participante_id) ?? "", tipo: d.enums.tipoAporte[a.tipo],
+      descricao: a.descricao, valor: Number(a.valor), obs: a.observacoes ?? "" });
   }
 
   const inv = wb.addWorksheet(x.investimentos);

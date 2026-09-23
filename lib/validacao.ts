@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
-  TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  TIPOS_APORTE, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -51,6 +51,25 @@ export function criarSchemas(d: Dicionario) {
       tipo: z.enum(TIPOS_PARTICIPANTE, enumMsg(v.tipoParticipanteInvalido)),
       percentual: percentual.gt(0, v.pctMaiorZero),
       contato: z.string().trim().max(200, v.contatoLongo).optional().transform((x) => x || null),
+      // E-mail do login do investidor (0007): opcional; vazio vira null.
+      email: z.string().trim().max(320, v.nomeLongo).optional().transform((x) => x || null)
+        .refine((x) => x === null || z.string().email().safeParse(x).success, v.emailInvalido),
+    }),
+    aporte: z.object({
+      projeto_id: uuid,
+      participante_id: z.string().uuid(v.participanteObrigatorio),
+      tipo: z.enum(TIPOS_APORTE, enumMsg(v.tipoAporteInvalido)),
+      descricao: z.string().trim().min(1, v.descricaoObrigatoria).max(200, v.nomeLongo),
+      valor: numeroPositivo(v.valor, MAX_VALOR),
+      data: dataISO,
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+    }),
+    organizacao: z.object({
+      nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),
+    }),
+    organizacaoMembro: z.object({
+      organizacao_id: uuid,
+      email: z.string().trim().email(v.emailInvalido).max(320, v.nomeLongo),
     }),
     investimento: z.object({
       projeto_id: uuid,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, despesasPorCategoria, detalharCustoVenda,
+  MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, despesasPorCategoria, detalharCustoVenda, resumoAportes,
   encontrarBreakeven, ratearParticipacoes, roiAnualizado, simularCenarios, tirAnual, tirMensal,
   totalParticipacao, vpl,
 } from "@/lib/calculos";
@@ -283,17 +283,17 @@ describe("Permissões por papel", () => {
   });
   it("manager vê e corrige entradas e saídas, mas não enxerga investimentos", () => {
     expect(permissoes("manager")).toEqual({
-      verInvestimentos: false, lancar: true, alterar: true, alterarComPin: false, administrar: false, ehDono: false,
+      verInvestimentos: false, lancar: true, alterar: true, alterarComPin: false, administrar: false, ehDono: false, ehInvestidor: false,
     });
   });
   it("escritório só lança; alterar e excluir dependem do PIN", () => {
     expect(permissoes("escritorio")).toEqual({
-      verInvestimentos: false, lancar: true, alterar: false, alterarComPin: true, administrar: false, ehDono: false,
+      verInvestimentos: false, lancar: true, alterar: false, alterarComPin: true, administrar: false, ehDono: false, ehInvestidor: false,
     });
   });
   it("sem papel não faz nada", () => {
     expect(permissoes(null)).toEqual({
-      verInvestimentos: false, lancar: false, alterar: false, alterarComPin: false, administrar: false, ehDono: false,
+      verInvestimentos: false, lancar: false, alterar: false, alterarComPin: false, administrar: false, ehDono: false, ehInvestidor: false,
     });
   });
   it("só o escritório passa pelo caminho do PIN", () => {
@@ -316,5 +316,29 @@ describe("Formatação", () => {
     const noite = new Date(2026, 8, 22, 22, 30);
     expect(hojeISO(noite)).toBe("2026-09-22");
     expect(hojeISO(new Date(2026, 0, 5))).toBe("2026-01-05");
+  });
+});
+
+describe("0007 — investidor e aportes", () => {
+  it("investidor só lê: nada de lançar, alterar, administrar ou ver investimentos", () => {
+    expect(permissoes("investidor")).toEqual({
+      verInvestimentos: false, lancar: false, alterar: false, alterarComPin: false, administrar: false, ehDono: false, ehInvestidor: true,
+    });
+  });
+  it("resumoAportes soma por participante e calcula a % implícita vs pactuada", () => {
+    const participantes = [
+      { id: "a", nome: "Fundo Alfa", percentual: 30 },
+      { id: "b", nome: "Mineradora B", percentual: 30 },
+      { id: "c", nome: "Sem aporte", percentual: 10 },
+    ];
+    const aportes = [
+      { participante_id: "a", valor: 300000 }, { participante_id: "b", valor: 250000 }, { participante_id: "b", valor: 100000 },
+    ];
+    const r = resumoAportes(participantes, aportes);
+    expect(r.total).toBe(650000);
+    expect(r.linhas[0]).toMatchObject({ aportado: 300000, pactuada: 30, implicita: 46.15, diferenca: 16.15 });
+    expect(r.linhas[1]).toMatchObject({ aportado: 350000, implicita: 53.85, diferenca: 23.85 });
+    expect(r.linhas[2]).toMatchObject({ aportado: 0, implicita: 0, diferenca: -10 });
+    expect(resumoAportes(participantes, []).linhas[0].implicita).toBeNull();
   });
 });

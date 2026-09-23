@@ -10,7 +10,8 @@ import { atualizarProjeto, excluirProjeto } from "@/app/actions/projetos";
 import { excluirParticipante } from "@/app/actions/participantes";
 import { removerMembro } from "@/app/actions/membros";
 import { revogarConvite } from "@/app/actions/acesso";
-import { listarConvites, listarMembros, listarParticipantes, obterPapel, obterProjeto, projetoTemPin } from "@/lib/consultas";
+import { listarConvites, listarMembros, listarParticipantes, minhaOrganizacao, obterPapel, obterProjeto, projetoTemPin } from "@/lib/consultas";
+import { vincularOrganizacao } from "@/app/actions/organizacao";
 import { permissoes } from "@/lib/permissoes";
 import { totalParticipacao } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
@@ -23,10 +24,10 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
   const projeto = await obterProjeto(params.id);
   const papel = await obterPapel(projeto.id);
   const pode = permissoes(papel);
-  const [participantes, membros, convites, temPin] = await Promise.all([
+  const [participantes, membros, convites, temPin, org] = await Promise.all([
     listarParticipantes(projeto.id), listarMembros(projeto.id),
     pode.administrar ? listarConvites(projeto.id) : Promise.resolve([]),
-    projetoTemPin(projeto.id),
+    projetoTemPin(projeto.id), minhaOrganizacao(),
   ]);
   const alocado = totalParticipacao(projeto, participantes);
   const disponivel = Math.round((100 - alocado) * 100) / 100;
@@ -62,12 +63,12 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
           <div className="overflow-x-auto">
             <table className="tabela">
               <thead><tr>
-                <th>{d.comum.nome}</th><th>{t.papel}</th><th className="num">{t.participacao}</th><th>{d.comum.contato}</th>
+                <th>{d.comum.nome}</th><th>{t.papel}</th><th className="num">{t.participacao}</th><th>{d.comum.contato}</th><th>{t.emailCol}</th>
                 {editavel && <th>{d.comum.acoes}</th>}
               </tr></thead>
               <tbody>
                 <tr className="bg-navy-soft/60">
-                  <td className="font-medium">{t.voce}</td><td>{t.dono}</td><td className="num">{f.numero(projeto.participacao_pct, 2)} %</td><td>—</td>
+                  <td className="font-medium">{t.voce}</td><td>{t.dono}</td><td className="num">{f.numero(projeto.participacao_pct, 2)} %</td><td>—</td><td>—</td>
                   {editavel && <td></td>}
                 </tr>
                 {participantes.map((p) => (
@@ -76,6 +77,7 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
                     <td>{d.enums.tipoParticipante[p.tipo]}</td>
                     <td className="num">{f.numero(Number(p.percentual), 2)} %</td>
                     <td>{p.contato ?? "—"}</td>
+                    <td className="break-all">{p.email ?? "—"}</td>
                     {editavel && (
                       <td><BotaoExcluir action={excluirParticipante} id={p.id} projetoId={projeto.id} confirmacao={fmtTexto(t.removerConfirma, { nome: p.nome })} rotulo={d.comum.remover} /></td>
                     )}
@@ -89,6 +91,28 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
 
       {editavel && (
         <section className="secao max-w-3xl"><h2>{t.adicionar}</h2><FormParticipante projetoId={projeto.id} disponivel={disponivel} /></section>
+      )}
+
+      {pode.administrar && (
+        <section className="secao max-w-3xl">
+          <h2>{d.organizacao.titulo}</h2>
+          {org ? (
+            <>
+              <p className="text-stone">{projeto.organizacao_id === org.organizacao.id
+                ? fmtTexto(d.organizacao.vinculado, { nome: org.organizacao.nome }) : d.organizacao.naoVinculado}</p>
+              <p className="mb-3 text-stone">{d.organizacao.vinculoAjuda}</p>
+              <form action={vincularOrganizacao}>
+                <input type="hidden" name="projeto_id" value={projeto.id} />
+                <input type="hidden" name="organizacao_id" value={projeto.organizacao_id === org.organizacao.id ? "" : org.organizacao.id} />
+                <button type="submit" className={projeto.organizacao_id === org.organizacao.id ? "btn-quieto" : "btn-navy"}>
+                  {projeto.organizacao_id === org.organizacao.id ? d.organizacao.desvincular : d.organizacao.vincular}
+                </button>
+              </form>
+            </>
+          ) : (
+            <p className="text-stone">{d.organizacao.semOrganizacao}</p>
+          )}
+        </section>
       )}
 
       <section className="secao">

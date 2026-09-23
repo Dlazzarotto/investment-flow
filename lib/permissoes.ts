@@ -7,12 +7,14 @@ import type { PapelNoProjeto, Permissoes } from "./types";
 
 export function permissoes(papel: PapelNoProjeto): Permissoes {
   const administrar = papel === "dono" || papel === "admin";
+  const ehInvestidor = papel === "investidor";
   return {
     verInvestimentos: administrar,
-    lancar: papel !== null,
+    lancar: papel !== null && !ehInvestidor,
     alterar: administrar || papel === "manager",
     alterarComPin: papel === "escritorio",
     administrar,
     ehDono: papel === "dono",
+    ehInvestidor,
   };
 }

@@ -31,6 +31,7 @@ export interface Projeto {
   moeda: Moeda;
   tipo_parceria: TipoParceria;
   participacao_pct: number;
+  organizacao_id: string | null;
   criado_em: string;
   atualizado_em: string;
 }
@@ -42,7 +43,58 @@ export interface Participante {
   tipo: TipoParticipante;
   percentual: number;
   contato: string | null;
+  /** E-mail do login do investidor; com ele, a pessoa entra como 'investidor' e vê só o que é dela. */
+  email: string | null;
+  email_normalizado: string | null;
   criado_em: string;
+}
+
+export const TIPOS_APORTE = ["dinheiro", "maquinario", "credito", "servico", "direito_minerario", "outro"] as const;
+export type TipoAporte = (typeof TIPOS_APORTE)[number];
+
+/** Como um participante entrou no projeto (tabela aportes, 0007). */
+export interface Aporte {
+  id: string;
+  projeto_id: string;
+  participante_id: string;
+  tipo: TipoAporte;
+  descricao: string;
+  valor: number;
+  data: string;
+  observacoes: string | null;
+  criado_em: string;
+}
+
+export interface Organizacao { id: string; nome: string; criado_por: string; criado_em: string }
+export interface OrganizacaoMembro { id: string; organizacao_id: string; email: string; email_normalizado: string; criado_em: string }
+
+/** Totais do projeto para qualquer membro (public.resumo_projeto). */
+export interface ResumoProjeto {
+  investimento_total: number;
+  receita_total: number;
+  custo_vendas_total: number;
+  despesas_total: number;
+  saida_total: number;
+  saldo: number;
+  aportes_total: number;
+}
+
+/** Linha de public.minha_carteira(): um projeto em que o usuário é participante. */
+export interface CarteiraItem {
+  projeto_id: string;
+  nome: string;
+  moeda: Moeda;
+  tipo_parceria: TipoParceria;
+  data_inicio: string;
+  participante_id: string;
+  participante_nome: string;
+  minha_pct: number;
+  meus_aportes: number;
+  investimento_total: number;
+  receita_total: number;
+  saida_total: number;
+  saldo: number;
+  saldo_atribuivel: number;
 }
 
 export interface Investimento {
@@ -137,7 +189,7 @@ export interface EstimativaIA {
  *   manager    → vê e lança entradas e saídas; não enxerga investimentos
  *   escritorio → só lança; alterar e excluir exigem o PIN do projeto
  */
-export const PAPEIS_MEMBRO = ["admin", "manager", "escritorio"] as const;
+export const PAPEIS_MEMBRO = ["admin", "manager", "escritorio", "investidor"] as const;
 export type PapelMembro = (typeof PAPEIS_MEMBRO)[number];
 
 /** Papel do usuário logado no projeto; null quando não tem acesso. */
@@ -153,6 +205,8 @@ export interface Permissoes {
   alterarComPin: boolean;
   administrar: boolean;
   ehDono: boolean;
+  /** Só lê o que é dele (própria participação e aportes); vive em /carteira. */
+  ehInvestidor: boolean;
 }
 
 /** Convite por link (o token em si nunca volta do banco — só o hash fica guardado). */

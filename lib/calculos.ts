@@ -3,7 +3,7 @@
  * A agregação mensal contínua é feita no banco por public.fluxo_mensal(); aqui
  * ficam KPIs, break-even e rateio por participação.
  */
-import type { Despesa, FluxoMensal, Investimento, Participante, Projeto, TipoParticipante, Venda } from "./types";
+import type { Aporte, Despesa, FluxoMensal, Investimento, Participante, Projeto, TipoParticipante, Venda } from "./types";
 
 export interface Kpis {
   investimentoTotal: number;
@@ -293,4 +293,19 @@ export function normalizarItem(item: string): string {
 export function desvioVsMedia(valorUnitario: number, valorMedio: number): number | null {
   if (!(valorMedio > 0)) return null;
   return Math.round(((valorUnitario - valorMedio) / valorMedio) * 10000) / 10000;
+}
+
+/** Total aportado por participante e a participação implícita (aportes ÷ total), para comparar com a % pactuada. */
+export function resumoAportes(participantes: Pick<Participante, "id" | "nome" | "percentual">[],
+                              aportes: Pick<Aporte, "participante_id" | "valor">[]) {
+  const porParticipante = new Map<string, number>();
+  for (const a of aportes) porParticipante.set(a.participante_id, (porParticipante.get(a.participante_id) ?? 0) + Number(a.valor));
+  const total = [...porParticipante.values()].reduce((s, v) => s + v, 0);
+  const linhas = participantes.map((p) => {
+    const aportado = Math.round((porParticipante.get(p.id) ?? 0) * 100) / 100;
+    const implicita = total > 0 ? Math.round((aportado / total) * 10000) / 100 : null;
+    return { participante_id: p.id, nome: p.nome, pactuada: Number(p.percentual), aportado, implicita,
+             diferenca: implicita === null ? null : Math.round((implicita - Number(p.percentual)) * 100) / 100 };
+  });
+  return { total: Math.round(total * 100) / 100, linhas };
 }

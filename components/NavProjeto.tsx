@@ -10,7 +10,7 @@ export function NavProjeto({ projetoId, verInvestimentos }: { projetoId: string;
   const abas = [
     { seg: "", rotulo: d.nav.dashboard },
     // Investimentos é assunto de dono e admin (0006): a aba some para os demais.
-    ...(verInvestimentos ? [{ seg: "/investimentos", rotulo: d.nav.investimentos }] : []),
+    ...(verInvestimentos ? [{ seg: "/investimentos", rotulo: d.nav.investimentos }, { seg: "/aportes", rotulo: d.nav.aportes }] : []),
     { seg: "/vendas", rotulo: d.nav.vendas },
     { seg: "/despesas", rotulo: d.nav.despesas },
     { seg: "/participantes", rotulo: d.nav.parceria },

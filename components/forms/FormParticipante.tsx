@@ -30,6 +30,11 @@ export function FormParticipante({ projetoId, disponivel }: { projetoId: string;
         <label className="rotulo" htmlFor="p_contato">{d.parceria.contatoOpcional}</label>
         <input id="p_contato" name="contato" maxLength={200} className="campo" placeholder={d.parceria.contatoPlaceholder} />
       </div>
+      <div className="sm:col-span-4">
+        <label className="rotulo" htmlFor="p_email">{d.parceria.emailInvestidor}</label>
+        <input id="p_email" name="email" type="email" maxLength={320} autoComplete="off" className="campo" placeholder={d.membros.emailPlaceholder} />
+        <p className="mt-1 text-stone">{d.parceria.emailInvestidorAjuda}</p>
+      </div>
       <div className="flex items-end sm:col-span-2"><SubmitButton>{d.parceria.adicionar}</SubmitButton></div>
       <div className="sm:col-span-6"><Mensagem estado={estado} /></div>
     </form>

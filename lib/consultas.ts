@@ -7,8 +7,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
-  Convite, Despesa, EstimativaIA, FluxoMensal, Investimento, PapelNoProjeto, Participante, Projeto,
-  ProjetoMembro, Venda,
+  Aporte, CarteiraItem, Convite, Despesa, EstimativaIA, FluxoMensal, Investimento, Organizacao,
+  OrganizacaoMembro, PapelNoProjeto, Participante, Projeto, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -135,4 +135,59 @@ export const mapaUltimasEstimativas = cache(async (projetoId: string): Promise<M
   const mapa = new Map<string, EstimativaIA>();
   for (const e of (data ?? []) as EstimativaIA[]) mapa.set(e.item_normalizado, e);
   return mapa;
+});
+
+// ---------------------------------------------------------------------------
+// 0007 — organização, aportes, resumo e carteira
+// ---------------------------------------------------------------------------
+
+export const listarAportes = cache(async (projetoId: string): Promise<Aporte[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("aportes").select("*")
+    .eq("projeto_id", projetoId).order("data").order("criado_em");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Aporte[];
+});
+
+/** Totais do projeto via função security definer — funciona para qualquer papel, inclusive investidor. */
+export const obterResumo = cache(async (projetoId: string): Promise<ResumoProjeto> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("resumo_projeto", { p_projeto_id: projetoId });
+  if (error) throw new Error(error.message);
+  const r = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | undefined;
+  if (!r) notFound();
+  const n = (k: string) => Number(r[k] ?? 0);
+  return {
+    investimento_total: n("investimento_total"), receita_total: n("receita_total"),
+    custo_vendas_total: n("custo_vendas_total"), despesas_total: n("despesas_total"),
+    saida_total: n("saida_total"), saldo: n("saldo"), aportes_total: n("aportes_total"),
+  };
+});
+
+/** Organização do usuário logado (com os sócios), ou null se ainda não criou/entrou em uma. */
+export const minhaOrganizacao = cache(async (): Promise<{ organizacao: Organizacao; membros: OrganizacaoMembro[] } | null> => {
+  const supabase = createClient();
+  const { data: orgs, error } = await supabase.from("organizacoes").select("*").order("criado_em").limit(1);
+  if (error) throw new Error(error.message);
+  const organizacao = (orgs?.[0] ?? null) as Organizacao | null;
+  if (!organizacao) return null;
+  const { data: membros, error: e2 } = await supabase.from("organizacao_membros").select("*")
+    .eq("organizacao_id", organizacao.id).order("criado_em");
+  if (e2) throw new Error(e2.message);
+  return { organizacao, membros: (membros ?? []) as OrganizacaoMembro[] };
+});
+
+/** Projetos em que o usuário logado é participante (investidor), com posição consolidada. */
+export const listarCarteira = cache(async (): Promise<CarteiraItem[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("minha_carteira");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    projeto_id: String(r.projeto_id), nome: String(r.nome), moeda: r.moeda as CarteiraItem["moeda"],
+    tipo_parceria: r.tipo_parceria as CarteiraItem["tipo_parceria"], data_inicio: String(r.data_inicio).slice(0, 10),
+    participante_id: String(r.participante_id), participante_nome: String(r.participante_nome),
+    minha_pct: Number(r.minha_pct), meus_aportes: Number(r.meus_aportes),
+    investimento_total: Number(r.investimento_total), receita_total: Number(r.receita_total),
+    saida_total: Number(r.saida_total), saldo: Number(r.saldo), saldo_atribuivel: Number(r.saldo_atribuivel),
+  }));
 });
