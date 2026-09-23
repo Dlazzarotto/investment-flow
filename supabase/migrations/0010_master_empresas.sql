@@ -31,7 +31,7 @@ create or replace function public.criar_empresa(
   p_plano public.plano_empresa default 'avaliacao',
   p_assentos int default null,
   p_vigencia_ate date default null
-) returns uuid language plpgsql security definer set search_path = public as $$
+) returns uuid language plpgsql security definer set search_path = public as $criar_empresa$
 declare
   v_id uuid;
   v_email text := lower(trim(p_email_adm));
@@ -50,7 +50,7 @@ begin
 
   insert into public.organizacao_membros (organizacao_id, email) values (v_id, v_email);
   return v_id;
-end $$;
+end $criar_empresa$;
 
 /**
  * O painel do master: uma linha por empresa, com o contrato e o uso.
@@ -60,11 +60,7 @@ end $$;
  * acesso de leitura a essas tabelas.
  */
 create or replace function public.empresas_da_plataforma()
-returns table (
-  id uuid, nome text, plano public.plano_empresa, assentos int, ativa boolean,
-  vigencia_ate date, em_dia boolean, assentos_usados int, projetos int,
-  admins text[], criado_em timestamptz
-) language plpgsql security definer set search_path = public as $$
+returns table (id uuid, nome text, plano public.plano_empresa, assentos int, ativa boolean, vigencia_ate date, em_dia boolean, assentos_usados int, projetos int, admins text[], criado_em timestamptz) language plpgsql security definer set search_path = public as $empresas$
 begin
   if not public.eh_master() then
     raise exception 'Somente a administração da plataforma vê este painel.'
@@ -76,11 +72,11 @@ begin
            public.assentos_ocupados(o.id),
            (select count(*)::int from public.projetos p where p.organizacao_id = o.id),
            coalesce((select array_agg(m.email order by m.criado_em)
-                       from public.organizacao_membros m where m.organizacao_id = o.id), '{}'),
+                       from public.organizacao_membros m where m.organizacao_id = o.id), '{}'::text[]),
            o.criado_em
       from public.organizacoes o
      order by o.criado_em desc;
-end $$;
+end $empresas$;
 
 grant execute on function public.criar_empresa(text, text, public.plano_empresa, int, date) to authenticated;
 grant execute on function public.empresas_da_plataforma() to authenticated;
