@@ -38,6 +38,10 @@ export function criarSchemas(d: Dicionario) {
   /** Campo de texto opcional: vazio vira null em vez de string em branco. */
   const textoOpcional = (max: number) =>
     z.string().trim().max(max, v.nomeLongo).optional().transform((x) => x || null);
+  /** Número opcional: campo em branco vira null, não zero — "não informado" não é "zero". */
+  const numeroOpcional = () =>
+    z.union([z.literal(""), z.coerce.number().finite()]).optional()
+      .transform((x) => (typeof x === "number" ? x : null));
 
   return {
     projeto: z.object({
@@ -187,6 +191,30 @@ export function criarSchemas(d: Dicionario) {
       pais: textoOpcional(80),
       observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
       ativo: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
+    }),
+    commodity: z.object({
+      organizacao_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
+      categoria: textoOpcional(80),
+      unidade_padrao: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
+      bolsa: textoOpcional(160),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+      ativo: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
+    }),
+    parametro: z.object({
+      commodity_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(80, v.nomeLongo),
+      unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(20, v.unidadeLonga),
+      referencia: numeroOpcional(),
+      minimo: numeroOpcional(),
+      maximo: numeroOpcional(),
+      // Pode ser negativo: sílica e umidade DERRUBAM o preço.
+      ajuste_por_ponto: z.coerce.number({ invalid_type_error: v.pctNumero }).finite().catch(0),
+      ordem: z.coerce.number().int().min(0).max(999).catch(0),
+    }).superRefine((x, ctx) => {
+      if (x.minimo !== null && x.maximo !== null && x.minimo > x.maximo) {
+        ctx.addIssue({ code: "custom", path: ["minimo"], message: v.faixaInvertida });
+      }
     }),
     empresa: z.object({
       nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),

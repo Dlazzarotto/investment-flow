@@ -105,3 +105,73 @@ export async function excluirFornecedor(fd: FormData): Promise<void> {
   if (error) throw new Error(traduzirErroBanco(error, "fornecedor", d));
   revalidatePath("/fornecedores");
 }
+
+// ---------------------------------------------------------------------------
+// Commodities e os parâmetros de qualidade
+// ---------------------------------------------------------------------------
+
+export async function criarCommodity(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).commodity.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+
+  const supabase = createClient();
+  const { error } = await supabase.from("commodities").insert(parsed.data);
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "commodity", d) };
+
+  revalidatePath("/commodities");
+  return { ok: true, sucesso: fmtTexto(d.cadastros.commoditySalva, { nome: parsed.data.nome }) };
+}
+
+export async function atualizarCommodity(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const schemas = criarSchemas(d);
+  const id = schemas.uuid.safeParse(fd.get("id"));
+  if (!id.success) return { ok: false, erro: d.validacao.idInvalido };
+  const parsed = schemas.commodity.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+  const { organizacao_id, ...campos } = parsed.data;
+
+  const supabase = createClient();
+  const { data, error } = await supabase.from("commodities")
+    .update({ ...campos, atualizado_em: new Date().toISOString() })
+    .eq("id", id.data).eq("organizacao_id", organizacao_id).select("id").maybeSingle();
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "commodity", d) };
+  if (!data) return { ok: false, erro: d.banco.naoEncontrado };
+
+  revalidatePath("/commodities");
+  return { ok: true, sucesso: fmtTexto(d.cadastros.commodityAtualizada, { nome: campos.nome }) };
+}
+
+export async function excluirCommodity(fd: FormData): Promise<void> {
+  const { d } = obterD();
+  const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
+  if (!id.success) return;
+  const supabase = createClient();
+  const { error } = await supabase.from("commodities").delete().eq("id", id.data);
+  if (error) throw new Error(traduzirErroBanco(error, "commodity", d));
+  revalidatePath("/commodities");
+}
+
+export async function criarParametro(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).parametro.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+
+  const supabase = createClient();
+  const { error } = await supabase.from("commodity_parametros").insert(parsed.data);
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "parametro", d) };
+
+  revalidatePath("/commodities");
+  return { ok: true, sucesso: fmtTexto(d.cadastros.parametroSalvo, { nome: parsed.data.nome }) };
+}
+
+export async function excluirParametro(fd: FormData): Promise<void> {
+  const { d } = obterD();
+  const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
+  if (!id.success) return;
+  const supabase = createClient();
+  const { error } = await supabase.from("commodity_parametros").delete().eq("id", id.data);
+  if (error) throw new Error(traduzirErroBanco(error, "parametro", d));
+  revalidatePath("/commodities");
+}

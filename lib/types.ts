@@ -423,3 +423,37 @@ export interface Fornecedor {
   criado_em: string;
   atualizado_em: string;
 }
+
+/** Catálogo de commodities da empresa (0015). */
+export interface Commodity {
+  id: string;
+  organizacao_id: string;
+  nome: string;
+  categoria: string | null;
+  unidade_padrao: string;
+  /** Onde se olha o preço: "SGX TSI 62% Fe", "CBOT Soybeans". */
+  bolsa: string | null;
+  observacoes: string | null;
+  ativo: boolean;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+/**
+ * Um parâmetro de qualidade: Fe, umidade, sílica. `ajuste_por_ponto` é a ponte
+ * entre qualidade e preço — positivo para o que valoriza, negativo para o que
+ * penaliza.
+ */
+export interface CommodityParametro {
+  id: string;
+  commodity_id: string;
+  nome: string;
+  unidade: string;
+  /** Teor que o índice de mercado assume (62 no "62% Fe"). */
+  referencia: number | null;
+  minimo: number | null;
+  maximo: number | null;
+  ajuste_por_ponto: number;
+  ordem: number;
+  criado_em: string;
+}

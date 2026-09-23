@@ -10,14 +10,23 @@ import {
 } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { montarCsv } from "@/lib/csv";
+import { montarRelatorio } from "@/lib/relatorio";
+import { formatadores } from "@/lib/format";
+import { minhaOrganizacao } from "@/lib/consultas";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/export/[id]?formato=csv|xlsx — exporta os dados do projeto no idioma atual (RLS garante o dono). */
+/**
+ * GET /api/export/[id]?formato=csv|xlsx|pdf — exporta no idioma atual (o RLS
+ * garante quem pode). CSV e XLSX são listas para outro sistema ler; PDF é um
+ * relatório para uma pessoa ler, e por isso traz resumo, não lançamento a
+ * lançamento.
+ */
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { locale, d } = obterD();
   const x = d.exportacao;
-  const formato = req.nextUrl.searchParams.get("formato") === "xlsx" ? "xlsx" : "csv";
+  const pedido = req.nextUrl.searchParams.get("formato");
+  const formato = pedido === "xlsx" || pedido === "pdf" ? pedido : "csv";
   const projeto = await obterProjeto(params.id);
   const aportes = await listarAportes(projeto.id);
   const [investimentos, vendas, despesas, participantes, fluxo, estimativas] = await Promise.all([
@@ -29,6 +38,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const papel = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
     : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo];
   const nomeParte = (r: Rateio) => r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome;
+
+  if (formato === "pdf") {
+    const [org, fluxoPdf] = await Promise.all([minhaOrganizacao(), Promise.resolve(fluxo)]);
+    const html = montarRelatorio({
+      projeto, empresa: org?.organizacao.nome ?? null, kpis,
+      rateios: ratearParticipacoes(projeto, participantes, kpis),
+      nomeParte, papel: (r) => papel(r.tipo), fluxo: fluxoPdf,
+      breakeven: encontrarBreakeven(fluxoPdf), geradoEm: new Date().toISOString().slice(0, 10),
+      d, f: formatadores(locale), lang: locale === "pt" ? "pt-BR" : locale === "zh" ? "zh-CN" : locale,
+    });
+    return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  }
 
   if (formato === "csv") {
     const linhas: (string | number)[][] = [
