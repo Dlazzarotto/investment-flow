@@ -91,7 +91,8 @@ export async function redefinirSenha(_: ActionState, fd: FormData): Promise<Acti
     if (error.code === "weak_password") return { ok: false, erro: d.login.senhaFraca };
     return { ok: false, erro: fmtTexto(d.login.falhaCadastro, { msg: error.message }) };
   }
-  redirect("/projetos");
+  // Mesma entrada do login: quem não é ADM o /painel já manda para /projetos.
+  redirect("/painel");
 }
 
 export async function sair() {

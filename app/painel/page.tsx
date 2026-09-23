@@ -1,6 +1,6 @@
+import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { PainelEmpresa } from "@/components/PainelEmpresa";
-import { Vazio } from "@/components/ui/Vazio";
 import {
   acessoSuspenso, ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterPainelEmpresa,
 } from "@/lib/consultas";
@@ -18,13 +18,18 @@ export default async function PainelPage() {
   const [projetos, carteira, master, org] = await Promise.all([
     listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(),
   ]);
+  // Sem empresa não há painel de empresa. /painel é a entrada de TODOS, então
+  // quem não é ADM (investidor, membro de projeto, conta nova) segue para
+  // /projetos, que já decide: investidor vai para a carteira, conta nova cria a
+  // organização ali. Era esse o caminho antes de a entrada virar /painel.
+  if (!org) redirect("/projetos");
   const [painel, suspenso] = await Promise.all([
-    obterPainelEmpresa(org?.organizacao.id), acessoSuspenso(),
+    obterPainelEmpresa(org.organizacao.id), acessoSuspenso(),
   ]);
   const t = d.painel;
 
   return (
-    <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org?.organizacao.nome}>
+    <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
       {suspenso && (
         <p role="alert" className="mb-6 rounded-md border-l-4 border-loss bg-red-50 px-4 py-3">
           <strong className="text-loss">{d.comum.acessoSuspenso}</strong>
@@ -32,14 +37,8 @@ export default async function PainelPage() {
         </p>
       )}
       <h1 className="text-2xl">{t.titulo}</h1>
-      {org ? (
-        <>
-          <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: org.organizacao.nome })}</p>
-          <PainelEmpresa painel={painel} />
-        </>
-      ) : (
-        <div className="mt-6"><Vazio titulo={t.semEmpresa} texto={t.semEmpresaTexto} /></div>
-      )}
+      <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: org.organizacao.nome })}</p>
+      <PainelEmpresa painel={painel} />
     </Shell>
   );
 }

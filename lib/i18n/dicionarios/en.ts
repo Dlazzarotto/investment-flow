@@ -347,7 +347,6 @@ export const en: Dicionario = {
     ativos: "{n} active", vendasQtd: "{n} sale(s)",
     receita: "Revenue", receitaMes: "Revenue this month", saida: "Outflow",
     saidaNota: "Investment + cost of sales + expenses", saldo: "Balance",
-    semEmpresa: "No company", semEmpresaTexto: "The overview consolidates one company’s data. Create yours on the projects screen to start.",
     faltaTitulo: "Receivable and pending shipment are not here yet",
     faltaTexto: "Both numbers come from the CONTRACT, and the contract is born from the SCO: LOI and CIS open the client, the client becomes an estimate, the estimate generates the SCO, and the SCO says whether it is for 1 year or 1 cargo. A 1-year contract has several shipments, and it is from the shipments that pending shipment and receivable come. Showing zero before that would be worse than saying this.",
   },

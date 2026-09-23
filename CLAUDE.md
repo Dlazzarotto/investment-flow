@@ -34,12 +34,15 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0014_clientes_fornecedores.sql (cadastros comerciais da empresa — etapa 2 da v4)
                        0015_commodities.sql (catálogo + parâmetros de qualidade com ajuste_por_ponto — etapa 3)
                        0016_painel_empresa.sql (painel_empresa(): consolidado da empresa, uma linha por moeda)
+                       0017_painel_empresa_corrige.sql (a 0016 falhava em TODA chamada — "moeda" ambígua; USD só
+                                                     entra sem projeto; receita do mês sem venda futura)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
                        preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
-app/painel/            dashboard do ADM: a EMPRESA inteira. É a página de entrada (/, pós-login e caminhoInterno)
+app/painel/            dashboard do ADM: a EMPRESA inteira. É a página de entrada (/, pós-login e caminhoInterno);
+                       quem não tem empresa (investidor, membro de projeto, conta nova) segue para /projetos
 app/clientes, /fornecedores, /commodities  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
                        custeio (grupo_custo, modal_etapa) para o lançamento herdar sem tradução no meio
 app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
@@ -169,6 +172,12 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
 - **O SQL Editor do Supabase trunca migration longa.** Aconteceu na 0010 e na 0012, a segunda já com etiqueta
   nomeada. Entregar migration em BLOCOS CURTOS, cada função com etiqueta própria (`$adm$`, `$lanc$`…), e
   conferir depois por `pg_proc`/`pg_policies` — "rodei" não é prova de que entrou inteira.
+- **Função PL/pgSQL com `returns table (...)`: TODA coluna do corpo leva prefixo de tabela.** Cada coluna de
+  saída vira variável; um `moeda` solto que coincida com ela dá "column reference is ambiguous" — e só na
+  CHAMADA, nunca no `create`. Foi assim que a 0016 saiu quebrada. "Criou sem erro" não prova nada: função nova
+  ganha teste em `tests/schemaN.test.sql`, rodado num Postgres local antes de entregar.
+- **Empresa do usuário é por filiação** (`minha_organizacao()`), nunca "a primeira linha que o RLS deixa ver": o
+  master enxerga todas as `organizacoes`, e a primeira visível seria a de outra empresa.
 
 ## Ambiente do usuário
 

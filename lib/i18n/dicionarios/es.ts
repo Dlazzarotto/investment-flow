@@ -347,7 +347,6 @@ export const es: Dicionario = {
     ativos: "{n} activo(s)", vendasQtd: "{n} venta(s)",
     receita: "Ingresos", receitaMes: "Ingresos del mes", saida: "Salida",
     saidaNota: "Inversión + costo de ventas + gastos", saldo: "Saldo",
-    semEmpresa: "Sin empresa", semEmpresaTexto: "El panel consolida los datos de una empresa. Cree la suya en la pantalla de proyectos para empezar.",
     faltaTitulo: "Por cobrar y por embarcar aún no aparecen aquí",
     faltaTexto: "Ambos números salen del CONTRATO, y el contrato nace de la SCO: LOI y CIS abren el cliente, el cliente se vuelve estimación, la estimación genera la SCO, y la SCO dice si es de 1 año o de 1 carga. Un contrato de 1 año tiene varios embarques, y de los embarques salen lo que falta embarcar y lo que falta cobrar. Mostrar cero antes de eso sería peor que decir esto.",
   },

@@ -347,7 +347,6 @@ export const pt = {
     ativos: "{n} ativo(s)", vendasQtd: "{n} venda(s)",
     receita: "Receita", receitaMes: "Receita no mês", saida: "Saída",
     saidaNota: "Investimento + custo das vendas + despesas", saldo: "Saldo",
-    semEmpresa: "Sem empresa", semEmpresaTexto: "O painel consolida os dados de uma empresa. Crie a sua na tela de projetos para começar.",
     faltaTitulo: "A receber e a embarcar ainda não aparecem aqui",
     faltaTexto: "Esses dois números saem do CONTRATO, e o contrato nasce da SCO: LOI e CIS abrem o cliente, o cliente vira estimativa, a estimativa gera a SCO, e é a SCO que diz se é de 1 ano ou de 1 carga. Contrato de 1 ano tem vários embarques; é dos embarques que sai o que falta embarcar e o que falta receber. Mostrar zero antes disso seria pior do que dizer isto.",
   },

@@ -347,7 +347,6 @@ export const zh: Dicionario = {
     ativos: "其中 {n} 个启用", vendasQtd: "{n} 笔销售",
     receita: "收入", receitaMes: "本月收入", saida: "支出",
     saidaNota: "投资 + 销售成本 + 费用", saldo: "结余",
-    semEmpresa: "尚未创建公司", semEmpresaTexto: "总览页汇总一家公司的数据。请先在项目页面创建您的公司。",
     faltaTitulo: "待收与待装运尚未显示",
     faltaTexto: "这两个数字来自合同，而合同源于 SCO：LOI 与 CIS 建立客户，客户转为估算，估算生成 SCO，而 SCO 说明是一年期还是单批货。一年期合同含多个装运，待装运与待收款均由装运产生。在此之前显示零，不如在此说明。",
   },
