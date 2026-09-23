@@ -12,6 +12,15 @@ export const en: Dicionario = {
   nav: { custeio: "Costing", aportes: "Contributions", carteira: "My portfolio", dashboard: "Dashboard", investimentos: "Investments", vendas: "Sales", despesas: "Expenses", parceria: "Partnership",
     projetoAtivo: "Active project", escolha: "Choose a project…", secoes: "Project sections" },
   login: {
+    esqueciSenha: "I forgot my password",
+    recuperarTitulo: "Recover access", recuperarTexto: "Enter your account email. If it exists, you will get a link to set a new password.",
+    enviarLink: "Send link", linkEnviado: "If an account exists with that email, the link is on its way. Check the spam folder too.",
+    voltarEntrar: "Back to sign in",
+    novaSenhaTitulo: "Set a new password", novaSenhaTexto: "Choose a password with at least 6 characters.",
+    novaSenha: "New password", repetirSenha: "Repeat the password", salvarSenha: "Save password",
+    senhaAlterada: "Password changed. You are in.", senhasDiferentes: "The two passwords must match.",
+    linkExpirado: "Invalid or expired link", linkExpiradoTexto: "Ask for another one: they last a short time and work once.",
+    criarContaTitulo: "Create your account", criarContaTexto: "Use the same email that received the invitation — that is how your access is recognised.",
     marca: "Investment-Flow System", subtitulo: "Investments, revenue and partnerships per project.",
     email: "Email", senha: "Password", entrar: "Sign in", criarConta: "Create account", verificando: "Checking…",
     irCadastro: "No account yet — create one", irEntrar: "I have an account — sign in",
@@ -135,6 +144,7 @@ export const en: Dicionario = {
     porCategoria: "Expenses by category",
   },
   acesso: {
+    conviteRecebido: "You have been invited", 
     pin: "Authorization PIN", pinAtual: "PIN is set", pinSemCadastro: "No PIN set",
     pinTexto: "The Office role can only change or delete an entry by typing this PIN. It belongs to the project, is stored hashed, and is nobody's login password.",
     pinNovo: "New PIN (at least {min} characters)", pinSalvar: "Save PIN", pinSalvo: "PIN saved.",

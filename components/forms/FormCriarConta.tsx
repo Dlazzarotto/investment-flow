@@ -1,15 +1,16 @@
 "use client";
 import Link from "next/link";
 import { useFormState } from "react-dom";
-import { entrar } from "@/app/actions/auth";
+import { cadastrar } from "@/app/actions/auth";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { useI18n } from "@/lib/i18n/client";
 import type { ActionState } from "@/lib/types";
 
-export function FormLogin({ next }: { next?: string }) {
+export function FormCriarConta({ next }: { next?: string }) {
   const { d } = useI18n();
-  const [estado, formAction] = useFormState(entrar, { ok: false } as ActionState);
+  const [estado, formAction] = useFormState(cadastrar, { ok: false } as ActionState);
+  const entrar = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
   return (
     <form action={formAction} className="grid gap-4">
       {next && <input type="hidden" name="next" value={next} />}
@@ -19,11 +20,11 @@ export function FormLogin({ next }: { next?: string }) {
       </div>
       <div>
         <label className="rotulo" htmlFor="senha">{d.login.senha}</label>
-        <input id="senha" name="senha" type="password" autoComplete="current-password" minLength={6} required className="campo" />
+        <input id="senha" name="senha" type="password" autoComplete="new-password" minLength={6} required className="campo" />
       </div>
-      <SubmitButton aguardando={d.login.verificando}>{d.login.entrar}</SubmitButton>
+      <SubmitButton aguardando={d.login.verificando}>{d.login.criarConta}</SubmitButton>
       <Mensagem estado={estado} />
-      <Link href="/esqueci-senha" className="btn-quieto">{d.login.esqueciSenha}</Link>
+      <Link href={entrar} className="btn-quieto">{d.login.irEntrar}</Link>
     </form>
   );
 }

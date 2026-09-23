@@ -12,6 +12,15 @@ export const es: Dicionario = {
   nav: { custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
     projetoAtivo: "Proyecto activo", escolha: "Elija un proyecto…", secoes: "Secciones del proyecto" },
   login: {
+    esqueciSenha: "Olvidé mi contraseña",
+    recuperarTitulo: "Recuperar acceso", recuperarTexto: "Indique el correo de su cuenta. Si existe, recibirá un enlace para crear una contraseña nueva.",
+    enviarLink: "Enviar enlace", linkEnviado: "Si existe una cuenta con ese correo, el enlace ya va en camino. Revise también la carpeta de spam.",
+    voltarEntrar: "Volver al acceso",
+    novaSenhaTitulo: "Crear contraseña nueva", novaSenhaTexto: "Elija una contraseña de al menos 6 caracteres.",
+    novaSenha: "Contraseña nueva", repetirSenha: "Repita la contraseña", salvarSenha: "Guardar contraseña",
+    senhaAlterada: "Contraseña cambiada. Ya está dentro.", senhasDiferentes: "Las dos contraseñas deben ser iguales.",
+    linkExpirado: "Enlace inválido o vencido", linkExpiradoTexto: "Pida otro enlace: duran poco y sirven una sola vez.",
+    criarContaTitulo: "Crear su cuenta", criarContaTexto: "Use el mismo correo que recibió la invitación — es por él que se reconoce su acceso.",
     marca: "Investment-Flow System", subtitulo: "Inversiones, ingresos y alianzas por proyecto.",
     email: "Correo electrónico", senha: "Contraseña", entrar: "Entrar", criarConta: "Crear cuenta", verificando: "Verificando…",
     irCadastro: "No tengo cuenta — crear", irEntrar: "Ya tengo cuenta — entrar",
@@ -135,6 +144,7 @@ export const es: Dicionario = {
     porCategoria: "Gastos por categoría",
   },
   acesso: {
+    conviteRecebido: "Usted fue invitado", 
     pin: "PIN de autorización", pinAtual: "PIN configurado", pinSemCadastro: "Sin PIN configurado",
     pinTexto: "La Oficina solo modifica o elimina un registro escribiendo este PIN. Es del proyecto, se guarda con hash y no es la contraseña de acceso de nadie.",
     pinNovo: "Nuevo PIN (mínimo {min} caracteres)", pinSalvar: "Guardar PIN", pinSalvo: "PIN guardado.",

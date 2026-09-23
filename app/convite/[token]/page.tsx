@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { entrarComConvite } from "@/app/actions/acesso";
-import { SeletorIdioma } from "@/components/SeletorIdioma";
+import { MolduraEntrada } from "@/components/MolduraEntrada";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { obterD } from "@/lib/i18n/server";
 import { obterUsuario } from "@/lib/consultas";
@@ -7,35 +8,50 @@ import { obterUsuario } from "@/lib/consultas";
 export const dynamic = "force-dynamic";
 
 /**
- * Tela do link de convite. O middleware já garante que só chega aqui quem está
- * logado; entrar de fato é um clique, para prefetch e prévia de link não gastarem
- * um uso do convite.
+ * Tela do link de convite — a única porta de entrada para uma conta nova.
+ *
+ * É pública: quem é convidado normalmente ainda não tem conta, e mandá-lo para
+ * o login primeiro deixava o link sem saída. Continua valendo que ENTRAR é um
+ * clique, não a visita: o uso do convite só é gasto no envio do formulário, e
+ * por isso prefetch e prévia de link não consomem nada.
  */
 export default async function ConvitePage({ params }: { params: { token: string } }) {
-  const { locale, d } = obterD();
+  const { d } = obterD();
   const usuario = await obterUsuario();
   const invalido = params.token === "invalido";
+  const volta = `/convite/${encodeURIComponent(params.token)}`;
+
+  if (invalido) {
+    return (
+      <MolduraEntrada titulo={d.acesso.conviteInvalido} texto={d.acesso.conviteInvalidoTexto}>
+        <Link href="/login" className="btn-navy">{d.login.voltarEntrar}</Link>
+      </MolduraEntrada>
+    );
+  }
+
+  // Sem conta ainda: as duas portas, carregando o convite para depois do cadastro.
+  if (!usuario) {
+    return (
+      <MolduraEntrada titulo={d.acesso.conviteRecebido} texto={d.login.criarContaTexto}>
+        <div className="grid gap-3">
+          <Link href={`/criar-conta?next=${encodeURIComponent(volta)}`} className="btn-primario">
+            {d.login.irCadastro}
+          </Link>
+          <Link href={`/login?next=${encodeURIComponent(volta)}`} className="btn-quieto">
+            {d.login.irEntrar}
+          </Link>
+        </div>
+      </MolduraEntrada>
+    );
+  }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
-      <div className="mb-6 flex justify-end"><SeletorIdioma atual={locale} escuro={false} /></div>
-      <p className="text-stone">{d.login.marca}</p>
-      <h1 className="mt-1 text-2xl">{invalido ? d.acesso.conviteInvalido : d.meta.titulo}</h1>
-      {invalido ? (
-        <>
-          <p className="mt-3 text-stone">{d.acesso.conviteInvalidoTexto}</p>
-          <a href="/projetos" className="btn-navy mt-8">{d.comum.verProjetos}</a>
-        </>
-      ) : (
-        <>
-          <p className="mt-3 text-stone">{d.acesso.convitesTexto}</p>
-          {usuario?.email && <p className="mt-2 break-all text-stone">{usuario.email}</p>}
-          <form action={entrarComConvite} className="mt-8">
-            <input type="hidden" name="token" value={params.token} />
-            <SubmitButton aguardando={d.acesso.entrando}>{d.comum.verProjetos}</SubmitButton>
-          </form>
-        </>
-      )}
-    </main>
+    <MolduraEntrada titulo={d.meta.titulo} texto={d.acesso.convitesTexto}>
+      <p className="mb-4 break-all text-center text-stone">{usuario.email}</p>
+      <form action={entrarComConvite}>
+        <input type="hidden" name="token" value={params.token} />
+        <SubmitButton aguardando={d.acesso.entrando}>{d.comum.verProjetos}</SubmitButton>
+      </form>
+    </MolduraEntrada>
   );
 }
