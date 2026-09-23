@@ -32,18 +32,21 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0012 + 0013_travas_parte2.sql (suspensão bloqueia de verdade; investidor perde despesas e
                                                      cadeia logística. A 0012 truncou no editor — a 0013 é o resto)
                        0014_clientes_fornecedores.sql (cadastros comerciais da empresa — etapa 2 da v4)
+                       0015_commodities.sql (catálogo + parâmetros de qualidade com ajuste_por_ponto — etapa 3)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
                        preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
-app/clientes, /fornecedores  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
+app/clientes, /fornecedores, /commodities  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
                        custeio (grupo_custo, modal_etapa) para o lançamento herdar sem tradução no meio
 app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
                        clicável filtra a lista), liberar empresa, contrato, faturas e administradores
 app/login, /criar-conta, /esqueci-senha, /redefinir-senha, /auth/confirmar, /convite/[token]
                        telas de fora da aplicação; todas usam components/MolduraEntrada
-app/api/export/[id]    CSV/XLSX no idioma atual;  app/api/ia/estimar  POST valor médio de mercado
+app/api/export/[id]    CSV/XLSX/PDF no idioma atual (PDF = lib/relatorio.ts, HTML com CSS de impressão: um
+                       gerador de PDF precisaria embutir fonte CJK de megabytes para o chinês não sair em
+                       quadradinhos, e o navegador já tem as fontes de todos os idiomas);  app/api/ia/estimar  POST valor médio de mercado
 app/api/ia/custo       POST custo de cargo (pela legislação do país da etapa) ou de serviço, já na base do driver
 lib/i18n/              config.ts, dicionarios/{pt,en,es,zh}.ts, server.ts (obterD), client.tsx (useI18n)
 lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchemas(d)), calculos.ts (puro),
@@ -62,7 +65,7 @@ tests/                 calculos.test.ts, custeio.test.ts, ia.test.ts, i18n.test.
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 93 testes, todos devem passar
+npm test          # vitest — 101 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```

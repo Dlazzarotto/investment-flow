@@ -52,7 +52,8 @@ export default async function DashboardPage({ params }: { params: { id: string }
           {projeto.descricao && <p className="mt-2 max-w-2xl text-stone">{projeto.descricao}</p>}
         </div>
         <div className="flex gap-2">
-          <a href={`/api/export/${projeto.id}?formato=csv`} className="btn-quieto">{d.dashboard.baixarCsv}</a>
+          <a href={`/api/export/${projeto.id}?formato=pdf`} target="_blank" rel="noopener"
+             className="btn-quieto">{d.dashboard.baixarPdf}</a>
           <a href={`/api/export/${projeto.id}?formato=xlsx`} className="btn-quieto">{d.dashboard.baixarExcel}</a>
         </div>
       </div>

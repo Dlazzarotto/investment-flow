@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
+  Cliente, Commodity, CommodityParametro, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -288,4 +288,23 @@ export const listarFornecedores = cache(async (organizacaoId?: string): Promise<
     .eq("organizacao_id", organizacaoId).order("nome");
   if (error) throw new Error(error.message);
   return (data ?? []) as Fornecedor[];
+});
+
+export const listarCommodities = cache(async (organizacaoId?: string): Promise<Commodity[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("commodities").select("*")
+    .eq("organizacao_id", organizacaoId).order("nome");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Commodity[];
+});
+
+/** Todos os parâmetros das commodities da empresa, para a tela agrupar sem N consultas. */
+export const listarParametros = cache(async (commodityIds: string[]): Promise<CommodityParametro[]> => {
+  if (commodityIds.length === 0) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("commodity_parametros").select("*")
+    .in("commodity_id", commodityIds).order("ordem").order("nome");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CommodityParametro[];
 });
