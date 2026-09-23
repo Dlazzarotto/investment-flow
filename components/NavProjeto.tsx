@@ -13,6 +13,8 @@ export function NavProjeto({ projetoId, verInvestimentos }: { projetoId: string;
     ...(verInvestimentos ? [{ seg: "/investimentos", rotulo: d.nav.investimentos }, { seg: "/aportes", rotulo: d.nav.aportes }] : []),
     { seg: "/vendas", rotulo: d.nav.vendas },
     { seg: "/despesas", rotulo: d.nav.despesas },
+    // Custeio é preço interno: o investidor nunca chega aqui (o layout o manda para a carteira).
+    { seg: "/custeio", rotulo: d.nav.custeio },
     { seg: "/participantes", rotulo: d.nav.parceria },
   ];
   return (

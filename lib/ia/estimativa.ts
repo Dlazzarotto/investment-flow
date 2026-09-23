@@ -147,13 +147,17 @@ export function textoFinal(content: BlocoConteudo[]): string {
 
 interface RespostaMessages { content?: BlocoConteudo[]; stop_reason?: string }
 
-/** Chama a Claude Messages API com a ferramenta de busca na web e devolve o resultado interpretado. */
-export async function estimarValorMedio(e: EntradaEstimativa, d: Dicionario): Promise<{ resultado: ResultadoEstimativa; modelo: string }> {
+/**
+ * Chama a Claude Messages API com busca na web e devolve o texto final da resposta.
+ * Fica separada do prompt para que outras perguntas (custo de cargo ou de serviço,
+ * em lib/ia/custo.ts) reaproveitem o laço de retomada e o tratamento de erro.
+ */
+export async function chamarClaude(prompt: string, d: Dicionario): Promise<{ texto: string; modelo: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error(d.ia.semChave);
   const modelo = process.env.ANTHROPIC_MODEL || MODELO_PADRAO;
   const tools = [{ type: "web_search_20250305", name: "web_search", max_uses: MAX_BUSCAS }];
-  const messages: { role: "user" | "assistant"; content: string | BlocoConteudo[] }[] = [{ role: "user", content: montarPrompt(e) }];
+  const messages: { role: "user" | "assistant"; content: string | BlocoConteudo[] }[] = [{ role: "user", content: prompt }];
   const inicio = Date.now();
 
   let resposta: RespostaMessages;
@@ -177,5 +181,11 @@ export async function estimarValorMedio(e: EntradaEstimativa, d: Dicionario): Pr
   if (resposta.stop_reason === "max_tokens") throw new Error(d.ia.truncada);
   const texto = textoFinal(resposta.content ?? []);
   if (!texto.trim()) throw new Error(d.ia.semTexto);
+  return { texto, modelo };
+}
+
+/** Valor médio de mercado do item, pesquisado na web. */
+export async function estimarValorMedio(e: EntradaEstimativa, d: Dicionario): Promise<{ resultado: ResultadoEstimativa; modelo: string }> {
+  const { texto, modelo } = await chamarClaude(montarPrompt(e), d);
   return { resultado: interpretarResposta(texto, d), modelo };
 }
