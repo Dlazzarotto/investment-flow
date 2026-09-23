@@ -246,12 +246,19 @@ export const DRIVERS_CUSTO = [
 ] as const;
 export type DriverCusto = (typeof DRIVERS_CUSTO)[number];
 
-/** Custeio do projeto — um por projeto; nome e moeda vêm do próprio projeto. */
+/**
+ * Uma precificação do projeto. Há várias por projeto: o mesmo projeto vende para
+ * clientes diferentes, cada um com seu lote, sua moeda e sua margem alvo.
+ */
 export interface EstimativaCusto {
   id: string;
   projeto_id: string;
+  nome: string;
   commodity: string;
+  /** Para quem é a proposta; opcional. */
+  cliente: string | null;
   modo: ModoEstimativa;
+  moeda: Moeda;
   unidade: string;
   volume_total: number;
   producao_diaria: number;

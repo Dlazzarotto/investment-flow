@@ -226,11 +226,4 @@ export const listarEtapas = cache(async (projetoId: string): Promise<ProjetoEtap
   return (data ?? []) as ProjetoEtapa[];
 });
 
-/** Custeio do projeto (um por projeto); null quando ainda não foi iniciado. */
-export const obterCusteio = cache(async (projetoId: string): Promise<EstimativaCusto | null> => {
-  const supabase = createClient();
-  const { data, error } = await supabase.from("estimativas_custo").select("*")
-    .eq("projeto_id", projetoId).maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as EstimativaCusto | null) ?? null;
-});
+

@@ -112,8 +112,11 @@ export function criarSchemas(d: Dicionario) {
     }),
     estimativa: z.object({
       projeto_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
       commodity: z.string().trim().min(1, v.commodityObrigatorio).max(120, v.nomeLongo),
+      cliente: z.string().trim().max(160, v.nomeLongo).optional().transform((x) => x || null),
       modo: z.enum(MODOS_ESTIMATIVA, enumMsg(v.modoInvalido)),
+      moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
       unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
       volume_total: numeroPositivo(v.volume, MAX_QUANTIDADE),
       producao_diaria: custoOpcional(v.producaoDiaria),

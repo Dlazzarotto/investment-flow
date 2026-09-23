@@ -12,10 +12,12 @@
 --                        embarcando em Porto Alegre" tem outras.
 --                        Cada etapa tem origem, destino, modal e PAÍS — e é o
 --                        país que diz qual legislação vale para o salário.
---   estimativas_custo  — o custeio do projeto: commodity, modo (produção própria
---                        ou revenda), volume, produção diária e margem alvo.
---                        UMA POR PROJETO: o nome e a moeda vêm do projeto, e a
---                        tela abre direto nela, sem cerimônia de criação.
+--   estimativas_custo  — uma precificação: commodity, cliente, modo (produção
+--                        própria ou revenda), volume, produção diária e margem.
+--                        VÁRIAS POR PROJETO — dentro do mesmo projeto vende-se
+--                        para clientes diferentes, cada um com seu lote, sua
+--                        moeda e sua margem. Todas reaproveitam a cadeia do
+--                        projeto.
 --   estimativa_itens   — cada linha de custo, dentro de uma etapa, com um DRIVER
 --                        que diz como aquele valor vira custo por unidade
 --
@@ -60,10 +62,15 @@ exception when duplicate_object then null; end $$;
 
 create table if not exists public.estimativas_custo (
   id              uuid primary key default gen_random_uuid(),
-  -- Uma por projeto: o custeio é do projeto, e o projeto já tem nome e moeda.
-  projeto_id      uuid not null unique references public.projetos (id) on delete cascade,
+  projeto_id      uuid not null references public.projetos (id) on delete cascade,
+  nome            text not null check (char_length(trim(nome)) between 1 and 160),
   commodity       text not null check (char_length(trim(commodity)) between 1 and 120),
+  -- Para quem é esta precificação; o mesmo projeto vende para vários clientes.
+  cliente         text check (cliente is null or char_length(trim(cliente)) between 1 and 160),
   modo            public.modo_estimativa not null default 'producao_propria',
+  -- Moeda da proposta: pode diferir da moeda-base do projeto (export em USD,
+  -- mercado interno em BRL), por isso fica aqui e não só no projeto.
+  moeda           public.moeda not null,
   unidade         text not null default 'Toneladas' check (char_length(trim(unidade)) between 1 and 40),
   -- Volume do lote que a estimativa precifica; divide os custos lançados como "por lote".
   volume_total    numeric(14,3) not null check (volume_total > 0),
@@ -76,7 +83,8 @@ create table if not exists public.estimativas_custo (
   criado_em       timestamptz not null default now(),
   atualizado_em   timestamptz not null default now()
 );
--- (o unique de projeto_id já indexa)
+create index if not exists estimativas_custo_projeto_idx
+  on public.estimativas_custo (projeto_id, criado_em desc);
 
 drop trigger if exists estimativas_custo_atualizado_em on public.estimativas_custo;
 create trigger estimativas_custo_atualizado_em
