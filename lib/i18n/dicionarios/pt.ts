@@ -1,6 +1,6 @@
 /** Dicionário-base (define o formato; os demais idiomas devem espelhar todas as chaves). */
 export const pt = {
-  meta: { titulo: "Gestão de Aportes", descricao: "Investimentos, receitas e parcerias por projeto" },
+  meta: { titulo: "Investment-Flow System", descricao: "Investimentos, receitas e parcerias por projeto" },
   comum: {
     app: "Aportes", sair: "Sair", idioma: "Idioma", salvando: "Salvando…", excluir: "Excluir", remover: "Remover",
     total: "Total", data: "Data", categoria: "Categoria", unidade: "Unidade", contato: "Contato", nome: "Nome",
@@ -12,7 +12,7 @@ export const pt = {
   nav: { custeio: "Custeio", aportes: "Aportes", carteira: "Minha carteira", dashboard: "Dashboard", investimentos: "Investimentos", vendas: "Vendas", despesas: "Despesas", parceria: "Parceria",
     projetoAtivo: "Projeto ativo", escolha: "Escolha um projeto…", secoes: "Seções do projeto" },
   login: {
-    marca: "Peace on Tax · ferramentas", subtitulo: "Investimentos, receitas e parcerias por projeto.",
+    marca: "Investment-Flow System", subtitulo: "Investimentos, receitas e parcerias por projeto.",
     email: "E-mail", senha: "Senha", entrar: "Entrar", criarConta: "Criar conta", verificando: "Verificando…",
     irCadastro: "Não tenho conta — criar", irEntrar: "Já tenho conta — entrar",
     credenciais: "E-mail ou senha incorretos.", contaCriada: "Conta criada. Confirme o e-mail recebido para entrar.",

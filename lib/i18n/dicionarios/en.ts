@@ -1,6 +1,6 @@
 import type { Dicionario } from "./pt";
 export const en: Dicionario = {
-  meta: { titulo: "Capital Tracker", descricao: "Investments, revenue and partnerships per project" },
+  meta: { titulo: "Investment-Flow System", descricao: "Investments, revenue and partnerships per project" },
   comum: {
     app: "Capital", sair: "Sign out", idioma: "Language", salvando: "Saving…", excluir: "Delete", remover: "Remove",
     total: "Total", data: "Date", categoria: "Category", unidade: "Unit", contato: "Contact", nome: "Name",
@@ -12,7 +12,7 @@ export const en: Dicionario = {
   nav: { custeio: "Costing", aportes: "Contributions", carteira: "My portfolio", dashboard: "Dashboard", investimentos: "Investments", vendas: "Sales", despesas: "Expenses", parceria: "Partnership",
     projetoAtivo: "Active project", escolha: "Choose a project…", secoes: "Project sections" },
   login: {
-    marca: "Peace on Tax · tools", subtitulo: "Investments, revenue and partnerships per project.",
+    marca: "Investment-Flow System", subtitulo: "Investments, revenue and partnerships per project.",
     email: "Email", senha: "Password", entrar: "Sign in", criarConta: "Create account", verificando: "Checking…",
     irCadastro: "No account yet — create one", irEntrar: "I have an account — sign in",
     credenciais: "Incorrect email or password.", contaCriada: "Account created. Confirm the email you received to sign in.",
