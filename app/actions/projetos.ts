@@ -49,3 +49,16 @@ export async function excluirProjeto(fd: FormData): Promise<void> {
   revalidatePath("/projetos");
   redirect("/projetos");
 }
+
+/** Status do projeto (0022): em análise, em andamento, encerrado — é o que o painel conta. */
+export async function mudarStatusProjeto(fd: FormData): Promise<void> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).statusProjeto.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return;
+  const supabase = createClient();
+  const { error } = await supabase.from("projetos").update({ status: parsed.data.status }).eq("id", parsed.data.id);
+  if (error) throw new Error(traduzirErroBanco(error, "projeto", d));
+  revalidatePath(`/projetos/${parsed.data.id}`, "layout");
+  revalidatePath("/projetos");
+  revalidatePath("/painel");
+}

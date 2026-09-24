@@ -60,7 +60,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
-      <Link href="/contratos" className="text-navy underline">← {t.voltar}</Link>
+      <Link href={contrato.direcao === "compra" ? "/compras" : "/vendas"} className="text-navy underline">← {t.voltar}</Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl">{titulo}</h1>
         <SeloStatus status={contrato.status} rotulo={d.enums.statusContrato[contrato.status]} />

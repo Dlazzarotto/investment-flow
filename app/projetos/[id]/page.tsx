@@ -1,176 +1,157 @@
 import Link from "next/link";
-import { Kpi } from "@/components/Kpi";
-import { Vazio } from "@/components/ui/Vazio";
-import { GraficoFluxo } from "@/components/charts/GraficoFluxo";
-import { GraficoBreakeven } from "@/components/charts/GraficoBreakeven";
-import { GraficoAlocacao } from "@/components/charts/GraficoAlocacao";
-import { listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, obterFluxoMensal, obterPapel, obterProjeto } from "@/lib/consultas";
-import { permissoes } from "@/lib/permissoes";
-import { Cenarios } from "@/components/Cenarios";
+import { mudarStatusProjeto } from "@/app/actions/projetos";
+import { SelectAutoSubmit } from "@/components/ui/SelectAutoSubmit";
+import { SeloStatus } from "@/components/contratos/SeloStatus";
 import {
-  MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, encontrarBreakeven, ratearParticipacoes,
-  roiAnualizado, tirAnual, tirMensal, type Rateio, type TipoRateio,
-} from "@/lib/calculos";
+  capitalPorProjeto, listarContratos, listarParticipantes, listarRemuneracoes, obterPapel, obterProjeto, obterResumo,
+} from "@/lib/consultas";
+import { baseDoProjeto, projetarRemuneracao, valorContrato } from "@/lib/contratos";
+import { permissoes } from "@/lib/permissoes";
 import { obterD } from "@/lib/i18n/server";
-import { fmtTexto } from "@/lib/i18n";
+import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
+import { STATUS_PROJETO } from "@/lib/types";
 
-export default async function DashboardPage({ params }: { params: { id: string } }) {
+export const dynamic = "force-dynamic";
+
+/**
+ * Resumo do projeto — o que a empresa ADMINISTRA para investidores (0022).
+ * Resultado (o mesmo que o investidor vê, via resumo_projeto), sócios, como a
+ * empresa ganha, e os contratos feitos por conta do projeto. Vender e comprar
+ * são da empresa (menu principal); aqui só se enxerga o que é do projeto.
+ */
+export default async function ResumoProjetoPage({ params }: { params: { id: string } }) {
   const { locale, d } = obterD();
   const f = formatadores(locale);
+  const t = d.resumoProjeto;
   const projeto = await obterProjeto(params.id);
   const papel = await obterPapel(projeto.id);
   const pode = permissoes(papel);
-  const [investimentos, vendas, despesas, participantes, fluxo] = await Promise.all([
-    // O RLS já devolveria vazio para quem não pode ver capex; nem pedimos.
-    pode.verInvestimentos ? listarInvestimentos(projeto.id) : Promise.resolve([]),
-    listarVendas(projeto.id), listarDespesas(projeto.id),
-    listarParticipantes(projeto.id), obterFluxoMensal(projeto.id),
+  const org = projeto.organizacao_id;
+  const [resumo, participantes, contratos, remuneracoes, capital] = await Promise.all([
+    obterResumo(projeto.id), listarParticipantes(projeto.id),
+    org && pode.administrar ? listarContratos(org) : Promise.resolve([]),
+    org && pode.administrar ? listarRemuneracoes(org) : Promise.resolve([]),
+    capitalPorProjeto([projeto.id]),
   ]);
-  const kpis = calcularKpis(investimentos, vendas, despesas);
-  const breakeven = encontrarBreakeven(fluxo);
-  const roiAno = roiAnualizado(kpis.roi, fluxo.length);
-  const fluxoLiquido = fluxo.map((x) => x.receita - x.saida);
-  const tir = tirAnual(fluxoLiquido);
-  const tirMes = tirMensal(fluxoLiquido);
-  const alocacao = alocacaoPorCategoria(investimentos);
-  const rateio = ratearParticipacoes(projeto, participantes, kpis);
-  const meu = rateio[0];
-  const semDados = investimentos.length === 0 && vendas.length === 0 && despesas.length === 0;
-  const tomSaldo = kpis.saldo > 0 ? "gain" : kpis.saldo < 0 ? "loss" : "neutro";
   const m = projeto.moeda;
-  const papelDaParte = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
-    : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo];
-  const nomeParte = (r: Rateio) => r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome;
+  const doProjeto = contratos.filter((c) => c.projeto_id === projeto.id && c.conta === "projeto");
+  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0);
+  const ganhos = remuneracoes.filter((r) => r.projeto_id === projeto.id).map((r) => ({ r, p: projetarRemuneracao(r, base) }));
+  const alocado = participantes.reduce((s, p) => s + Number(p.percentual), 0) + Number(projeto.participacao_pct);
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">{projeto.nome}</h1>
-          <p className="mt-1 text-stone">{fmtTexto(d.projetos.resumoCabecalho, { tipo: d.enums.tipoParceria[projeto.tipo_parceria], pct: f.numero(projeto.participacao_pct, 2) })}</p>
-          {projeto.descricao && <p className="mt-2 max-w-2xl text-stone">{projeto.descricao}</p>}
-        </div>
-        <div className="flex gap-2">
-          <a href={`/api/export/${projeto.id}?formato=pdf`} target="_blank" rel="noopener"
-             className="btn-quieto">{d.dashboard.baixarPdf}</a>
-          <a href={`/api/export/${projeto.id}?formato=xlsx`} className="btn-quieto">{d.dashboard.baixarExcel}</a>
-        </div>
-      </div>
-
-      {!pode.verInvestimentos && (
-        <p className="mt-6 rounded-md border-l-4 border-navy bg-navy-soft px-4 py-3">{d.acesso.semInvestimentos}</p>
-      )}
-
-      <section className="mt-8 rounded-md bg-navy px-5 py-6 text-white sm:px-8">
-        <p className="text-sm text-white/75">{d.dashboard.saldo}</p>
-        <p className={`num mt-1 text-3xl font-semibold leading-none ${kpis.saldo < 0 ? "text-orange" : ""}`}>{f.moeda(kpis.saldo, m)}</p>
-        <p className="mt-3 text-base text-white/85">
-          {breakeven ? fmtTexto(d.dashboard.breakevenAtingido, { mes: f.mesLongo(breakeven) })
-            : kpis.investimentoTotal > 0 ? d.dashboard.breakevenNao : d.dashboard.breakevenSemDados}
-        </p>
-        {meu.percentual > 0 && (
-          <p className="mt-1 text-base text-white/85">
-            {fmtTexto(d.dashboard.atribuivel, { pct: f.numero(meu.percentual, 2) })}{" "}
-            <span className="num font-semibold text-white">{f.moeda(meu.saldoAtribuivel, m)}</span>
+          <p className="mt-1 text-stone">
+            {[d.enums.statusProjeto[projeto.status], m, fmtTexto(t.desde, { data: f.data(projeto.data_inicio) })].join(" · ")}
           </p>
+        </div>
+        {pode.administrar && (
+          <form action={mudarStatusProjeto}>
+            <input type="hidden" name="id" value={projeto.id} />
+            <SelectAutoSubmit name="status" defaultValue={projeto.status} className="campo w-auto" ariaLabel={t.status}>
+              {STATUS_PROJETO.map((s) => <option key={s} value={s}>{d.enums.statusProjeto[s]}</option>)}
+            </SelectAutoSubmit>
+          </form>
         )}
+      </div>
+      {projeto.descricao && <p className="mt-3">{projeto.descricao}</p>}
+
+      <section className="secao">
+        <h2>{t.resultado}</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Cartao rotulo={t.receita} valor={f.moeda(Number(resumo.receita_total), m)} />
+          <Cartao rotulo={t.saida} valor={f.moeda(Number(resumo.saida_total), m)} nota={t.saidaNota} />
+          <Cartao rotulo={t.saldo} valor={f.moeda(Number(resumo.saldo), m)} destaque
+                  cor={Number(resumo.saldo) < 0 ? "text-loss" : "text-gain"} />
+          <Cartao rotulo={t.aportes} valor={f.moeda(Number(resumo.aportes_total), m)} />
+        </div>
+        <p className="mt-2 text-sm text-stone">{t.resultadoNota}</p>
       </section>
 
-      <section className="mt-8 grid gap-6 sm:grid-cols-3">
-        {/* Investimento e ROI dependem do capex: sem ele, os dois saem da tela. */}
-        {pode.verInvestimentos && (
-          <Kpi rotulo={d.dashboard.investimentoTotal} valor={f.moeda(kpis.investimentoTotal, m)} nota={fmtTexto(d.dashboard.lancamentos, { n: investimentos.length })} />
+      <section className="secao">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="mb-0">{t.socios}</h2>
+          <Link href={`/projetos/${projeto.id}/participantes`} className="text-navy underline">{t.gerirSocios}</Link>
+        </div>
+        {participantes.length === 0 ? <p className="text-stone">{t.semSocios}</p> : (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {participantes.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-2 rounded-md border border-stone-light bg-white px-4 py-3">
+                <span className="font-medium">{p.nome} <span className="text-stone">· {d.enums.tipoParticipante[p.tipo]}</span></span>
+                <span className="num font-semibold text-navy">{f.numero(Number(p.percentual), 2)} %</span>
+              </li>
+            ))}
+          </ul>
         )}
-        <Kpi rotulo={d.dashboard.receitaTotal} valor={f.moeda(kpis.receitaTotal, m)} nota={fmtTexto(d.dashboard.vendasN, { n: vendas.length })} />
-        {pode.verInvestimentos
-          ? <Kpi rotulo={d.dashboard.roi} valor={f.pct(kpis.roi)} tom={tomSaldo} nota={d.dashboard.roiNota} />
-          : <Kpi rotulo={d.dashboard.despesas} valor={f.moeda(kpis.despesasTotal, m)} nota={d.despesas.titulo} />}
+        <p className="mt-2 text-sm text-stone">
+          {fmtTexto(t.alocado, { pct: f.numero(alocado, 2) })}
+          {Number(projeto.participacao_pct) > 0 && ` · ${fmtTexto(t.empresaSocia, { pct: f.numero(Number(projeto.participacao_pct), 2) })}`}
+        </p>
       </section>
 
-      <section className="mt-8 grid gap-6 sm:grid-cols-3">
-        <Kpi rotulo={d.dashboard.margemBruta} valor={f.moeda(kpis.margemBruta, m)}
-             tom={kpis.margemBruta < 0 ? "loss" : "gain"}
-             nota={fmtTexto(d.dashboard.margemBrutaNota, { pct: f.pct(kpis.margemPct) })} />
-        <Kpi rotulo={d.dashboard.custoVendas} valor={f.moeda(kpis.custoVendasTotal, m)} nota={d.dashboard.custoVendasNota} />
-        <Kpi rotulo={d.dashboard.saidaTotal} valor={f.moeda(kpis.saidaTotal, m)}
-             nota={fmtTexto(d.dashboard.custoDespesaNota, { custo: f.moeda(kpis.custoVendasTotal, m), despesa: f.moeda(kpis.despesasTotal, m) })} />
-      </section>
-
-      {!semDados && (
-        <section className="mt-8 grid gap-6 sm:grid-cols-2">
-          <Kpi rotulo={d.dashboard.roiAnualizado} valor={f.pct(roiAno)} tom={tomSaldo}
-               nota={roiAno === null ? fmtTexto(d.dashboard.roiCurto, { min: MESES_MINIMOS_ANUALIZAR })
-                                     : fmtTexto(d.dashboard.roiAnualizadoNota, { meses: fluxo.length })} />
-          <Kpi rotulo={d.dashboard.tir} valor={f.pct(tir)} tom={tomSaldo}
-               nota={tir === null ? d.dashboard.semTir : fmtTexto(d.dashboard.tirNota, { mensal: f.pct(tirMes) })} />
+      {pode.administrar && (
+        <section className="secao">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="mb-0">{t.ganhoEmpresa}</h2>
+            <Link href={`/projetos/${projeto.id}/participantes#gestao`} className="text-navy underline">{t.definirGanho}</Link>
+          </div>
+          {ganhos.length === 0 ? <p className="rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{t.semGanho}</p> : (
+            <ul className="grid gap-2">
+              {ganhos.map(({ r, p }) => (
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-stone-light bg-white px-4 py-3">
+                  <span className="font-medium">{d.enums.tipoRemuneracao[r.tipo]}</span>
+                  <span className="num text-stone">
+                    {p.porAno !== null ? `${f.moeda(p.porAno, m)} ${d.gestao.porAno}`
+                      : p.sobContratos !== null ? `${f.moeda(p.sobContratos, m)} ${d.gestao.sobContratos}` : d.gestao.aConfirmar}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
-      {semDados ? (
-        <div className="secao"><Vazio titulo={d.dashboard.vazioTitulo} texto={d.dashboard.vazioTexto} /></div>
-      ) : (
-        <>
-          <section className="secao"><h2>{d.dashboard.fluxo}</h2><GraficoFluxo fluxo={fluxo} moeda={m} /></section>
-          <section className="secao"><h2>{d.dashboard.breakeven}</h2><GraficoBreakeven fluxo={fluxo} moeda={m} breakeven={breakeven} /></section>
-          <section className="secao grid gap-8 lg:grid-cols-2">
-            {pode.verInvestimentos && (
-              <div>
-                <h2 className="mb-4 text-xl">{d.dashboard.alocacao}</h2>
-                {alocacao.length === 0 ? <Vazio titulo={d.dashboard.semInvestimentos} texto={d.dashboard.semInvestimentosTexto} /> : <GraficoAlocacao alocacao={alocacao} moeda={m} />}
-              </div>
-            )}
-            <div>
-              <h2 className="mb-4 text-xl">{d.dashboard.porParticipacao}</h2>
-              <div className="overflow-x-auto">
-                <table className="tabela">
-                  <thead><tr><th>{d.dashboard.parte}</th><th>{d.dashboard.papel}</th><th className="num">%</th><th className="num">{d.dashboard.saldoAtribuivel}</th></tr></thead>
-                  <tbody>
-                    {rateio.map((r, i) => (
-                      <tr key={`${r.tipo}-${i}`} className={r.tipo === "restante" ? "text-stone" : ""}>
-                        <td className="font-medium">{nomeParte(r)}</td>
-                        <td>{papelDaParte(r.tipo)}</td>
-                        <td className="num">{f.numero(r.percentual, 2)}</td>
-                        <td className={`num ${r.saldoAtribuivel < 0 ? "text-loss" : ""}`}>{f.moeda(r.saldoAtribuivel, m)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Link href={`/projetos/${projeto.id}/participantes`} className="mt-3 inline-block text-navy underline">{d.dashboard.gerenciar}</Link>
-            </div>
-          </section>
-          <section className="secao">
-            <h2>{d.dashboard.cenarios}</h2>
-            <Cenarios fluxo={fluxo} moeda={m} />
-          </section>
-          <section className="secao">
-            <h2>{d.dashboard.tabelaMensal}</h2>
-            <div className="overflow-x-auto">
-              <table className="tabela">
-                <thead><tr>
-                  <th>{d.dashboard.mes}</th>{pode.verInvestimentos && <th className="num">{d.dashboard.investimento}</th>}
-                  <th className="num">{d.dashboard.custoVendas}</th><th className="num">{d.dashboard.despesas}</th>
-                  <th className="num">{d.dashboard.saida}</th><th className="num">{d.dashboard.receita}</th>
-                  <th className="num">{d.dashboard.saidaAcum}</th><th className="num">{d.dashboard.recAcum}</th><th className="num">{d.dashboard.saldoAcum}</th>
-                </tr></thead>
-                <tbody>
-                  {fluxo.map((x) => (
-                    <tr key={x.mes}>
-                      <td>{f.mesLongo(x.mes)}</td>
-                      {pode.verInvestimentos && <td className="num">{f.moeda(x.investimento, m)}</td>}
-                      <td className="num">{f.moeda(x.custo_vendas, m)}</td><td className="num">{f.moeda(x.despesas, m)}</td>
-                      <td className="num font-semibold">{f.moeda(x.saida, m)}</td><td className="num">{f.moeda(x.receita, m)}</td>
-                      <td className="num">{f.moeda(x.saida_acumulada, m)}</td><td className="num">{f.moeda(x.rec_acumulada, m)}</td>
-                      <td className={`num ${x.saldo_acumulado < 0 ? "text-loss" : "text-gain"}`}>{f.moeda(x.saldo_acumulado, m)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </>
+      {pode.administrar && (
+        <section className="secao">
+          <h2>{t.contratos}</h2>
+          {doProjeto.length === 0 ? <p className="text-stone">{t.semContratos}</p> : (
+            <ul className="grid gap-2 lg:grid-cols-2">
+              {doProjeto.map((c) => {
+                const v = valorContrato(c);
+                return (
+                  <li key={c.id}>
+                    <Link href={`/contratos/${c.id}`} className="block min-h-touch rounded-md border border-stone-light bg-white px-4 py-3 hover:border-navy">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-navy">{c.numero ?? d.contratos.semNumero} · {d.enums.direcaoContrato[c.direcao]}</span>
+                        <SeloStatus status={c.status} rotulo={d.enums.statusContrato[c.status]} />
+                      </div>
+                      <p className="num mt-1 text-stone">
+                        {f.numero(Number(c.volume), 0)} {rotuloUnidade(c.unidade, d)} · {v === null ? d.contratos.valorAConfirmar : f.moeda(v, c.moeda)}
+                      </p>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className="mt-2 text-sm text-stone">{t.contratosNota}</p>
+        </section>
       )}
     </>
+  );
+}
+
+function Cartao({ rotulo, valor, nota, destaque = false, cor = "text-navy" }:
+  { rotulo: string; valor: string; nota?: string; destaque?: boolean; cor?: string }) {
+  return (
+    <div className={`rounded-md border p-4 ${destaque ? "border-navy bg-navy-soft" : "border-stone-light bg-white"}`}>
+      <p className="text-sm text-stone">{rotulo}</p>
+      <p className={`num mt-1 text-lg font-semibold ${cor}`}>{valor}</p>
+      {nota && <p className="mt-1 text-sm text-stone">{nota}</p>}
+    </div>
   );
 }

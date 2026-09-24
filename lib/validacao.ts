@@ -4,7 +4,7 @@ import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
-  TIPOS_DOCUMENTO_CLIENTE, ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
+  STATUS_PROJETO, TIPOS_DOCUMENTO_CLIENTE, ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
   BASES_COMISSAO, DIRECOES_CONTRATO, EVENTOS_SALDO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
 } from "./types";
 
@@ -51,9 +51,14 @@ export function criarSchemas(d: Dicionario) {
       descricao: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
       data_inicio: dataISO,
       moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
-      tipo_parceria: z.enum(TIPOS_PARCERIA, enumMsg(v.tipoParceriaInvalido)),
-      participacao_pct: percentual,
+      // 0022: a empresa ADMINISTRA o projeto; tipo de parceria saiu da tela e a
+      // participação da empresa nasce 0 % (se ela também for sócia, informa aqui).
+      tipo_parceria: z.enum(TIPOS_PARCERIA, enumMsg(v.tipoParceriaInvalido)).optional(),
+      // Vazio/ausente = 0 %; fora de 0–100 continua ERRO (catch engoliria um 101 e gravaria 0).
+      participacao_pct: z.union([z.undefined(), z.literal("").transform(() => 0), percentual]).transform((x) => x ?? 0),
+      status: z.enum(STATUS_PROJETO, enumMsg(v.dadosInvalidos)).catch("em_andamento"),
     }),
+    statusProjeto: z.object({ id: uuid, status: z.enum(STATUS_PROJETO, enumMsg(v.dadosInvalidos)) }),
     participante: z.object({
       projeto_id: uuid,
       nome: z.string().trim().min(1, v.nomeParticipante).max(120, v.nomeLongo),

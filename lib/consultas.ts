@@ -407,3 +407,16 @@ export const listarDocumentosClientes = cache(async (organizacaoId?: string): Pr
   if (error) throw new Error(error.message);
   return (data ?? []) as ClienteDocumento[];
 });
+
+/** Todas as propostas (estimativas de custo) dos projetos da empresa, com o nome do projeto. */
+export const listarPropostasEmpresa = cache(async (organizacaoId?: string):
+  Promise<(EstimativaCusto & { projeto_nome: string })[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("estimativas_custo")
+    .select("*, projetos!inner(nome, organizacao_id)")
+    .eq("projetos.organizacao_id", organizacaoId).order("atualizado_em", { ascending: false });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as (EstimativaCusto & { projetos: { nome: string } })[])
+    .map(({ projetos, ...e }) => ({ ...e, projeto_nome: projetos.nome }));
+});

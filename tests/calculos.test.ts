@@ -224,6 +224,15 @@ describe("Validação (zod)", () => {
     expect(projetoSchema.safeParse({ ...base, participacao_pct: "101" }).success).toBe(false);
     expect(projetoSchema.safeParse({ ...base, descricao: "" }).data?.descricao).toBeNull();
   });
+  it("projeto (0022): a empresa administra — sem participação informada vale 0 %, sem tipo de parceria é aceito", () => {
+    const novo = projetoSchema.safeParse({ nome: "Mineradora", data_inicio: "2026-09-22", moeda: "USD" });
+    expect(novo.success).toBe(true);
+    expect(novo.data?.participacao_pct).toBe(0);
+    expect(novo.data?.status).toBe("em_andamento");
+    expect(projetoSchema.safeParse({ nome: "M", data_inicio: "2026-09-22", moeda: "USD", participacao_pct: "" }).data?.participacao_pct).toBe(0);
+    expect(projetoSchema.safeParse({ nome: "M", data_inicio: "2026-09-22", moeda: "USD", participacao_pct: "101" }).success).toBe(false);
+    expect(projetoSchema.safeParse({ nome: "M", data_inicio: "2026-09-22", moeda: "USD", status: "em_analise" }).data?.status).toBe("em_analise");
+  });
   it("investimento e venda: números devem ser > 0 e vindos de FormData (string)", () => {
     const i = { projeto_id: uuid, item: "Barcaças", categoria: "logistica", quantidade: "4", valor_unitario: "250000", data: "2026-01-20" };
     expect(investimentoSchema.safeParse(i).data?.quantidade).toBe(4);
