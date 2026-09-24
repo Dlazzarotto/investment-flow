@@ -1,11 +1,15 @@
 import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { PainelEmpresa } from "@/components/PainelEmpresa";
+import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpresa";
 import {
-  acessoSuspenso, ehMaster, listarCarteira, listarCommodities, listarContratos, listarProjetos, minhaOrganizacao,
-  obterPainelEmpresa,
+  acessoSuspenso, capitalPorProjeto, ehMaster, listarCarteira, listarCommodities, listarContratos, listarInstrumentos,
+  listarMonetizacoes, listarProjetos, listarRemuneracoes, minhaOrganizacao, obterPainelEmpresa, obterUsuario,
 } from "@/lib/consultas";
-import { resumoContratos } from "@/lib/contratos";
+import {
+  alertasInstrumentos, baseDoProjeto, projetarRemuneracao, receitaDaEmpresa, resumoContratos, resumoMonetizacoes,
+} from "@/lib/contratos";
+import { hojeISO } from "@/lib/format";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 
@@ -17,18 +21,32 @@ export const dynamic = "force-dynamic";
  */
 export default async function PainelPage() {
   const { d } = obterD();
-  const [projetos, carteira, master, org] = await Promise.all([
-    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(),
+  const [projetos, carteira, master, org, usuario] = await Promise.all([
+    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(), obterUsuario(),
   ]);
   // Sem empresa não há painel de empresa. /painel é a entrada de TODOS, então
   // quem não é ADM (investidor, membro de projeto, conta nova) segue para
   // /projetos, que já decide: investidor vai para a carteira, conta nova cria a
   // organização ali. Era esse o caminho antes de a entrada virar /painel.
   if (!org) redirect("/projetos");
-  const [painel, suspenso, contratos, commodities] = await Promise.all([
-    obterPainelEmpresa(org.organizacao.id), acessoSuspenso(),
-    listarContratos(org.organizacao.id), listarCommodities(org.organizacao.id),
+  const orgId = org.organizacao.id;
+  const projetosDaEmpresa = projetos.filter((p) => p.organizacao_id === orgId);
+  const [painel, suspenso, contratos, commodities, instrumentos, monetizacoes, remuneracoes, capital] = await Promise.all([
+    obterPainelEmpresa(orgId), acessoSuspenso(), listarContratos(orgId), listarCommodities(orgId),
+    listarInstrumentos(orgId), listarMonetizacoes(orgId), listarRemuneracoes(orgId),
+    capitalPorProjeto(projetosDaEmpresa.map((p) => p.id)),
   ]);
+  const resumo = resumoContratos(contratos);
+  const gestao = remuneracoes.map((r) => {
+    const projeto = projetosDaEmpresa.find((p) => p.id === r.projeto_id);
+    return { moeda: projeto?.moeda ?? "USD" as const,
+             ...projetarRemuneracao(r, baseDoProjeto(contratos, r.projeto_id, capital.get(r.projeto_id) ?? 0)) };
+  });
+  const receita = receitaDaEmpresa(resumo, resumoMonetizacoes(monetizacoes, instrumentos), gestao);
+  const alertas = alertasInstrumentos(instrumentos, hojeISO()).map((a) => {
+    const i = instrumentos.find((x) => x.id === a.instrumento_id)!;
+    return { ...a, contrato_id: i.contrato_id, rotulo: `${i.tipo.toUpperCase()} ${i.numero ?? ""}`.trim() };
+  });
   const t = d.painel;
 
   return (
@@ -41,7 +59,10 @@ export default async function PainelPage() {
       )}
       <h1 className="text-2xl">{t.titulo}</h1>
       <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: org.organizacao.nome })}</p>
-      <PainelEmpresa painel={painel} contratos={resumoContratos(contratos)}
+      <ProjetosForaDaEmpresa organizacaoId={org.organizacao.id}
+                             projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
+      <PainelEmpresa painel={painel} contratos={resumo} receita={receita} alertas={alertas}
+                     nomesProjeto={new Map(projetosDaEmpresa.map((p) => [p.id, p.nome]))}
                      nomesCommodity={new Map(commodities.map((c) => [c.id, c.nome]))} />
     </Shell>
   );

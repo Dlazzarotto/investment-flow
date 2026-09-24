@@ -38,6 +38,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      entra sem projeto; receita do mês sem venda futura)
                        0018_contratos.sql (contrato comercial: compra/venda, trader/agente, preço fixo/fórmula,
                                                      LC/TT; mesma empresa por FK composta; escrever exige empresa em dia)
+                       0019_partes_instrumentos_monetizacao.sql (partes do contrato, conta/assinante, instrumentos DLC/SBLC/LC,
+                                                     monetização, remuneração da gestão; projeto só entra em empresa de quem grava)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
@@ -74,7 +76,7 @@ tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, ia.
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 115 testes, todos devem passar
+npm test          # vitest — 125 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -167,8 +169,24 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
 - **Preço fixo ou fórmula** (índice ± prêmio no período de cotação). `indice_referencia` serve só para PROJETAR;
   sem ele o valor é desconhecido (null, "a confirmar"), nunca zero. Ajuste de qualidade entra no embarque, pelo laudo.
 - **Pagamento: LC ou TT contra documentos**, com provisória opcional. Prazo de apresentação da LC é risco — alertar.
-- **Contraparte vem de `clientes`** (comprador/vendedor); fornecedor é prestador e entra nos custos do embarque.
+- **Partes vêm de `clientes`** (`contrato_partes`: comprador, vendedor, Financial Partner — um de cada por contrato;
+  `contratos.contraparte_id` está obsoleto desde a 0019). Trader vendendo: só o comprador é cliente (a empresa é o
+  vendedor); comprando: só o vendedor; intermediando (agente): os dois. Fornecedor é prestador e entra nos custos do
+  embarque. Para a DSD "todos são clientes" (decisão do usuário): Financial Partner é um TIPO de cliente.
+- **Financial Partner recebe e administra o instrumento bancário** (DLC/SBLC/LC) e consta no contrato de compra e
+  venda para isso; não responde pelo produto — por isso não aparece nos seletores de comprador/vendedor.
+- **Monetização é outro contrato** (FP ↔ vendedor), ligado ao instrumento: o FP paga **% do valor de FACE** (ex.:
+  35 %), o valor vai para o vendedor ou para o projeto, e a empresa ganha **% do valor MONETIZADO** (ex.: 5 %) —
+  nunca do face. `comissaoMonetizacao()` tem teste que prova a diferença.
+- **Por conta de × quem assina:** `conta` (propria/projeto) decide para onde vai o resultado; `assinante`
+  (empresa/projeto) é só jurídico. Contrato por conta de projeto vai para "Sob gestão" e NÃO soma na empresa.
+- **Remuneração da gestão** por projeto (`remuneracoes_gestao`): taxa adm % a.a. sobre aportes, fixo mensal, % sobre
+  vendas, por unidade, performance (% do lucro — "a confirmar" até haver resultado). "Por ano" e "sobre contratos"
+  são horizontes diferentes e o painel mostra separados. O investidor não vê esta tabela.
 - **Projeto vira agrupador opcional** (JV/investidor); o investidor continua vendo só a parte dele.
+- **Projeto criado antes da empresa fica com `organizacao_id` vazio** e some do contrato e do painel (a FK composta
+  exige a mesma empresa). O aviso `ProjetosForaDaEmpresa` (painel e contratos) traz com um clique — só os projetos
+  de que o usuário é DONO; projeto compartilhado não muda de empresa por decisão de quem só participa.
 - Painel: "Operação" vem primeiro — contratos ativos, em negociação, contratado por moeda e posição por
   commodity (comprado − vendido; toneladas não se somam com barris).
 
@@ -201,6 +219,8 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   `foreign key (x_id, organizacao_id) references tabela (id, organizacao_id)` + índice único `(id, organizacao_id)`
   do lado referenciado: declarativo, sem corpo para o editor quebrar, e o banco garante sozinho. Função PL/pgSQL
   nova só quando não houver alternativa declarativa.
+- **Projeto só entra em empresa de quem grava** (0019, política RESTRITIVA em `projetos`): o RLS antigo deixava o
+  dono gravar qualquer `organizacao_id`; a tela conferia e o banco não. Travas de acesso vão no banco, sempre.
 - **Empresa do usuário é por filiação** (`minha_organizacao()`), nunca "a primeira linha que o RLS deixa ver": o
   master enxerga todas as `organizacoes`, e a primeira visível seria a de outra empresa.
 

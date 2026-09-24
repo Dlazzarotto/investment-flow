@@ -4,6 +4,7 @@ import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
   BASES_COMISSAO, DIRECOES_CONTRATO, FORMAS_PAGAMENTO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
 } from "./types";
 
@@ -253,7 +254,12 @@ export function criarSchemas(d: Dicionario) {
     contratoComercial: z.object({
       organizacao_id: uuid,
       numero: textoOpcional(60),
-      contraparte_id: z.string().uuid(v.contraparteObrigatoria),
+      // As partes vão para contrato_partes (0019); quais são obrigatórias depende do papel da empresa.
+      comprador_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      vendedor_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      financial_partner_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      conta: z.enum(CONTAS_CONTRATO, enumMsg(v.dadosInvalidos)).catch("propria"),
+      assinante: z.enum(ASSINANTES_CONTRATO, enumMsg(v.dadosInvalidos)).catch("empresa"),
       commodity_id: z.string().uuid(v.commodityObrigatorio),
       projeto_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
       estimativa_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
@@ -289,6 +295,18 @@ export function criarSchemas(d: Dicionario) {
       fim_entregas: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
       observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
     }).superRefine((c, ctx) => {
+      // Trader vendendo: a empresa é o vendedor, falta o comprador. Comprando: o
+      // contrário. Intermediando: as duas pontas são clientes.
+      const precisaComprador = c.papel === "agente" || c.direcao === "venda";
+      const precisaVendedor = c.papel === "agente" || c.direcao === "compra";
+      if (precisaComprador && !c.comprador_id) ctx.addIssue({ code: "custom", path: ["comprador_id"], message: v.compradorObrigatorio });
+      if (precisaVendedor && !c.vendedor_id) ctx.addIssue({ code: "custom", path: ["vendedor_id"], message: v.vendedorObrigatorio });
+      if (c.comprador_id && c.comprador_id === c.vendedor_id) {
+        ctx.addIssue({ code: "custom", path: ["vendedor_id"], message: v.partesIguais });
+      }
+      if ((c.conta === "projeto" || c.assinante === "projeto") && !c.projeto_id) {
+        ctx.addIssue({ code: "custom", path: ["projeto_id"], message: v.projetoObrigatorio });
+      }
       if (c.tipo_preco === "fixo" && !(c.preco_fixo !== null && c.preco_fixo > 0)) {
         ctx.addIssue({ code: "custom", path: ["preco_fixo"], message: v.precoFixoObrigatorio });
       }
@@ -322,7 +340,63 @@ export function criarSchemas(d: Dicionario) {
       indice_referencia: c.tipo_preco === "formula" ? c.indice_referencia : null,
       comissao_base: c.papel === "agente" ? c.comissao_base : null,
       comissao_valor: c.papel === "agente" ? c.comissao_valor : null,
+      // Parte que não cabe no papel escolhido não é gravada (ex.: trader vendendo não tem vendedor-cliente).
+      comprador_id: c.papel === "agente" || c.direcao === "venda" ? c.comprador_id : null,
+      vendedor_id: c.papel === "agente" || c.direcao === "compra" ? c.vendedor_id : null,
     })),
+    instrumento: z.object({
+      organizacao_id: uuid,
+      contrato_id: uuid,
+      tipo: z.enum(TIPOS_INSTRUMENTO, enumMsg(v.dadosInvalidos)),
+      financial_partner_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      banco_emissor: textoOpcional(160),
+      numero: textoOpcional(80),
+      valor_face: numeroPositivo(v.valorFace, MAX_VALOR),
+      moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
+      data_emissao: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      validade: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      prazo_apresentacao: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      status: z.enum(STATUS_INSTRUMENTO, enumMsg(v.dadosInvalidos)).catch("solicitado"),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+    }).superRefine((i, ctx) => {
+      if (i.data_emissao && i.validade && i.validade < i.data_emissao) {
+        ctx.addIssue({ code: "custom", path: ["validade"], message: v.periodoInvertido });
+      }
+    }),
+    monetizacao: z.object({
+      organizacao_id: uuid,
+      numero: textoOpcional(60),
+      instrumento_id: uuid,
+      financial_partner_id: z.string().uuid(v.financialPartnerObrigatorio),
+      beneficiario_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      projeto_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      pct_monetizacao: z.coerce.number({ invalid_type_error: v.pctNumero }).gt(0, v.pctMaiorZero).max(100, v.pctMax),
+      comissao_pct: z.coerce.number({ invalid_type_error: v.pctNumero }).min(0, v.pctNegativo).max(100, v.pctMax).catch(0),
+      status: z.enum(STATUS_MONETIZACAO, enumMsg(v.dadosInvalidos)).catch("negociacao"),
+      data_oferta: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      data_pagamento: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+    }).superRefine((m, ctx) => {
+      if (!m.beneficiario_id && !m.projeto_id) {
+        ctx.addIssue({ code: "custom", path: ["beneficiario_id"], message: v.destinoObrigatorio });
+      }
+    }),
+    remuneracao: z.object({
+      organizacao_id: uuid,
+      projeto_id: uuid,
+      tipo: z.enum(TIPOS_REMUNERACAO, enumMsg(v.dadosInvalidos)),
+      valor: numeroPositivo(v.valor, MAX_VALOR),
+      inicio: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      fim: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      observacoes: z.string().trim().max(1000, v.descricaoLonga).optional().transform((x) => x || null),
+    }).superRefine((r, ctx) => {
+      if (r.tipo !== "fixo_mensal" && r.tipo !== "por_unidade" && r.valor > 100) {
+        ctx.addIssue({ code: "custom", path: ["valor"], message: v.pctMax });
+      }
+      if (r.inicio && r.fim && r.fim < r.inicio) ctx.addIssue({ code: "custom", path: ["fim"], message: v.periodoInvertido });
+    }),
+    statusInstrumento: z.object({ id: uuid, status: z.enum(STATUS_INSTRUMENTO, enumMsg(v.dadosInvalidos)) }),
+    statusMonetizacao: z.object({ id: uuid, status: z.enum(STATUS_MONETIZACAO, enumMsg(v.dadosInvalidos)) }),
     id: z.object({ id: uuid, projeto_id: uuid }),
     /** Identificador isolado (edição/exclusão de projeto). */
     uuid,

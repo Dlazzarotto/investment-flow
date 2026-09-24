@@ -4,7 +4,8 @@ import { Shell } from "@/components/Shell";
 import { Vazio } from "@/components/ui/Vazio";
 import { SeloStatus } from "@/components/contratos/SeloStatus";
 import {
-  ehMaster, listarCarteira, listarClientes, listarCommodities, listarContratos, listarProjetos, minhaOrganizacao,
+  ehMaster, listarCarteira, listarClientes, listarCommodities, listarContratos, listarPartes, listarProjetos,
+  minhaOrganizacao,
 } from "@/lib/consultas";
 import { valorContrato, comissaoAgente } from "@/lib/contratos";
 import { obterD } from "@/lib/i18n/server";
@@ -24,9 +25,14 @@ export default async function ContratosPage({ searchParams }: { searchParams: { 
   // Contrato é da administração da empresa; quem não tem empresa segue o caminho de sempre.
   if (!org) redirect("/projetos");
   const orgId = org.organizacao.id;
-  const [contratos, clientes, commodities] = await Promise.all([
-    listarContratos(orgId), listarClientes(orgId), listarCommodities(orgId),
+  const [contratos, clientes, commodities, partes] = await Promise.all([
+    listarContratos(orgId), listarClientes(orgId), listarCommodities(orgId), listarPartes(orgId),
   ]);
+  // "Comprador → vendedor"; a empresa aparece pelo nome quando é ela uma das pontas.
+  const ponta = (contratoId: string, papel: "comprador" | "vendedor") => {
+    const p = partes.find((x) => x.contrato_id === contratoId && x.papel === papel);
+    return p ? nomeCliente.get(p.cliente_id) : org.organizacao.nome;
+  };
   const nomeCliente = new Map(clientes.map((c) => [c.id, c.nome]));
   const nomeCommodity = new Map(commodities.map((c) => [c.id, c.nome]));
 
@@ -94,13 +100,15 @@ export default async function ContratosPage({ searchParams }: { searchParams: { 
                             className="block min-h-touch rounded-md border border-stone-light bg-white px-5 py-4 hover:border-navy">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-lg font-semibold text-navy">
-                            {c.numero ?? t.semNumero} · {nomeCliente.get(c.contraparte_id)}
+                            {c.numero ?? t.semNumero}
                           </p>
                           <SeloStatus status={c.status} rotulo={d.enums.statusContrato[c.status]} />
                         </div>
+                        <p className="mt-1 font-medium">{ponta(c.id, "vendedor")} → {ponta(c.id, "comprador")}</p>
                         <p className="mt-1 text-stone">
-                          {[d.enums.direcaoContrato[c.direcao], d.enums.papelContrato[c.papel],
-                            d.enums.modalidadeContrato[c.modalidade], nomeCommodity.get(c.commodity_id), c.incoterm].join(" · ")}
+                          {[c.conta === "projeto" ? d.enums.contaContrato.projeto : null,
+                            c.papel === "agente" ? null : d.enums.direcaoContrato[c.direcao], d.enums.papelContrato[c.papel],
+                            d.enums.modalidadeContrato[c.modalidade], nomeCommodity.get(c.commodity_id), c.incoterm].filter(Boolean).join(" · ")}
                         </p>
                         <p className="num mt-1">
                           {f.numero(Number(c.volume), 0)} {rotuloUnidade(c.unidade, d)}
