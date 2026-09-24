@@ -5,7 +5,7 @@ import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
   ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
-  BASES_COMISSAO, DIRECOES_CONTRATO, FORMAS_PAGAMENTO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
+  BASES_COMISSAO, DIRECOES_CONTRATO, EVENTOS_SALDO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -282,7 +282,8 @@ export function criarSchemas(d: Dicionario) {
         .transform((x) => (typeof x === "number" ? x : 0)),
       periodo_cotacao: textoOpcional(160),
       indice_referencia: numeroOpcional(),
-      forma_pagamento: z.enum(FORMAS_PAGAMENTO, enumMsg(v.dadosInvalidos)),
+      pct_antecipado: z.coerce.number({ invalid_type_error: v.pctNumero }).min(0, v.pctNegativo).max(100, v.pctMax).catch(0),
+      evento_saldo: z.enum(EVENTOS_SALDO, enumMsg(v.dadosInvalidos)).catch("bl"),
       prazo_pagamento_dias: z.coerce.number().int().min(0).max(365).catch(0),
       pct_provisoria: numeroOpcional(),
       comissao_base: z.union([z.literal(""), z.enum(BASES_COMISSAO)]).optional().transform((x) => x || null),

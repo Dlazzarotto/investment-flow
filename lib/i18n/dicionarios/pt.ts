@@ -370,9 +370,14 @@ export const pt = {
     sobGestao: "Sob gestão",
     sobGestaoNota: "Contratos por conta dos projetos de investidores. Não somam no resultado da empresa; a empresa ganha a remuneração da gestão.",
     faltaTitulo: "A receber e a embarcar chegam com os embarques",
-    faltaTexto: "Os contratos já dizem quanto foi vendido e comprado. O que falta embarcar e o que falta receber sai de cada EMBARQUE (navio, BL, laudo de qualidade) e das faturas por LC ou TT contra documentos — é a próxima etapa. Mostrar zero antes disso seria pior do que dizer isto.",
+    faltaTexto: "Os contratos já dizem quanto foi vendido e comprado. O que falta embarcar e o que falta receber sai de cada EMBARQUE (caminhão ou navio, BL, laudo de qualidade) e do cronograma de pagamento negociado — é a próxima etapa. Mostrar zero antes disso seria pior do que dizer isto.",
   },
   contratos: {
+    pctAntecipado: "Antecipado (%)",
+    eventoSaldo: "Saldo pago",
+    pagamentoAjuda: "Negociado entre as partes: ex.: 30 % antecipado e o restante na BL; ou 100 % no carregamento do caminhão (venda FOB no país). Carta de crédito é garantia: vai em Garantias bancárias.",
+    maisDias: "+{dias} dia(s)",
+    antecipado: "antecipado",
     empresaCompra: "Comprador: a própria empresa (trader).",
     empresaVende: "Vendedor: a própria empresa (trader).",
     financialPartner: "Financial Partner (opcional)",
@@ -408,7 +413,6 @@ export const pt = {
     faixa: "Faixa: {min} a {max}",
     precoUnitario: "Preço por unidade",
     valorProjetado: "Valor projetado",
-    formaPagamento: "Pagamento",
     provisoriaNota: "Provisória de {pct} % no embarque",
     projecaoAviso: "Valores projetados pelo que foi pactuado. O preço final sai de cada embarque (índice do período e laudo de qualidade).",
     editar: "Editar contrato",
@@ -462,9 +466,9 @@ export const pt = {
     observacoes: "Observações",
   },
   instrumentos: {
-    titulo: "Instrumentos bancários",
-    subtitulo: "DLC, SBLC ou LC do contrato. O Financial Partner recebe e administra; a monetização fica dentro de cada instrumento.",
-    vazio: "Nenhum instrumento neste contrato.",
+    titulo: "Garantias bancárias",
+    subtitulo: "DLC, SBLC ou LC que garantem o contrato. O Financial Partner recebe e administra; a monetização fica dentro de cada garantia.",
+    vazio: "Nenhuma garantia neste contrato.",
     semNumero: "Sem número",
     valorFace: "valor de face",
     validade: "Validade",
@@ -474,8 +478,8 @@ export const pt = {
     alertaApresentacao: "Apresentar documentos em {dias} dia(s)",
     alertaValidade: "Vence em {dias} dia(s)",
     status: "Status",
-    excluirConfirma: "Excluir o instrumento \"{numero}\"?",
-    novo: "Novo instrumento",
+    excluirConfirma: "Excluir a garantia \"{numero}\"?",
+    novo: "Nova garantia",
     tipo: "Tipo",
     financialPartner: "Financial Partner (recebe e administra)",
     bancoEmissor: "Banco emissor",
@@ -483,8 +487,8 @@ export const pt = {
     moeda: "Moeda",
     dataEmissao: "Emissão",
     observacoes: "Observações",
-    salvar: "Salvar instrumento",
-    salvo: "Instrumento salvo.",
+    salvar: "Salvar garantia",
+    salvo: "Garantia salva.",
   },
   monetizacao: {
     titulo: "Monetização",
@@ -526,6 +530,12 @@ export const pt = {
     salva: "Remuneração salva.",
   },
   enums: {
+    eventoSaldo: {
+      carregamento: "no carregamento",
+      bl: "na BL",
+      documentos: "na apresentação dos documentos",
+      descarga: "na descarga",
+    },
     contaContrato: {
       propria: "A própria empresa",
       projeto: "Projeto (sob gestão)",
@@ -591,10 +601,6 @@ export const pt = {
     tipoPreco: {
       fixo: "Fixo",
       formula: "Fórmula (índice ± prêmio)",
-    },
-    formaPagamento: {
-      lc: "Carta de crédito (LC)",
-      tt_documentos: "TT contra documentos",
     },
     statusContrato: {
       rascunho: "Em negociação",

@@ -493,8 +493,13 @@ export const MODALIDADES_CONTRATO = ["spot", "term"] as const;
 export type ModalidadeContrato = (typeof MODALIDADES_CONTRATO)[number];
 export const TIPOS_PRECO = ["fixo", "formula"] as const;
 export type TipoPreco = (typeof TIPOS_PRECO)[number];
-export const FORMAS_PAGAMENTO = ["lc", "tt_documentos"] as const;
-export type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
+/**
+ * Momento em que vence o saldo (0020). Carta de crédito NÃO é forma de pagamento:
+ * é garantia e mora em `instrumentos`. Venda FOB dentro do país paga no
+ * carregamento do caminhão — não há BL.
+ */
+export const EVENTOS_SALDO = ["carregamento", "bl", "documentos", "descarga"] as const;
+export type EventoSaldo = (typeof EVENTOS_SALDO)[number];
 export const STATUS_CONTRATO = ["rascunho", "assinado", "em_execucao", "concluido", "cancelado"] as const;
 export type StatusContrato = (typeof STATUS_CONTRATO)[number];
 /** Incoterms 2020 — códigos iguais em todos os idiomas, por isso não vão para os dicionários. */
@@ -531,7 +536,9 @@ export interface Contrato {
   premio: number;
   periodo_cotacao: string | null;
   indice_referencia: number | null;
-  forma_pagamento: FormaPagamento;
+  /** % pago antes do embarque; o saldo vence no `evento_saldo` + `prazo_pagamento_dias`. */
+  pct_antecipado: number;
+  evento_saldo: EventoSaldo;
   prazo_pagamento_dias: number;
   pct_provisoria: number | null;
   comissao_base: BaseComissao | null;

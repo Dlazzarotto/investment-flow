@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   alertasInstrumentos, comissaoAgente, comissaoMonetizacao, faixaVolume, precoUnitario, projetarRemuneracao,
-  receitaDaEmpresa, resumoContratos, resumoMonetizacoes, valorContrato, valorMonetizado, baseDoProjeto,
+  cronogramaPagamento, receitaDaEmpresa, resumoContratos, resumoMonetizacoes, valorContrato, valorMonetizado, baseDoProjeto,
 } from "@/lib/contratos";
 import type { Contrato } from "@/lib/types";
 
@@ -10,7 +10,7 @@ const base: Contrato = {
   estimativa_id: null, conta: "propria", assinante: "empresa", direcao: "venda", papel: "principal", modalidade: "spot", status: "assinado",
   volume: 50000, tolerancia_pct: 10, unidade: "Toneladas", incoterm: "FOB", porto_embarque: null,
   porto_destino: null, moeda: "USD", tipo_preco: "fixo", preco_fixo: 100, indice: null, premio: 0,
-  periodo_cotacao: null, indice_referencia: null, forma_pagamento: "lc", prazo_pagamento_dias: 0,
+  periodo_cotacao: null, indice_referencia: null, pct_antecipado: 0, evento_saldo: "bl", prazo_pagamento_dias: 0,
   pct_provisoria: null, comissao_base: null, comissao_valor: null, data_loi: null, data_icpo: null,
   data_sco: null, data_assinatura: null, inicio_entregas: null, fim_entregas: null, observacoes: null,
   criado_em: "", atualizado_em: "",
@@ -183,5 +183,20 @@ describe("Receita da empresa (painel)", () => {
     expect(baseDoProjeto(lista, "p", 100)).toEqual({ capital: 100, vendas: 5_000_000, volumeVendas: 50_000, lucro: null });
     const semPreco = [...lista, c({ id: "5", conta: "projeto", projeto_id: "p", tipo_preco: "formula", indice_referencia: null })];
     expect(baseDoProjeto(semPreco, "p", 0).vendas).toBeNull();
+  });
+});
+
+describe("Pagamento negociado", () => {
+  it("30 % antecipado e 70 % no evento; antecipado + saldo fecham o valor", () => {
+    expect(cronogramaPagamento(5_000_000, 30)).toEqual({ antecipado: 1_500_000, saldo: 3_500_000 });
+    const r = cronogramaPagamento(1234.57, 33.33)!;
+    expect(r.antecipado + r.saldo).toBeCloseTo(1234.57, 2);
+  });
+  it("100 % no evento (ex.: venda FOB no país, no carregamento) e 100 % antecipado", () => {
+    expect(cronogramaPagamento(135_000, 0)).toEqual({ antecipado: 0, saldo: 135_000 });
+    expect(cronogramaPagamento(135_000, 100)).toEqual({ antecipado: 135_000, saldo: 0 });
+  });
+  it("sem valor conhecido não inventa cronograma", () => {
+    expect(cronogramaPagamento(null, 30)).toBeNull();
   });
 });

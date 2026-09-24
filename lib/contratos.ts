@@ -281,3 +281,15 @@ export function receitaDaEmpresa(
     gestaoAno: arred(x.gestaoAno), gestaoContratos: arred(x.gestaoContratos),
   }));
 }
+
+/**
+ * Cronograma de pagamento negociado: o que entra antes (antecipado) e o saldo no
+ * evento (carregamento, BL, documentos ou descarga). Null quando o valor do
+ * contrato ainda não é conhecido (fórmula sem índice de referência).
+ */
+export function cronogramaPagamento(valor: number | null, pctAntecipado: number):
+  { antecipado: number; saldo: number } | null {
+  if (valor === null) return null;
+  const antecipado = arred((valor * Number(pctAntecipado)) / 100);
+  return { antecipado, saldo: arred(valor - antecipado) };
+}

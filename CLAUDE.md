@@ -40,6 +40,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      LC/TT; mesma empresa por FK composta; escrever exige empresa em dia)
                        0019_partes_instrumentos_monetizacao.sql (partes do contrato, conta/assinante, instrumentos DLC/SBLC/LC,
                                                      monetização, remuneração da gestão; projeto só entra em empresa de quem grava)
+                       0020_pagamento_negociado.sql (pagamento = % antecipado + saldo no carregamento/BL/documentos/
+                                                     descarga + prazo; forma_pagamento LC/TT aposentada)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
@@ -76,7 +78,7 @@ tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, ia.
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 125 testes, todos devem passar
+npm test          # vitest — 128 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -168,7 +170,10 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   compra e venda no embarque (back-to-back); agente tem um contrato só e a receita é a comissão.
 - **Preço fixo ou fórmula** (índice ± prêmio no período de cotação). `indice_referencia` serve só para PROJETAR;
   sem ele o valor é desconhecido (null, "a confirmar"), nunca zero. Ajuste de qualidade entra no embarque, pelo laudo.
-- **Pagamento: LC ou TT contra documentos**, com provisória opcional. Prazo de apresentação da LC é risco — alertar.
+- **Carta de crédito (DLC/SBLC/LC) é GARANTIA, não forma de pagamento** (correção do usuário; a 0018 errou). Mora em
+  `instrumentos` ("Garantias bancárias"). Pagamento é o cronograma negociado (0020): `pct_antecipado` + saldo no
+  `evento_saldo` (carregamento, BL, documentos, descarga) + `prazo_pagamento_dias`. Venda FOB DENTRO DO PAÍS paga no
+  carregamento do caminhão — não há BL. Provisória continua opcional. `forma_pagamento` é coluna obsoleta.
 - **Partes vêm de `clientes`** (`contrato_partes`: comprador, vendedor, Financial Partner — um de cada por contrato;
   `contratos.contraparte_id` está obsoleto desde a 0019). Trader vendendo: só o comprador é cliente (a empresa é o
   vendedor); comprando: só o vendedor; intermediando (agente): os dois. Fornecedor é prestador e entra nos custos do
