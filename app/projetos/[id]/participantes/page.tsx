@@ -107,7 +107,7 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
       )}
 
       {daEmpresa && (
-        <section className="secao max-w-3xl">
+        <section className="secao max-w-3xl" id="gestao">
           <h2>{d.gestao.titulo}</h2>
           <p className="mb-4 text-stone">{fmtTexto(d.gestao.subtitulo, { empresa: org!.organizacao.nome })}</p>
           <RemuneracaoGestao linhas={linhasGestao} organizacaoId={org!.organizacao.id} projetoId={projeto.id} moeda={projeto.moeda} />

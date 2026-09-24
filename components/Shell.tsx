@@ -2,7 +2,6 @@ import { sair } from "@/app/actions/auth";
 import { obterD } from "@/lib/i18n/server";
 import { obterUsuario } from "@/lib/consultas";
 import { Lateral, type GrupoNav } from "./Lateral";
-import { SeletorProjeto } from "./SeletorProjeto";
 import { SeletorIdioma } from "./SeletorIdioma";
 import type { Projeto } from "@/lib/types";
 
@@ -41,8 +40,10 @@ export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
     titulo: d.nav.geral,
     itens: [
       { href: "/painel", rotulo: d.nav.painel, icone: "📊", exato: true },
-      { href: "/contratos", rotulo: d.nav.contratos, icone: "📝" },
-      { href: "/projetos", rotulo: d.projetos.titulo, icone: "🗂️", exato: true },
+      { href: "/vendas", rotulo: d.nav.vendasMenu, icone: "📤" },
+      { href: "/compras", rotulo: d.nav.compras, icone: "📥" },
+      { href: "/propostas", rotulo: d.nav.propostas, icone: "🧮" },
+      { href: "/projetos", rotulo: d.projetos.titulo, icone: "🗂️" },
       { href: "/clientes", rotulo: d.nav.clientes, icone: "🤝" },
       { href: "/fornecedores", rotulo: d.nav.fornecedores, icone: "🚚" },
       { href: "/commodities", rotulo: d.nav.commodities, icone: "⛏️" },
@@ -52,21 +53,18 @@ export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
     ],
   }];
 
-  // As seções do projeto aberto entram DEPOIS, sob o nome dele.
+  // As seções do projeto aberto entram DEPOIS, sob o nome dele. O projeto é o
+  // que a empresa ADMINISTRA para investidores (0022): resumo, sócios, aportes e
+  // custos. Vender, comprar e precificar são da empresa — ficam no menu principal.
   if (base && projetoAtual) {
     grupos.push({
       titulo: projetoAtual.nome,
       itens: [
-        { href: base, rotulo: d.nav.dashboard, icone: "📊", exato: true },
-        // Investimentos é assunto de dono e admin (0006): somem para os demais.
-        ...(verInvestimentos ? [
-          { href: `${base}/investimentos`, rotulo: d.nav.investimentos, icone: "🏗️" },
-          { href: `${base}/aportes`, rotulo: d.nav.aportes, icone: "🤝" },
-        ] : []),
-        { href: `${base}/vendas`, rotulo: d.nav.vendas, icone: "📦" },
-        { href: `${base}/despesas`, rotulo: d.nav.despesas, icone: "🧾" },
-        { href: `${base}/custeio`, rotulo: d.nav.custeio, icone: "🧮" },
-        { href: `${base}/participantes`, rotulo: d.nav.parceria, icone: "👥" },
+        { href: base, rotulo: d.nav.resumo, icone: "📊", exato: true },
+        { href: `${base}/participantes`, rotulo: d.nav.socios, icone: "👥" },
+        // Aportes e capex são assunto de dono e admin (0006): somem para os demais.
+        ...(verInvestimentos ? [{ href: `${base}/aportes`, rotulo: d.nav.aportes, icone: "🤝" }] : []),
+        { href: `${base}/despesas`, rotulo: d.nav.custos, icone: "🧾" },
       ],
     });
   }
@@ -75,7 +73,6 @@ export async function Shell({ projetos, projetoAtual, verInvestimentos = false,
     <div className="flex min-h-screen flex-col lg:flex-row">
       <Lateral
         empresa={empresa} usuario={usuario?.email} grupos={grupos}
-        seletor={projetos.length > 0 ? <SeletorProjeto projetos={projetos} atualId={projetoAtual?.id} /> : undefined}
         rodape={
           <div className="flex flex-wrap items-center gap-2">
             <SeletorIdioma atual={locale} />

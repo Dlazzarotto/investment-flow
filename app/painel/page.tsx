@@ -62,6 +62,11 @@ export default async function PainelPage() {
       <ProjetosForaDaEmpresa organizacaoId={org.organizacao.id}
                              projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
       <PainelEmpresa painel={painel} contratos={resumo} receita={receita} alertas={alertas}
+                     projetosStatus={{
+                       em_analise: projetosDaEmpresa.filter((p) => p.status === "em_analise").length,
+                       em_andamento: projetosDaEmpresa.filter((p) => p.status === "em_andamento").length,
+                       encerrado: projetosDaEmpresa.filter((p) => p.status === "encerrado").length,
+                     }}
                      nomesProjeto={new Map(projetosDaEmpresa.map((p) => [p.id, p.nome]))}
                      nomesCommodity={new Map(commodities.map((c) => [c.id, c.nome]))} />
     </Shell>

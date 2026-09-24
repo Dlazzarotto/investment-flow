@@ -4,7 +4,7 @@ import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { rotuloUnidade } from "@/lib/i18n";
 import type { AlertaInstrumento, ReceitaEmpresa, ResumoContratos } from "@/lib/contratos";
-import type { PainelEmpresa as Painel } from "@/lib/types";
+import { type PainelEmpresa as Painel, type StatusProjeto } from "@/lib/types";
 
 /**
  * O dashboard do ADM: a empresa inteira, não um projeto.
@@ -12,8 +12,9 @@ import type { PainelEmpresa as Painel } from "@/lib/types";
  * As contagens vêm da primeira linha (empresa não tem moeda); o dinheiro sai
  * por moeda, e com uma moeda só — o caso normal — fica igual a um painel comum.
  */
-export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto, receita, alertas }:
+export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto, receita, alertas, projetosStatus }:
   { painel: Painel[]; contratos: ResumoContratos; nomesCommodity: Map<string, string>; nomesProjeto: Map<string, string>;
+    projetosStatus: Record<StatusProjeto, number>;
     receita: ReceitaEmpresa[]; alertas: (AlertaInstrumento & { contrato_id: string; rotulo: string })[] }) {
   const { locale, d } = obterD();
   const f = formatadores(locale);
@@ -60,9 +61,9 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto,
       <section className="secao">
         <h2>{t.operacao}</h2>
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <Cartao href="/contratos" rotulo={t.contratosAtivos} valor={String(contratos.ativosProprios)}
+          <Cartao href="/vendas" rotulo={t.contratosAtivos} valor={String(contratos.ativosProprios)}
                   nota={t.contratosAtivosNota} destaque />
-          <Cartao href="/contratos?status=rascunho" rotulo={t.emNegociacao} valor={String(contratos.emNegociacao)} />
+          <Cartao href="/vendas?status=rascunho" rotulo={t.emNegociacao} valor={String(contratos.emNegociacao)} />
         </div>
         {contratos.valores.map((v) => (
           <div key={v.moeda} className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -100,11 +101,19 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto,
         )}
       </section>
 
-      {/* Sob gestão: dinheiro dos projetos de investidores — NÃO soma no resultado da empresa. */}
-      {contratos.sobGestao.length > 0 && (
-        <section className="secao">
-          <h2>{t.sobGestao}</h2>
-          <ul className="grid gap-3 lg:grid-cols-2">
+      {/* PROJETOS: o que a empresa administra para investidores (0022). Só os
+          resultados deles chegam aqui — e NÃO somam no resultado da empresa. */}
+      <section className="secao">
+        <h2>{t.projetos}</h2>
+        {/* Uma coluna no celular: "Em andamento" não cabe num terço de 390 px. */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {(["em_andamento", "encerrado", "em_analise"] as const).map((s) => (
+            <Cartao key={s} href={`/projetos?status=${s}`} rotulo={d.enums.statusProjeto[s]}
+                    valor={String(projetosStatus[s] ?? 0)} destaque={s === "em_andamento"} />
+          ))}
+        </div>
+        {contratos.sobGestao.length > 0 && (
+          <ul className="mt-3 grid gap-3 lg:grid-cols-2">
             {contratos.sobGestao.map((g) => (
               <li key={`${g.projeto_id}|${g.moeda}`} className="rounded-md border border-stone-light bg-white p-4">
                 <p className="font-semibold text-navy">{nomesProjeto.get(g.projeto_id) ?? "—"}</p>
@@ -116,9 +125,9 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto,
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-sm text-stone">{t.sobGestaoNota}</p>
-        </section>
-      )}
+        )}
+        <p className="mt-2 text-sm text-stone">{t.sobGestaoNota}</p>
+      </section>
 
       <section className="secao">
         <h2>{t.carteira}</h2>

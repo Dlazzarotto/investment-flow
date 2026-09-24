@@ -27,7 +27,8 @@ export async function criarContrato(_: ActionState, fd: FormData): Promise<Actio
   // O contrato já existe: melhor abrir a ficha dele com o aviso do que perder o que foi digitado.
   if (erroPartes) redirect(`/contratos/${data.id}?erro=partes`);
 
-  revalidatePath("/contratos");
+  revalidatePath("/vendas");
+  revalidatePath("/compras");
   revalidatePath("/painel");
   redirect(`/contratos/${data.id}`);
 }
@@ -51,7 +52,8 @@ export async function atualizarContrato(_: ActionState, fd: FormData): Promise<A
   const erroPartes = await gravarPartes(organizacao_id, id.data, { comprador_id, vendedor_id, financial_partner_id });
   if (erroPartes) return { ok: false, erro: erroPartes };
 
-  revalidatePath("/contratos");
+  revalidatePath("/vendas");
+  revalidatePath("/compras");
   revalidatePath(`/contratos/${id.data}`);
   revalidatePath("/painel");
   return { ok: true, sucesso: d.contratos.atualizado };
@@ -64,9 +66,10 @@ export async function excluirContrato(fd: FormData): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.from("contratos").delete().eq("id", id.data);
   if (error) throw new Error(traduzirErroBanco(error, "contrato", d));
-  revalidatePath("/contratos");
+  revalidatePath("/vendas");
+  revalidatePath("/compras");
   revalidatePath("/painel");
-  redirect("/contratos");
+  redirect("/vendas");
 }
 
 

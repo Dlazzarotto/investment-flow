@@ -20,18 +20,19 @@ const normal = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
  * unidade, projeto e o preço que o custeio reverso encontrou já vêm preenchidos,
  * e o contrato guarda de qual estimativa veio.
  */
-export default async function NovoContratoPage({ searchParams }: { searchParams: { estimativa?: string } }) {
+export default async function NovoContratoPage({ searchParams }: { searchParams: { estimativa?: string; direcao?: string } }) {
   const { d } = obterD();
   const t = d.contratos;
+  const direcao = searchParams.direcao === "compra" ? "compra" as const : "venda" as const;
   const [projetos, carteira, master, org, usuario] = await Promise.all([
     listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(), obterUsuario(),
   ]);
   if (!org) redirect("/projetos");
   const orgId = org.organizacao.id;
   const [clientes, commodities] = await Promise.all([listarClientes(orgId), listarCommodities(orgId)]);
-  if (clientes.length === 0 || commodities.length === 0) redirect("/contratos");
+  if (clientes.length === 0 || commodities.length === 0) redirect(direcao === "compra" ? "/compras" : "/vendas");
 
-  let valores: ValoresContrato = {};
+  let valores: ValoresContrato = { direcao };
   let origem: string | null = null;
   if (searchParams.estimativa) {
     const est = await obterEstimativa(searchParams.estimativa);
@@ -54,7 +55,7 @@ export default async function NovoContratoPage({ searchParams }: { searchParams:
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
-      <Link href="/contratos" className="text-navy underline">← {t.voltar}</Link>
+      <Link href={direcao === "compra" ? "/compras" : "/vendas"} className="text-navy underline">← {t.voltar}</Link>
       <h1 className="mt-2 text-2xl">{t.novo}</h1>
       <p className="mt-1 text-stone">{origem ? `${t.daProposta}: ${origem}` : t.novoSubtitulo}</p>
       <ProjetosForaDaEmpresa organizacaoId={orgId}

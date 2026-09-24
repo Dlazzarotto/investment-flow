@@ -32,9 +32,14 @@ export interface Projeto {
   tipo_parceria: TipoParceria;
   participacao_pct: number;
   organizacao_id: string | null;
+  /** 0022: em análise, em andamento, encerrado. */
+  status: StatusProjeto;
   criado_em: string;
   atualizado_em: string;
 }
+
+export const STATUS_PROJETO = ["em_analise", "em_andamento", "encerrado"] as const;
+export type StatusProjeto = (typeof STATUS_PROJETO)[number];
 
 export interface Participante {
   id: string;

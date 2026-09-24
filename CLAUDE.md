@@ -44,15 +44,21 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      descarga + prazo; forma_pagamento LC/TT aposentada)
                        0021_documentos_clientes.sql (CIS/LOI/ICPO/KYC… do cliente: tabela + bucket PRIVADO "documentos";
                                                      políticas do Storage pela 1ª pasta do caminho = empresa)
+                       0022_projetos_sob_gestao.sql (status do projeto; projeto novo nasce 0 % da empresa; vendas da 1ª versão
+                                                     viram contratos concluídos com venda_origem_id; resumo_projeto sem dupla contagem)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
-app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
-                       custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
-                       preço); layout.tsx = Shell; investidor é redirecionado para /carteira/[id]
+app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
+app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
+                       participantes/ = Sócios e investidores (+ remuneração da gestão, acesso, PIN); aportes/; despesas/ =
+                       Custos do projeto (despesas + capex); vendas/ e investimentos/ só redirecionam; custeio/ segue ali
+                       até a proposta sair do projeto. layout.tsx = Shell; investidor vai para /carteira/[id]
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
 app/painel/            dashboard do ADM: a EMPRESA inteira. É a página de entrada (/, pós-login e caminhoInterno);
                        quem não tem empresa (investidor, membro de projeto, conta nova) segue para /projetos
-app/contratos/         lista (filtro por status/direção), novo/ (?estimativa= preenche pela proposta) e [id]/ (resumo +
-                       edição); contas puras em lib/contratos.ts (preço, valor, faixa, comissão, resumoContratos)
+app/vendas, /compras   lista de contratos com a direção fixa (components/contratos/PaginaContratos); /contratos redireciona
+app/contratos/         novo/ (?estimativa= preenche pela proposta; ?direcao=) e [id]/ (resumo + garantias + edição); contas
+                       puras em lib/contratos.ts (preço, valor, faixa, comissão, resumoContratos)
+app/propostas/         todas as propostas (custeio) da empresa; ainda nascem dentro de um projeto (cadeia é do projeto, 0008)
 app/clientes, /fornecedores, /commodities  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
                        custeio (grupo_custo, modal_etapa) para o lançamento herdar sem tradução no meio
 app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
@@ -80,7 +86,7 @@ tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, doc
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 132 testes, todos devem passar
+npm test          # vitest — 133 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -190,7 +196,14 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
 - **Remuneração da gestão** por projeto (`remuneracoes_gestao`): taxa adm % a.a. sobre aportes, fixo mensal, % sobre
   vendas, por unidade, performance (% do lucro — "a confirmar" até haver resultado). "Por ano" e "sobre contratos"
   são horizontes diferentes e o painel mostra separados. O investidor não vê esta tabela.
-- **Projeto vira agrupador opcional** (JV/investidor); o investidor continua vendo só a parte dele.
+- **Projeto = o que a empresa ADMINISTRA para investidores (0022, decisão do usuário).** Menu principal é da empresa:
+  Painel, Vendas, Compras, Propostas, Projetos, Clientes, Fornecedores, Commodities. Dentro do projeto só: Resumo,
+  Sócios e investidores, Aportes, Custos do projeto. Sem seletor de projeto na lateral; sem "tipo de parceria / sua
+  participação" (a empresa nasce 0 % — se também for sócia, informa a %). Painel geral tem o bloco "Projetos" com
+  Em andamento / Encerrado / Em análise, e abaixo só os resultados sob gestão (não somam na empresa).
+- **Vendas da 1ª versão viraram contratos concluídos** (`contratos.venda_origem_id`). A linha antiga NÃO foi apagada:
+  `resumo_projeto()` soma a venda antiga OU o contrato, nunca os dois — o investidor vê os mesmos números de antes.
+  Contrato novo só entra no resultado do projeto quando CONCLUÍDO (preço fixo); fórmula entra com os embarques.
 - **Documentos do cliente (0021):** o navegador sobe o arquivo direto ao bucket privado `documentos` no caminho
   `<organizacao_id>/clientes/<cliente_id>/<uuid>-<nome>`; as políticas de `storage.objects` conferem a empresa pela
   1ª pasta (com `case` + regex antes do `::uuid`, para nome estranho negar em vez de quebrar). Só depois grava o
