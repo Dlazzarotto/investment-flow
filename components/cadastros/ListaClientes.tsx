@@ -1,13 +1,19 @@
 "use client";
 import { atualizarCliente, criarCliente, excluirCliente } from "@/app/actions/cadastros";
 import { Cadastro, Selos } from "./Cadastro";
+import { DocumentosCliente } from "./DocumentosCliente";
+import { situacaoCis } from "@/lib/documentos";
+import { useHoje } from "@/components/ui/useHoje";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
-import { TIPOS_CLIENTE, type Cliente } from "@/lib/types";
+import { TIPOS_CLIENTE, type Cliente, type ClienteDocumento } from "@/lib/types";
 
-export function ListaClientes({ clientes, organizacaoId }: { clientes: Cliente[]; organizacaoId: string }) {
+export function ListaClientes({ clientes, organizacaoId, documentos }:
+  { clientes: Cliente[]; organizacaoId: string; documentos: ClienteDocumento[] }) {
   const { d } = useI18n();
   const t = d.cadastros;
+  // Hoje no fuso do aparelho, só depois da hidratação (o servidor roda em UTC).
+  const hoje = useHoje();
 
   return (
     <Cadastro<Cliente>
@@ -26,6 +32,9 @@ export function ListaClientes({ clientes, organizacaoId }: { clientes: Cliente[]
           <p className="mt-1 text-stone">
             {[c.pais, c.email, c.telefone].filter(Boolean).join(" · ")}
           </p>
+          {hoje && <SeloCis situacao={situacaoCis(documentos.filter((x) => x.cliente_id === c.id), hoje)} />}
+          <DocumentosCliente organizacaoId={organizacaoId} clienteId={c.id}
+                             docs={documentos.filter((x) => x.cliente_id === c.id)} />
         </>
       )}
       campos={(c) => {
@@ -82,4 +91,16 @@ export function ListaClientes({ clientes, organizacaoId }: { clientes: Cliente[]
       }}
     />
   );
+}
+
+/** O CIS abre o cliente (com a LOI): sem ele, ou vencido, a ficha avisa. */
+function SeloCis({ situacao }: { situacao: ReturnType<typeof situacaoCis> }) {
+  const { d } = useI18n();
+  const t = d.documentos;
+  if (situacao.estado === "ok") return <p className="mt-2 text-sm font-semibold text-gain">{t.cisOk}</p>;
+  const texto = situacao.estado === "sem_cis" ? t.semCis
+    : situacao.estado === "vencido" ? fmtTexto(t.cisVencido, { dias: situacao.dias })
+    : fmtTexto(t.cisVence, { dias: situacao.dias });
+  const cor = situacao.estado === "vence" ? "border-orange bg-orange-soft text-orange-deep" : "border-loss bg-red-50 text-loss";
+  return <p className={`mt-2 inline-block rounded-md border-l-4 px-3 py-1 text-sm font-semibold ${cor}`}>{texto}</p>;
 }

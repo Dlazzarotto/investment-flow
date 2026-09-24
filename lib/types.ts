@@ -634,3 +634,26 @@ export interface RemuneracaoGestao {
   observacoes: string | null;
   criado_em: string;
 }
+
+// ---------------------------------------------------------------------------
+// 0021 — documentos do cliente
+// ---------------------------------------------------------------------------
+export const TIPOS_DOCUMENTO_CLIENTE = ["cis", "loi", "icpo", "kyc", "contrato_social", "procuracao", "outro"] as const;
+export type TipoDocumentoCliente = (typeof TIPOS_DOCUMENTO_CLIENTE)[number];
+
+export interface ClienteDocumento {
+  id: string;
+  organizacao_id: string;
+  cliente_id: string;
+  tipo: TipoDocumentoCliente;
+  nome_arquivo: string;
+  /** Caminho no bucket "documentos"; a 1ª pasta é a empresa. */
+  caminho: string;
+  tamanho: number | null;
+  mime: string | null;
+  emitido_em: string | null;
+  validade: string | null;
+  observacoes: string | null;
+  enviado_por: string | null;
+  criado_em: string;
+}

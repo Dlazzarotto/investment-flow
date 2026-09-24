@@ -1,7 +1,7 @@
 import { Shell } from "@/components/Shell";
 import { ListaClientes } from "@/components/cadastros/ListaClientes";
 import { Vazio } from "@/components/ui/Vazio";
-import { ehMaster, listarCarteira, listarClientes, listarProjetos, minhaOrganizacao } from "@/lib/consultas";
+import { ehMaster, listarCarteira, listarClientes, listarDocumentosClientes, listarProjetos, minhaOrganizacao } from "@/lib/consultas";
 import { obterD } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,9 @@ export default async function ClientesPage() {
   const [projetos, carteira, master, org] = await Promise.all([
     listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(),
   ]);
-  const clientes = await listarClientes(org?.organizacao.id);
+  const [clientes, documentos] = await Promise.all([
+    listarClientes(org?.organizacao.id), listarDocumentosClientes(org?.organizacao.id),
+  ]);
   const t = d.cadastros;
 
   return (
@@ -21,7 +23,7 @@ export default async function ClientesPage() {
       <p className="mt-1 text-stone">{t.clientesSubtitulo}</p>
       <div className="mt-6">
         {org ? (
-          <ListaClientes clientes={clientes} organizacaoId={org.organizacao.id} />
+          <ListaClientes clientes={clientes} organizacaoId={org.organizacao.id} documentos={documentos} />
         ) : (
           <Vazio titulo={t.semEmpresa} texto={t.semEmpresaTexto} />
         )}

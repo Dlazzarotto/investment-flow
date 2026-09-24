@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, Commodity, CommodityParametro, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
+  Cliente, ClienteDocumento, Commodity, CommodityParametro, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
   PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
@@ -396,4 +396,14 @@ export const capitalPorProjeto = cache(async (projetoIds: string[]): Promise<Map
     m.set(a.projeto_id, (m.get(a.projeto_id) ?? 0) + Number(a.valor));
   }
   return m;
+});
+
+/** Documentos dos clientes da empresa (0021), do mais novo para o mais antigo. */
+export const listarDocumentosClientes = cache(async (organizacaoId?: string): Promise<ClienteDocumento[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("cliente_documentos").select("*")
+    .eq("organizacao_id", organizacaoId).order("criado_em", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ClienteDocumento[];
 });
