@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, Commodity, CommodityParametro, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
+  Cliente, Commodity, CommodityParametro, Contrato, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
   PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
@@ -327,4 +327,24 @@ export const obterPainelEmpresa = cache(async (organizacaoId?: string): Promise<
   const { data, error } = await supabase.rpc("painel_empresa", { p_organizacao_id: organizacaoId });
   if (error) throw new Error(error.message);
   return (data ?? []) as PainelEmpresa[];
+});
+
+/** Contratos comerciais da empresa (0018), do mais recente para o mais antigo. */
+export const listarContratos = cache(async (organizacaoId?: string): Promise<Contrato[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("contratos").select("*")
+    .eq("organizacao_id", organizacaoId).order("criado_em", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Contrato[];
+});
+
+export const obterContrato = cache(async (id: string): Promise<Contrato> => {
+  if (!UUID.test(id)) notFound();
+  const supabase = createClient();
+  const { data, error } = await supabase.from("contratos").select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  // O RLS devolve vazio para contrato de outra empresa: para quem pergunta, ele não existe.
+  if (!data) notFound();
+  return data as Contrato;
 });

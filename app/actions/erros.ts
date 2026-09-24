@@ -16,6 +16,8 @@ export function traduzirErroBanco(err: PostgrestError, entidade: Entidade, d: Di
   }
   // numeric_value_out_of_range: estoura numeric(16,2)/numeric(18,2) (ex.: quantidade × valor unitário enorme)
   if (err.code === "22003") return d.banco.foraDaFaixa;
+  // foreign_key_violation: apagar cliente ou commodity que um contrato ainda usa (on delete restrict).
+  if (err.code === "23503") return fmtTexto(d.banco.emUso, { entidade: nome });
   if (err.code === "42501" || err.code === "PGRST301") return d.comum.semPermissao;
   return fmtTexto(d.banco.falha, { entidade: nome, msg: err.message });
 }

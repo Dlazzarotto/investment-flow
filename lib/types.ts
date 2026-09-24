@@ -480,3 +480,66 @@ export interface PainelEmpresa {
   receita_mes: number;
   vendas_qtd: number;
 }
+
+// ---------------------------------------------------------------------------
+// Contratos comerciais (0018) — o centro da operação de trading
+// ---------------------------------------------------------------------------
+export const DIRECOES_CONTRATO = ["venda", "compra"] as const;
+export type DirecaoContrato = (typeof DIRECOES_CONTRATO)[number];
+/** Principal = trader (compra e revende, dono da carga); agente = intermedia e ganha comissão. */
+export const PAPEIS_CONTRATO = ["principal", "agente"] as const;
+export type PapelContrato = (typeof PAPEIS_CONTRATO)[number];
+export const MODALIDADES_CONTRATO = ["spot", "term"] as const;
+export type ModalidadeContrato = (typeof MODALIDADES_CONTRATO)[number];
+export const TIPOS_PRECO = ["fixo", "formula"] as const;
+export type TipoPreco = (typeof TIPOS_PRECO)[number];
+export const FORMAS_PAGAMENTO = ["lc", "tt_documentos"] as const;
+export type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
+export const STATUS_CONTRATO = ["rascunho", "assinado", "em_execucao", "concluido", "cancelado"] as const;
+export type StatusContrato = (typeof STATUS_CONTRATO)[number];
+/** Incoterms 2020 — códigos iguais em todos os idiomas, por isso não vão para os dicionários. */
+export const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"] as const;
+export type Incoterm = (typeof INCOTERMS)[number];
+export const BASES_COMISSAO = ["por_unidade", "pct_valor"] as const;
+export type BaseComissao = (typeof BASES_COMISSAO)[number];
+
+export interface Contrato {
+  id: string;
+  organizacao_id: string;
+  numero: string | null;
+  contraparte_id: string;
+  commodity_id: string;
+  projeto_id: string | null;
+  estimativa_id: string | null;
+  direcao: DirecaoContrato;
+  papel: PapelContrato;
+  modalidade: ModalidadeContrato;
+  status: StatusContrato;
+  volume: number;
+  tolerancia_pct: number;
+  unidade: string;
+  incoterm: Incoterm;
+  porto_embarque: string | null;
+  porto_destino: string | null;
+  moeda: Moeda;
+  tipo_preco: TipoPreco;
+  preco_fixo: number | null;
+  indice: string | null;
+  premio: number;
+  periodo_cotacao: string | null;
+  indice_referencia: number | null;
+  forma_pagamento: FormaPagamento;
+  prazo_pagamento_dias: number;
+  pct_provisoria: number | null;
+  comissao_base: BaseComissao | null;
+  comissao_valor: number | null;
+  data_loi: string | null;
+  data_icpo: string | null;
+  data_sco: string | null;
+  data_assinatura: string | null;
+  inicio_entregas: string | null;
+  fim_entregas: string | null;
+  observacoes: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
