@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, Commodity, CommodityParametro, Contrato, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
+  Cliente, Commodity, CommodityParametro, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
   PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
@@ -347,4 +347,53 @@ export const obterContrato = cache(async (id: string): Promise<Contrato> => {
   // O RLS devolve vazio para contrato de outra empresa: para quem pergunta, ele não existe.
   if (!data) notFound();
   return data as Contrato;
+});
+
+/** Partes de todos os contratos da empresa, para as telas agruparem sem N consultas. */
+export const listarPartes = cache(async (organizacaoId?: string): Promise<ContratoParte[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("contrato_partes").select("*").eq("organizacao_id", organizacaoId);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ContratoParte[];
+});
+
+export const listarInstrumentos = cache(async (organizacaoId?: string): Promise<Instrumento[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("instrumentos").select("*")
+    .eq("organizacao_id", organizacaoId).order("criado_em");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Instrumento[];
+});
+
+export const listarMonetizacoes = cache(async (organizacaoId?: string): Promise<Monetizacao[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("monetizacoes").select("*")
+    .eq("organizacao_id", organizacaoId).order("criado_em");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Monetizacao[];
+});
+
+export const listarRemuneracoes = cache(async (organizacaoId?: string): Promise<RemuneracaoGestao[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("remuneracoes_gestao").select("*")
+    .eq("organizacao_id", organizacaoId).order("criado_em");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RemuneracaoGestao[];
+});
+
+/** Soma dos aportes por projeto da empresa — base da taxa de administração. */
+export const capitalPorProjeto = cache(async (projetoIds: string[]): Promise<Map<string, number>> => {
+  const m = new Map<string, number>();
+  if (projetoIds.length === 0) return m;
+  const supabase = createClient();
+  const { data, error } = await supabase.from("aportes").select("projeto_id, valor").in("projeto_id", projetoIds);
+  if (error) throw new Error(error.message);
+  for (const a of (data ?? []) as { projeto_id: string; valor: number }[]) {
+    m.set(a.projeto_id, (m.get(a.projeto_id) ?? 0) + Number(a.valor));
+  }
+  return m;
 });

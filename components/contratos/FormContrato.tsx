@@ -6,13 +6,15 @@ import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { rotuloUnidade } from "@/lib/i18n";
 import {
-  BASES_COMISSAO, DIRECOES_CONTRATO, FORMAS_PAGAMENTO, INCOTERMS, MODALIDADES_CONTRATO, MOEDAS, PAPEIS_CONTRATO,
+  ASSINANTES_CONTRATO, BASES_COMISSAO, CONTAS_CONTRATO, DIRECOES_CONTRATO, FORMAS_PAGAMENTO, INCOTERMS, MODALIDADES_CONTRATO, MOEDAS, PAPEIS_CONTRATO,
   STATUS_CONTRATO, TIPOS_PRECO, UNIDADES_VOLUME,
   type ActionState, type Cliente, type Commodity, type Contrato, type Projeto,
 } from "@/lib/types";
 
-/** Valores iniciais: o contrato salvo, ou o que veio da proposta (estimativa de custo). */
-export type ValoresContrato = Partial<Contrato>;
+/** Valores iniciais: o contrato salvo (com as partes), ou o que veio da proposta (estimativa de custo). */
+export type ValoresContrato = Partial<Contrato> & {
+  comprador_id?: string | null; vendedor_id?: string | null; financial_partner_id?: string | null;
+};
 
 interface Props {
   acao: (s: ActionState, fd: FormData) => Promise<ActionState>;
@@ -39,11 +41,18 @@ export function FormContrato({ acao, organizacaoId, clientes, commodities, proje
   const [papel, setPapel] = useState(v.papel ?? "principal");
   const [direcao, setDirecao] = useState(v.direcao ?? "venda");
 
-  // Contraparte certa primeiro: na venda, compradores; na compra, vendedores.
-  const tipoEsperado = direcao === "venda" ? "comprador" : "vendedor";
-  const contrapartes = [...clientes]
-    .filter((c) => c.ativo || c.id === v.contraparte_id)
-    .sort((a, b) => Number(b.tipos.includes(tipoEsperado)) - Number(a.tipos.includes(tipoEsperado)));
+  const [conta, setConta] = useState(v.conta ?? "propria");
+  // Quem é cliente em cada ponta: trader vendendo tem só o comprador (a empresa é
+  // o vendedor); comprando, só o vendedor; intermediando, os dois.
+  const pedeComprador = papel === "agente" || direcao === "venda";
+  const pedeVendedor = papel === "agente" || direcao === "compra";
+  const ativos = clientes.filter((c) => c.ativo || [v.comprador_id, v.vendedor_id, v.financial_partner_id].includes(c.id));
+  // O Financial Partner só recebe e administra o instrumento — não entra como
+  // ponta do produto. Quem é SÓ Financial Partner fica fora dos seletores de ponta.
+  const soFp = (c: Cliente) => c.tipos.length > 0 && c.tipos.every((x) => x === "financial_partner");
+  const ordenar = (tipo: Cliente["tipos"][number]) => ativos.filter((c) => !soFp(c))
+    .sort((a, b) => Number(b.tipos.includes(tipo)) - Number(a.tipos.includes(tipo)) || a.nome.localeCompare(b.nome));
+  const financiais = ativos.filter((c) => c.tipos.includes("financial_partner") || c.id === v.financial_partner_id);
   const num = (x: number | null | undefined) => (x === null || x === undefined ? "" : String(x));
 
   return (
@@ -70,12 +79,33 @@ export function FormContrato({ acao, organizacaoId, clientes, commodities, proje
           </select>
         </Campo>
         <p className="text-sm text-stone sm:col-span-6">{e.descricaoPapelContrato[papel]}</p>
-        <Campo col={3} rotulo={direcao === "venda" ? t.comprador : t.vendedor} id="contraparte_id">
-          <select id="contraparte_id" name="contraparte_id" required className="campo" defaultValue={v.contraparte_id ?? ""}>
-            <option value="" disabled>{t.escolha}</option>
-            {contrapartes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        {pedeComprador ? (
+          <Campo col={3} rotulo={t.comprador} id="comprador_id">
+            <select id="comprador_id" name="comprador_id" required className="campo" defaultValue={v.comprador_id ?? ""}>
+              <option value="" disabled>{t.escolha}</option>
+              {ordenar("comprador").map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
+          </Campo>
+        ) : (
+          <p className="self-end text-stone sm:col-span-3">{t.empresaCompra}</p>
+        )}
+        {pedeVendedor ? (
+          <Campo col={3} rotulo={t.vendedor} id="vendedor_id">
+            <select id="vendedor_id" name="vendedor_id" required className="campo" defaultValue={v.vendedor_id ?? ""}>
+              <option value="" disabled>{t.escolha}</option>
+              {ordenar("vendedor").map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
+          </Campo>
+        ) : (
+          <p className="self-end text-stone sm:col-span-3">{t.empresaVende}</p>
+        )}
+        <Campo col={3} rotulo={t.financialPartner} id="financial_partner_id">
+          <select id="financial_partner_id" name="financial_partner_id" className="campo" defaultValue={v.financial_partner_id ?? ""}>
+            <option value="">{t.semFinancialPartner}</option>
+            {financiais.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Campo>
+        <p className="text-sm text-stone sm:col-span-3 sm:self-end">{t.financialPartnerAjuda}</p>
         <Campo col={3} rotulo={t.commodity} id="commodity_id">
           <select id="commodity_id" name="commodity_id" required className="campo" defaultValue={v.commodity_id ?? ""}>
             <option value="" disabled>{t.escolha}</option>
@@ -83,12 +113,24 @@ export function FormContrato({ acao, organizacaoId, clientes, commodities, proje
               .map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Campo>
-        <Campo col={3} rotulo={t.projeto} id="projeto_id">
-          <select id="projeto_id" name="projeto_id" className="campo" defaultValue={v.projeto_id ?? ""}>
+        <Campo col={2} rotulo={t.conta} id="conta">
+          <select id="conta" name="conta" className="campo" value={conta}
+                  onChange={(x) => setConta(x.target.value as typeof conta)}>
+            {CONTAS_CONTRATO.map((o) => <option key={o} value={o}>{e.contaContrato[o]}</option>)}
+          </select>
+        </Campo>
+        <Campo col={2} rotulo={t.assinante} id="assinante">
+          <select id="assinante" name="assinante" className="campo" defaultValue={v.assinante ?? "empresa"}>
+            {ASSINANTES_CONTRATO.map((o) => <option key={o} value={o}>{e.assinanteContrato[o]}</option>)}
+          </select>
+        </Campo>
+        <Campo col={2} rotulo={conta === "projeto" ? t.projetoObrigatorio : t.projeto} id="projeto_id">
+          <select id="projeto_id" name="projeto_id" required={conta === "projeto"} className="campo" defaultValue={v.projeto_id ?? ""}>
             <option value="">{t.semProjeto}</option>
             {projetos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
           </select>
         </Campo>
+        <p className="text-sm text-stone sm:col-span-6">{e.descricaoContaContrato[conta]}</p>
         <Campo col={3} rotulo={t.status} id="status">
           <select id="status" name="status" className="campo" defaultValue={v.status ?? "rascunho"}>
             {STATUS_CONTRATO.map((o) => <option key={o} value={o}>{e.statusContrato[o]}</option>)}

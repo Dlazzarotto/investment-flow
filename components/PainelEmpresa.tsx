@@ -3,7 +3,7 @@ import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { rotuloUnidade } from "@/lib/i18n";
-import type { ResumoContratos } from "@/lib/contratos";
+import type { AlertaInstrumento, ReceitaEmpresa, ResumoContratos } from "@/lib/contratos";
 import type { PainelEmpresa as Painel } from "@/lib/types";
 
 /**
@@ -12,8 +12,9 @@ import type { PainelEmpresa as Painel } from "@/lib/types";
  * As contagens vêm da primeira linha (empresa não tem moeda); o dinheiro sai
  * por moeda, e com uma moeda só — o caso normal — fica igual a um painel comum.
  */
-export function PainelEmpresa({ painel, contratos, nomesCommodity }:
-  { painel: Painel[]; contratos: ResumoContratos; nomesCommodity: Map<string, string> }) {
+export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto, receita, alertas }:
+  { painel: Painel[]; contratos: ResumoContratos; nomesCommodity: Map<string, string>; nomesProjeto: Map<string, string>;
+    receita: ReceitaEmpresa[]; alertas: (AlertaInstrumento & { contrato_id: string; rotulo: string })[] }) {
   const { locale, d } = obterD();
   const f = formatadores(locale);
   const t = d.painel;
@@ -21,11 +22,45 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity }:
 
   return (
     <>
+      {/* Prazo de LC perdido é pagamento perdido: o alerta vem antes de tudo. */}
+      {alertas.length > 0 && (
+        <section className="secao">
+          <h2>{t.instrumentosAlerta}</h2>
+          <ul className="grid gap-2">
+            {alertas.map((a) => (
+              <li key={`${a.instrumento_id}-${a.motivo}`}>
+                <Link href={`/contratos/${a.contrato_id}`}
+                      className="block min-h-touch rounded-md border-l-4 border-loss bg-red-50 px-4 py-3 font-semibold text-loss hover:underline">
+                  {a.rotulo} · {a.dias < 0 ? fmtTexto(d.instrumentos.atrasado, { dias: -a.dias })
+                    : fmtTexto(a.motivo === "apresentacao" ? d.instrumentos.alertaApresentacao : d.instrumentos.alertaValidade, { dias: a.dias })}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* O que a EMPRESA ganha: intermediação, monetização e gestão — o que é dos projetos fica fora. */}
+      {receita.length > 0 && (
+        <section className="secao">
+          <h2>{t.receitaEmpresa}</h2>
+          {receita.map((r) => (
+            <div key={r.moeda} className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Cartao rotulo={`${t.receitaIntermediacao} · ${r.moeda}`} valor={f.moeda(r.intermediacao, r.moeda)} bom />
+              <Cartao rotulo={`${t.receitaMonetizacao} · ${r.moeda}`} valor={f.moeda(r.monetizacao, r.moeda)} bom />
+              <Cartao rotulo={`${t.receitaGestaoAno} · ${r.moeda}`} valor={f.moeda(r.gestaoAno, r.moeda)} bom />
+              <Cartao rotulo={`${t.receitaGestaoContratos} · ${r.moeda}`} valor={f.moeda(r.gestaoContratos, r.moeda)} bom />
+            </div>
+          ))}
+          <p className="mt-2 text-sm text-stone">{t.receitaNota}</p>
+        </section>
+      )}
+
       {/* A OPERAÇÃO vem primeiro: contrato é o centro do trading; o resto é consequência dele. */}
       <section className="secao">
         <h2>{t.operacao}</h2>
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <Cartao href="/contratos" rotulo={t.contratosAtivos} valor={String(contratos.ativos)}
+          <Cartao href="/contratos" rotulo={t.contratosAtivos} valor={String(contratos.ativosProprios)}
                   nota={t.contratosAtivosNota} destaque />
           <Cartao href="/contratos?status=rascunho" rotulo={t.emNegociacao} valor={String(contratos.emNegociacao)} />
         </div>
@@ -33,7 +68,6 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity }:
           <div key={v.moeda} className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Cartao rotulo={`${t.contratadoVenda} · ${v.moeda}`} valor={f.moeda(v.venda, v.moeda)} bom />
             <Cartao rotulo={`${t.contratadoCompra} · ${v.moeda}`} valor={f.moeda(v.compra, v.moeda)} />
-            <Cartao rotulo={`${t.comissoes} · ${v.moeda}`} valor={f.moeda(v.comissao, v.moeda)} />
             {v.semPreco > 0 && (
               <Cartao rotulo={t.semPreco} valor={String(v.semPreco)} nota={t.semPrecoNota} alerta />
             )}
@@ -65,6 +99,26 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity }:
           </div>
         )}
       </section>
+
+      {/* Sob gestão: dinheiro dos projetos de investidores — NÃO soma no resultado da empresa. */}
+      {contratos.sobGestao.length > 0 && (
+        <section className="secao">
+          <h2>{t.sobGestao}</h2>
+          <ul className="grid gap-3 lg:grid-cols-2">
+            {contratos.sobGestao.map((g) => (
+              <li key={`${g.projeto_id}|${g.moeda}`} className="rounded-md border border-stone-light bg-white p-4">
+                <p className="font-semibold text-navy">{nomesProjeto.get(g.projeto_id) ?? "—"}</p>
+                <dl className="mt-2 grid grid-cols-3 gap-2">
+                  <div><dt className="text-sm text-stone">{t.contratosAtivos}</dt><dd className="num font-semibold">{g.contratos}</dd></div>
+                  <div className="col-span-2"><dt className="text-sm text-stone">{t.contratadoVenda}</dt>
+                    <dd className="num font-semibold">{f.moeda(g.venda, g.moeda)}</dd></div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-sm text-stone">{t.sobGestaoNota}</p>
+        </section>
+      )}
 
       <section className="secao">
         <h2>{t.carteira}</h2>

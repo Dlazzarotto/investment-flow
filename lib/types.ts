@@ -386,7 +386,7 @@ export interface PainelPlataforma {
  * o mesmo comprador aparece em vários embarques, e repetir o cadastro por
  * projeto seria garantir que os dados divergem.
  */
-export const TIPOS_CLIENTE = ["investidor", "comprador", "vendedor", "monetizador"] as const;
+export const TIPOS_CLIENTE = ["investidor", "comprador", "vendedor", "monetizador", "financial_partner"] as const;
 export type TipoCliente = (typeof TIPOS_CLIENTE)[number];
 
 export interface Cliente {
@@ -507,9 +507,12 @@ export interface Contrato {
   id: string;
   organizacao_id: string;
   numero: string | null;
-  contraparte_id: string;
+  /** Obsoleto desde a 0019: as partes moram em contrato_partes. */
+  contraparte_id: string | null;
   commodity_id: string;
   projeto_id: string | null;
+  conta: ContaContrato;
+  assinante: AssinanteContrato;
   estimativa_id: string | null;
   direcao: DirecaoContrato;
   papel: PapelContrato;
@@ -542,4 +545,85 @@ export interface Contrato {
   observacoes: string | null;
   criado_em: string;
   atualizado_em: string;
+}
+
+// ---------------------------------------------------------------------------
+// 0019 — partes, instrumentos bancários, monetização e remuneração da gestão
+// ---------------------------------------------------------------------------
+/** O Financial Partner recebe e administra o instrumento; não responde pelo produto. */
+export const PAPEIS_PARTE = ["comprador", "vendedor", "financial_partner"] as const;
+export type PapelParte = (typeof PAPEIS_PARTE)[number];
+/** Por conta de quem: o resultado segue a conta. */
+export const CONTAS_CONTRATO = ["propria", "projeto"] as const;
+export type ContaContrato = (typeof CONTAS_CONTRATO)[number];
+/** Quem assina: informação jurídica, não muda o resultado. */
+export const ASSINANTES_CONTRATO = ["empresa", "projeto"] as const;
+export type AssinanteContrato = (typeof ASSINANTES_CONTRATO)[number];
+export const TIPOS_INSTRUMENTO = ["dlc", "sblc", "lc"] as const;
+export type TipoInstrumento = (typeof TIPOS_INSTRUMENTO)[number];
+export const STATUS_INSTRUMENTO = ["solicitado", "emitido", "recebido", "monetizado", "liquidado", "vencido", "cancelado"] as const;
+export type StatusInstrumento = (typeof STATUS_INSTRUMENTO)[number];
+export const STATUS_MONETIZACAO = ["negociacao", "aprovada", "paga", "cancelada"] as const;
+export type StatusMonetizacao = (typeof STATUS_MONETIZACAO)[number];
+export const TIPOS_REMUNERACAO = ["taxa_adm_anual_pct", "fixo_mensal", "pct_vendas", "por_unidade", "performance_pct"] as const;
+export type TipoRemuneracao = (typeof TIPOS_REMUNERACAO)[number];
+
+export interface ContratoParte {
+  id: string;
+  organizacao_id: string;
+  contrato_id: string;
+  cliente_id: string;
+  papel: PapelParte;
+  criado_em: string;
+}
+
+export interface Instrumento {
+  id: string;
+  organizacao_id: string;
+  contrato_id: string;
+  tipo: TipoInstrumento;
+  financial_partner_id: string | null;
+  banco_emissor: string | null;
+  numero: string | null;
+  valor_face: number;
+  moeda: Moeda;
+  data_emissao: string | null;
+  validade: string | null;
+  prazo_apresentacao: string | null;
+  status: StatusInstrumento;
+  observacoes: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface Monetizacao {
+  id: string;
+  organizacao_id: string;
+  numero: string | null;
+  instrumento_id: string;
+  financial_partner_id: string;
+  beneficiario_id: string | null;
+  projeto_id: string | null;
+  /** % do valor de FACE que o Financial Partner paga. */
+  pct_monetizacao: number;
+  /** % do valor MONETIZADO que a empresa ganha. */
+  comissao_pct: number;
+  status: StatusMonetizacao;
+  data_oferta: string | null;
+  data_pagamento: string | null;
+  observacoes: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface RemuneracaoGestao {
+  id: string;
+  organizacao_id: string;
+  projeto_id: string;
+  tipo: TipoRemuneracao;
+  valor: number;
+  inicio: string | null;
+  fim: string | null;
+  observacoes: string | null;
+  criado_em: string;
 }

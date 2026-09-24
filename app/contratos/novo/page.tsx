@@ -47,7 +47,7 @@ export default async function NovoContratoPage({ searchParams }: { searchParams:
       estimativa_id: est.id, projeto_id: est.projeto_id, direcao: "venda", volume: Number(est.volume_total),
       unidade: est.unidade, moeda: est.moeda, tipo_preco: "fixo",
       preco_fixo: r.preco === null ? null : Math.round(r.preco * 100) / 100,
-      contraparte_id: cliente?.id, commodity_id: commodity?.id,
+      comprador_id: cliente?.id, commodity_id: commodity?.id,
     };
     origem = est.nome;
   }

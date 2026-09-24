@@ -10,7 +10,12 @@ import { atualizarProjeto, excluirProjeto } from "@/app/actions/projetos";
 import { excluirParticipante } from "@/app/actions/participantes";
 import { removerMembro } from "@/app/actions/membros";
 import { revogarConvite } from "@/app/actions/acesso";
-import { listarConvites, listarMembros, listarParticipantes, minhaOrganizacao, obterPapel, obterProjeto, projetoTemPin } from "@/lib/consultas";
+import {
+  capitalPorProjeto, listarContratos, listarConvites, listarMembros, listarParticipantes, listarRemuneracoes, minhaOrganizacao,
+  obterPapel, obterProjeto, projetoTemPin,
+} from "@/lib/consultas";
+import { RemuneracaoGestao } from "@/components/contratos/RemuneracaoGestao";
+import { baseDoProjeto, projetarRemuneracao } from "@/lib/contratos";
 import { vincularOrganizacao } from "@/app/actions/organizacao";
 import { permissoes } from "@/lib/permissoes";
 import { totalParticipacao } from "@/lib/calculos";
@@ -29,6 +34,14 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
     pode.administrar ? listarConvites(projeto.id) : Promise.resolve([]),
     projetoTemPin(projeto.id), minhaOrganizacao(),
   ]);
+  // Remuneração da gestão: só quando o projeto é da empresa de quem administra.
+  const daEmpresa = pode.administrar && !!org && projeto.organizacao_id === org.organizacao.id;
+  const [remuneracoes, contratos, capital] = daEmpresa
+    ? await Promise.all([listarRemuneracoes(org!.organizacao.id), listarContratos(org!.organizacao.id), capitalPorProjeto([projeto.id])])
+    : [[], [], new Map<string, number>()];
+  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0);
+  const linhasGestao = remuneracoes.filter((r) => r.projeto_id === projeto.id)
+    .map((r) => ({ ...r, ...projetarRemuneracao(r, base) }));
   const alocado = totalParticipacao(projeto, participantes);
   const disponivel = Math.round((100 - alocado) * 100) / 100;
   const t = d.parceria;
@@ -91,6 +104,14 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
 
       {editavel && (
         <section className="secao max-w-3xl"><h2>{t.adicionar}</h2><FormParticipante projetoId={projeto.id} disponivel={disponivel} /></section>
+      )}
+
+      {daEmpresa && (
+        <section className="secao max-w-3xl">
+          <h2>{d.gestao.titulo}</h2>
+          <p className="mb-4 text-stone">{fmtTexto(d.gestao.subtitulo, { empresa: org!.organizacao.nome })}</p>
+          <RemuneracaoGestao linhas={linhasGestao} organizacaoId={org!.organizacao.id} projetoId={projeto.id} moeda={projeto.moeda} />
+        </section>
       )}
 
       {pode.administrar && (
