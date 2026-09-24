@@ -36,6 +36,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0016_painel_empresa.sql (painel_empresa(): consolidado da empresa, uma linha por moeda)
                        0017_painel_empresa_corrige.sql (a 0016 falhava em TODA chamada — "moeda" ambígua; USD só
                                                      entra sem projeto; receita do mês sem venda futura)
+                       0018_contratos.sql (contrato comercial: compra/venda, trader/agente, preço fixo/fórmula,
+                                                     LC/TT; mesma empresa por FK composta; escrever exige empresa em dia)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
@@ -43,6 +45,8 @@ app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, 
 app/carteira/          visão do investidor: lista (page.tsx) e detalhe por projeto ([id]/page.tsx), só leitura
 app/painel/            dashboard do ADM: a EMPRESA inteira. É a página de entrada (/, pós-login e caminhoInterno);
                        quem não tem empresa (investidor, membro de projeto, conta nova) segue para /projetos
+app/contratos/         lista (filtro por status/direção), novo/ (?estimativa= preenche pela proposta) e [id]/ (resumo +
+                       edição); contas puras em lib/contratos.ts (preço, valor, faixa, comissão, resumoContratos)
 app/clientes, /fornecedores, /commodities  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
                        custeio (grupo_custo, modal_etapa) para o lançamento herdar sem tradução no meio
 app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
@@ -61,7 +65,7 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
 components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
-tests/                 calculos.test.ts, custeio.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
+tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
                        schema*.test.sql (psql)
 ```
 
@@ -70,7 +74,7 @@ tests/                 calculos.test.ts, custeio.test.ts, ia.test.ts, i18n.test.
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 101 testes, todos devem passar
+npm test          # vitest — 115 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -152,6 +156,22 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
 - **Migrations com função usam delimitador nomeado** (`$fn$`, `$ck$`), nunca `$$`: o editor de SQL do Supabase
   quebra a instrução no primeiro `;` de dentro do corpo e devolve "unterminated dollar-quoted string".
 
+### Espinha da operação — trading de commodities (em andamento)
+
+Decidido com o usuário: o centro é o NEGÓCIO, não o projeto. Cadeia: proposta (estimativa de custo) → LOI/ICPO →
+SCO → **contrato** (0018) → **embarques** (etapa 2) → **faturas, LC e recebimentos** (etapa 3) → **custos por
+embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel reescrito (etapa 5).
+
+- **A empresa é trader E agente**: `direcao` (venda/compra) e `papel` (principal/agente) por contrato. Trader casa
+  compra e venda no embarque (back-to-back); agente tem um contrato só e a receita é a comissão.
+- **Preço fixo ou fórmula** (índice ± prêmio no período de cotação). `indice_referencia` serve só para PROJETAR;
+  sem ele o valor é desconhecido (null, "a confirmar"), nunca zero. Ajuste de qualidade entra no embarque, pelo laudo.
+- **Pagamento: LC ou TT contra documentos**, com provisória opcional. Prazo de apresentação da LC é risco — alertar.
+- **Contraparte vem de `clientes`** (comprador/vendedor); fornecedor é prestador e entra nos custos do embarque.
+- **Projeto vira agrupador opcional** (JV/investidor); o investidor continua vendo só a parte dele.
+- Painel: "Operação" vem primeiro — contratos ativos, em negociação, contratado por moeda e posição por
+  commodity (comprado − vendido; toneladas não se somam com barris).
+
 ### Custeio — cálculo reverso (0008, etapa 1 fechada)
 
 - **A cadeia é do projeto, a estimativa é do cliente.** `projeto_etapas` guarda o percurso uma vez (mina → estrada →
@@ -176,6 +196,11 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   saída vira variável; um `moeda` solto que coincida com ela dá "column reference is ambiguous" — e só na
   CHAMADA, nunca no `create`. Foi assim que a 0016 saiu quebrada. "Criou sem erro" não prova nada: função nova
   ganha teste em `tests/schemaN.test.sql`, rodado num Postgres local antes de entregar.
+- **Trava entre tabelas: chave estrangeira COMPOSTA, não trigger.** A 0018 nasceu com uma trigger PL/pgSQL e o
+  SQL Editor partiu o corpo dela no meio mesmo com etiqueta nomeada (`$ctr$`). "Mesma empresa" virou
+  `foreign key (x_id, organizacao_id) references tabela (id, organizacao_id)` + índice único `(id, organizacao_id)`
+  do lado referenciado: declarativo, sem corpo para o editor quebrar, e o banco garante sozinho. Função PL/pgSQL
+  nova só quando não houver alternativa declarativa.
 - **Empresa do usuário é por filiação** (`minha_organizacao()`), nunca "a primeira linha que o RLS deixa ver": o
   master enxerga todas as `organizacoes`, e a primeira visível seria a de outra empresa.
 

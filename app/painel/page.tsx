@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { PainelEmpresa } from "@/components/PainelEmpresa";
 import {
-  acessoSuspenso, ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterPainelEmpresa,
+  acessoSuspenso, ehMaster, listarCarteira, listarCommodities, listarContratos, listarProjetos, minhaOrganizacao,
+  obterPainelEmpresa,
 } from "@/lib/consultas";
+import { resumoContratos } from "@/lib/contratos";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 
@@ -23,8 +25,9 @@ export default async function PainelPage() {
   // /projetos, que já decide: investidor vai para a carteira, conta nova cria a
   // organização ali. Era esse o caminho antes de a entrada virar /painel.
   if (!org) redirect("/projetos");
-  const [painel, suspenso] = await Promise.all([
+  const [painel, suspenso, contratos, commodities] = await Promise.all([
     obterPainelEmpresa(org.organizacao.id), acessoSuspenso(),
+    listarContratos(org.organizacao.id), listarCommodities(org.organizacao.id),
   ]);
   const t = d.painel;
 
@@ -38,7 +41,8 @@ export default async function PainelPage() {
       )}
       <h1 className="text-2xl">{t.titulo}</h1>
       <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: org.organizacao.nome })}</p>
-      <PainelEmpresa painel={painel} />
+      <PainelEmpresa painel={painel} contratos={resumoContratos(contratos)}
+                     nomesCommodity={new Map(commodities.map((c) => [c.id, c.nome]))} />
     </Shell>
   );
 }

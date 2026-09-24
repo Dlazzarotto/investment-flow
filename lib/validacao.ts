@@ -4,6 +4,7 @@ import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
+  BASES_COMISSAO, DIRECOES_CONTRATO, FORMAS_PAGAMENTO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -248,6 +249,80 @@ export function criarSchemas(d: Dicionario) {
       vigencia_ate: z.union([z.literal(""), z.string().refine(ehDataISO, v.dataInvalida)])
         .optional().transform((x) => x || null),
     }),
+    /** Contrato comercial (0018). As travas do banco se repetem aqui para a mensagem sair traduzida. */
+    contratoComercial: z.object({
+      organizacao_id: uuid,
+      numero: textoOpcional(60),
+      contraparte_id: z.string().uuid(v.contraparteObrigatoria),
+      commodity_id: z.string().uuid(v.commodityObrigatorio),
+      projeto_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      estimativa_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
+      direcao: z.enum(DIRECOES_CONTRATO, enumMsg(v.dadosInvalidos)),
+      papel: z.enum(PAPEIS_CONTRATO, enumMsg(v.dadosInvalidos)),
+      modalidade: z.enum(MODALIDADES_CONTRATO, enumMsg(v.dadosInvalidos)),
+      status: z.enum(STATUS_CONTRATO, enumMsg(v.dadosInvalidos)),
+      volume: numeroPositivo(v.volume, MAX_QUANTIDADE),
+      tolerancia_pct: z.coerce.number({ invalid_type_error: v.pctNumero }).min(0, v.pctNegativo).max(50, v.toleranciaMax).catch(0),
+      unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
+      incoterm: z.enum(INCOTERMS, enumMsg(v.dadosInvalidos)),
+      porto_embarque: textoOpcional(160),
+      porto_destino: textoOpcional(160),
+      moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
+      tipo_preco: z.enum(TIPOS_PRECO, enumMsg(v.dadosInvalidos)),
+      preco_fixo: numeroOpcional(),
+      indice: textoOpcional(160),
+      // Prêmio pode ser negativo (desconto sobre o índice); vazio = zero.
+      premio: z.union([z.literal(""), z.coerce.number().finite()]).optional()
+        .transform((x) => (typeof x === "number" ? x : 0)),
+      periodo_cotacao: textoOpcional(160),
+      indice_referencia: numeroOpcional(),
+      forma_pagamento: z.enum(FORMAS_PAGAMENTO, enumMsg(v.dadosInvalidos)),
+      prazo_pagamento_dias: z.coerce.number().int().min(0).max(365).catch(0),
+      pct_provisoria: numeroOpcional(),
+      comissao_base: z.union([z.literal(""), z.enum(BASES_COMISSAO)]).optional().transform((x) => x || null),
+      comissao_valor: numeroOpcional(),
+      data_loi: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      data_icpo: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      data_sco: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      data_assinatura: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      inicio_entregas: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      fim_entregas: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+    }).superRefine((c, ctx) => {
+      if (c.tipo_preco === "fixo" && !(c.preco_fixo !== null && c.preco_fixo > 0)) {
+        ctx.addIssue({ code: "custom", path: ["preco_fixo"], message: v.precoFixoObrigatorio });
+      }
+      if (c.tipo_preco === "formula" && c.indice === null) {
+        ctx.addIssue({ code: "custom", path: ["indice"], message: v.indiceObrigatorio });
+      }
+      if (c.indice_referencia !== null && c.indice_referencia <= 0) {
+        ctx.addIssue({ code: "custom", path: ["indice_referencia"], message: fmtTexto(v.maiorZero, { campo: v.indiceReferencia }) });
+      }
+      if (c.pct_provisoria !== null && !(c.pct_provisoria > 0 && c.pct_provisoria < 100)) {
+        ctx.addIssue({ code: "custom", path: ["pct_provisoria"], message: v.provisoriaFaixa });
+      }
+      if (c.papel === "agente") {
+        if (c.comissao_base === null || c.comissao_valor === null || c.comissao_valor <= 0) {
+          ctx.addIssue({ code: "custom", path: ["comissao_valor"], message: v.comissaoObrigatoria });
+        } else if (c.comissao_base === "pct_valor" && c.comissao_valor > 100) {
+          ctx.addIssue({ code: "custom", path: ["comissao_valor"], message: v.pctMax });
+        }
+      }
+      if (c.inicio_entregas && c.fim_entregas && c.fim_entregas < c.inicio_entregas) {
+        ctx.addIssue({ code: "custom", path: ["fim_entregas"], message: v.periodoInvertido });
+      }
+    }).transform((c) => ({
+      ...c,
+      // O banco exige coerência: o campo do outro tipo de preço/papel vai nulo,
+      // em vez de guardar um valor que ninguém vê na tela e que confundiria depois.
+      preco_fixo: c.tipo_preco === "fixo" ? c.preco_fixo : null,
+      indice: c.tipo_preco === "formula" ? c.indice : null,
+      premio: c.tipo_preco === "formula" ? c.premio : 0,
+      periodo_cotacao: c.tipo_preco === "formula" ? c.periodo_cotacao : null,
+      indice_referencia: c.tipo_preco === "formula" ? c.indice_referencia : null,
+      comissao_base: c.papel === "agente" ? c.comissao_base : null,
+      comissao_valor: c.papel === "agente" ? c.comissao_valor : null,
+    })),
     id: z.object({ id: uuid, projeto_id: uuid }),
     /** Identificador isolado (edição/exclusão de projeto). */
     uuid,

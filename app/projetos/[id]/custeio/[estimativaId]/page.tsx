@@ -56,6 +56,13 @@ export default async function EstimativaPage({ params }: { params: { id: string;
       <section className="secao">
         <h2>{t.resultado}</h2>
         <PainelResultado resultado={resultado} estimativa={estimativa} />
+        {/* A proposta aceita vira contrato: o preço encontrado aqui já vai preenchido.
+            Contrato é da administração da empresa, então só quem administra vê o botão. */}
+        {pode.administrar && projeto.organizacao_id && (
+          <Link href={`/contratos/novo?estimativa=${estimativa.id}`} className="btn-primario mt-4">
+            {d.contratos.gerarDaProposta}
+          </Link>
+        )}
       </section>
 
       <section className="secao">

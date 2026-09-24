@@ -16,6 +16,12 @@ export function traduzirErroBanco(err: PostgrestError, entidade: Entidade, d: Di
   }
   // numeric_value_out_of_range: estoura numeric(16,2)/numeric(18,2) (ex.: quantidade × valor unitário enorme)
   if (err.code === "22003") return d.banco.foraDaFaixa;
+  // foreign_key_violation tem dois sentidos: APAGAR algo que um contrato ainda usa
+  // (on delete restrict) ou GRAVAR apontando para algo inexistente ou de outra
+  // empresa (chave composta com organizacao_id, 0018).
+  if (err.code === "23503") {
+    return err.message.startsWith("update or delete") ? fmtTexto(d.banco.emUso, { entidade: nome }) : d.banco.travas;
+  }
   if (err.code === "42501" || err.code === "PGRST301") return d.comum.semPermissao;
   return fmtTexto(d.banco.falha, { entidade: nome, msg: err.message });
 }

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
+import { rotuloUnidade } from "@/lib/i18n";
+import type { ResumoContratos } from "@/lib/contratos";
 import type { PainelEmpresa as Painel } from "@/lib/types";
 
 /**
@@ -10,7 +12,8 @@ import type { PainelEmpresa as Painel } from "@/lib/types";
  * As contagens vêm da primeira linha (empresa não tem moeda); o dinheiro sai
  * por moeda, e com uma moeda só — o caso normal — fica igual a um painel comum.
  */
-export function PainelEmpresa({ painel }: { painel: Painel[] }) {
+export function PainelEmpresa({ painel, contratos, nomesCommodity }:
+  { painel: Painel[]; contratos: ResumoContratos; nomesCommodity: Map<string, string> }) {
   const { locale, d } = obterD();
   const f = formatadores(locale);
   const t = d.painel;
@@ -18,6 +21,51 @@ export function PainelEmpresa({ painel }: { painel: Painel[] }) {
 
   return (
     <>
+      {/* A OPERAÇÃO vem primeiro: contrato é o centro do trading; o resto é consequência dele. */}
+      <section className="secao">
+        <h2>{t.operacao}</h2>
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <Cartao href="/contratos" rotulo={t.contratosAtivos} valor={String(contratos.ativos)}
+                  nota={t.contratosAtivosNota} destaque />
+          <Cartao href="/contratos?status=rascunho" rotulo={t.emNegociacao} valor={String(contratos.emNegociacao)} />
+        </div>
+        {contratos.valores.map((v) => (
+          <div key={v.moeda} className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Cartao rotulo={`${t.contratadoVenda} · ${v.moeda}`} valor={f.moeda(v.venda, v.moeda)} bom />
+            <Cartao rotulo={`${t.contratadoCompra} · ${v.moeda}`} valor={f.moeda(v.compra, v.moeda)} />
+            <Cartao rotulo={`${t.comissoes} · ${v.moeda}`} valor={f.moeda(v.comissao, v.moeda)} />
+            {v.semPreco > 0 && (
+              <Cartao rotulo={t.semPreco} valor={String(v.semPreco)} nota={t.semPrecoNota} alerta />
+            )}
+          </div>
+        ))}
+        {contratos.volumes.length > 0 && (
+          <div className="mt-4">
+            {/* Cartão por commodity, não tabela: quatro colunas com números de
+                milhões não cabiam num celular de 390 px e a posição sumia. */}
+            <ul className="grid gap-3 lg:grid-cols-2">
+              {contratos.volumes.map((v) => {
+                const posicao = v.compra - v.venda;
+                return (
+                  <li key={`${v.commodity_id}|${v.unidade}`} className="rounded-md border border-stone-light bg-white p-4">
+                    <p className="font-semibold text-navy">
+                      {nomesCommodity.get(v.commodity_id) ?? "—"} <span className="font-normal text-stone">({rotuloUnidade(v.unidade, d)})</span>
+                    </p>
+                    <dl className="mt-2 grid grid-cols-3 gap-2">
+                      <div><dt className="text-sm text-stone">{t.volumeVenda}</dt><dd className="num font-semibold">{f.numero(v.venda, 0)}</dd></div>
+                      <div><dt className="text-sm text-stone">{t.volumeCompra}</dt><dd className="num font-semibold">{f.numero(v.compra, 0)}</dd></div>
+                      <div><dt className="text-sm text-stone">{t.posicao}</dt>
+                        <dd className={`num font-semibold ${posicao < 0 ? "text-loss" : "text-navy"}`}>{f.numero(posicao, 0)}</dd></div>
+                    </dl>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-sm text-stone">{t.posicaoAjuda}</p>
+          </div>
+        )}
+      </section>
+
       <section className="secao">
         <h2>{t.carteira}</h2>
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
