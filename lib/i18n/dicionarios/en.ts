@@ -370,9 +370,14 @@ export const en: Dicionario = {
     sobGestao: "Under management",
     sobGestaoNota: "Contracts on the account of investor projects. They do not add to the company result; the company earns the management fees.",
     faltaTitulo: "Receivable and pending shipment come with the shipments",
-    faltaTexto: "Contracts already tell how much was sold and bought. What is left to ship and to collect comes from each SHIPMENT (vessel, B/L, quality report) and from the invoices under LC or TT against documents — that is the next stage. Showing zero before that would be worse than saying this.",
+    faltaTexto: "Contracts already tell how much was sold and bought. What is left to ship and to collect comes from each SHIPMENT (truck or vessel, B/L, quality report) and from the negotiated payment schedule — that is the next stage. Showing zero before that would be worse than saying this.",
   },
   contratos: {
+    pctAntecipado: "Prepayment (%)",
+    eventoSaldo: "Balance paid",
+    pagamentoAjuda: "Negotiated between the parties: e.g. 30 % in advance and the rest at B/L; or 100 % when the truck is loaded (domestic FOB sale). A letter of credit is a guarantee: it goes under Bank guarantees.",
+    maisDias: "+{dias} day(s)",
+    antecipado: "in advance",
     empresaCompra: "Buyer: the company itself (trader).",
     empresaVende: "Seller: the company itself (trader).",
     financialPartner: "Financial Partner (optional)",
@@ -408,7 +413,6 @@ export const en: Dicionario = {
     faixa: "Range: {min} to {max}",
     precoUnitario: "Price per unit",
     valorProjetado: "Projected value",
-    formaPagamento: "Payment",
     provisoriaNota: "{pct} % provisional at shipment",
     projecaoAviso: "Values projected from what was agreed. The final price comes from each shipment (period index and quality report).",
     editar: "Edit contract",
@@ -462,9 +466,9 @@ export const en: Dicionario = {
     observacoes: "Notes",
   },
   instrumentos: {
-    titulo: "Bank instruments",
-    subtitulo: "The contract's DLC, SBLC or LC. The Financial Partner receives and administers it; monetization sits inside each instrument.",
-    vazio: "No instruments in this contract.",
+    titulo: "Bank guarantees",
+    subtitulo: "DLC, SBLC or LC securing the contract. The Financial Partner receives and administers it; monetization sits inside each guarantee.",
+    vazio: "No guarantees in this contract.",
     semNumero: "No number",
     valorFace: "face value",
     validade: "Expiry",
@@ -474,8 +478,8 @@ export const en: Dicionario = {
     alertaApresentacao: "Present documents in {dias} day(s)",
     alertaValidade: "Expires in {dias} day(s)",
     status: "Status",
-    excluirConfirma: "Delete instrument \"{numero}\"?",
-    novo: "New instrument",
+    excluirConfirma: "Delete guarantee \"{numero}\"?",
+    novo: "New guarantee",
     tipo: "Type",
     financialPartner: "Financial Partner (receives and administers)",
     bancoEmissor: "Issuing bank",
@@ -483,8 +487,8 @@ export const en: Dicionario = {
     moeda: "Currency",
     dataEmissao: "Issue date",
     observacoes: "Notes",
-    salvar: "Save instrument",
-    salvo: "Instrument saved.",
+    salvar: "Save guarantee",
+    salvo: "Guarantee saved.",
   },
   monetizacao: {
     titulo: "Monetization",
@@ -526,6 +530,12 @@ export const en: Dicionario = {
     salva: "Fee saved.",
   },
   enums: {
+    eventoSaldo: {
+      carregamento: "at loading",
+      bl: "at B/L",
+      documentos: "on presentation of documents",
+      descarga: "at discharge",
+    },
     contaContrato: {
       propria: "The company itself",
       projeto: "Project (under management)",
@@ -591,10 +601,6 @@ export const en: Dicionario = {
     tipoPreco: {
       fixo: "Fixed",
       formula: "Formula (index ± premium)",
-    },
-    formaPagamento: {
-      lc: "Letter of credit (LC)",
-      tt_documentos: "TT against documents",
     },
     statusContrato: {
       rascunho: "Under negotiation",

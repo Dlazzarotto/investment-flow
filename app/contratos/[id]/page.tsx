@@ -11,7 +11,7 @@ import {
   ehMaster, listarCarteira, listarClientes, listarCommodities, listarInstrumentos, listarMonetizacoes, listarPartes, listarProjetos,
   minhaOrganizacao, obterContrato, obterUsuario,
 } from "@/lib/consultas";
-import { alertasInstrumentos, comissaoAgente, faixaVolume, precoUnitario, valorContrato } from "@/lib/contratos";
+import { alertasInstrumentos, comissaoAgente, cronogramaPagamento, faixaVolume, precoUnitario, valorContrato } from "@/lib/contratos";
 import { hojeISO } from "@/lib/format";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
@@ -46,6 +46,17 @@ export default async function ContratoPage({ params, searchParams }: { params: {
   const faixa = faixaVolume(contrato);
   const unidade = rotuloUnidade(contrato.unidade, d);
   const titulo = contrato.numero ?? t.semNumero;
+  // "30 % antecipado: US$ 1,5 M · 70 % na BL (+5 dias): US$ 3,5 M" — em moeda quando o valor é conhecido.
+  const pctAnt = Number(contrato.pct_antecipado);
+  const crono = cronogramaPagamento(valor, pctAnt);
+  const evento = d.enums.eventoSaldo[contrato.evento_saldo]
+    + (contrato.prazo_pagamento_dias > 0 ? ` ${fmtTexto(t.maisDias, { dias: contrato.prazo_pagamento_dias })}` : "");
+  const trecho = (pct: number, rotulo: string, v: number | undefined) =>
+    `${f.numero(pct, 0)} % ${rotulo}${v === undefined ? "" : `: ${f.moeda(v, contrato.moeda)}`}`;
+  const textoPagamento = [
+    pctAnt > 0 ? trecho(pctAnt, t.antecipado, crono?.antecipado) : null,
+    pctAnt < 100 ? trecho(100 - pctAnt, evento, crono?.saldo) : null,
+  ].filter(Boolean).join(" · ");
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
@@ -80,8 +91,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
           {contrato.papel === "agente" ? (
             <Cartao rotulo={t.comissao} valor={comissao === null ? t.valorAConfirmar : f.moeda(comissao, contrato.moeda)} destaque />
           ) : (
-            <Cartao rotulo={t.formaPagamento}
-                    valor={d.enums.formaPagamento[contrato.forma_pagamento]}
+            <Cartao rotulo={t.blocoPagamento} valor={textoPagamento}
                     nota={contrato.pct_provisoria !== null
                       ? fmtTexto(t.provisoriaNota, { pct: f.numero(Number(contrato.pct_provisoria), 0) }) : undefined} />
           )}

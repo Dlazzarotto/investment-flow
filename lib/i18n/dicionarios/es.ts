@@ -370,9 +370,14 @@ export const es: Dicionario = {
     sobGestao: "Bajo gestión",
     sobGestaoNota: "Contratos por cuenta de los proyectos de inversores. No suman al resultado de la empresa; la empresa gana la remuneración de la gestión.",
     faltaTitulo: "Por cobrar y por embarcar llegan con los embarques",
-    faltaTexto: "Los contratos ya dicen cuánto se vendió y se compró. Lo que falta embarcar y cobrar sale de cada EMBARQUE (buque, BL, informe de calidad) y de las facturas por LC o TT contra documentos: es la próxima etapa. Mostrar cero antes de eso sería peor que decir esto.",
+    faltaTexto: "Los contratos ya dicen cuánto se vendió y se compró. Lo que falta embarcar y cobrar sale de cada EMBARQUE (camión o buque, BL, informe de calidad) y del cronograma de pago negociado: es la próxima etapa. Mostrar cero antes de eso sería peor que decir esto.",
   },
   contratos: {
+    pctAntecipado: "Anticipo (%)",
+    eventoSaldo: "Saldo pagado",
+    pagamentoAjuda: "Negociado entre las partes: ej.: 30 % anticipado y el resto contra BL; o 100 % en la carga del camión (venta FOB en el país). La carta de crédito es garantía: va en Garantías bancarias.",
+    maisDias: "+{dias} día(s)",
+    antecipado: "anticipado",
     empresaCompra: "Comprador: la propia empresa (trader).",
     empresaVende: "Vendedor: la propia empresa (trader).",
     financialPartner: "Financial Partner (opcional)",
@@ -408,7 +413,6 @@ export const es: Dicionario = {
     faixa: "Rango: {min} a {max}",
     precoUnitario: "Precio por unidad",
     valorProjetado: "Valor proyectado",
-    formaPagamento: "Pago",
     provisoriaNota: "Provisional del {pct} % en el embarque",
     projecaoAviso: "Valores proyectados según lo pactado. El precio final sale de cada embarque (índice del período e informe de calidad).",
     editar: "Editar contrato",
@@ -462,9 +466,9 @@ export const es: Dicionario = {
     observacoes: "Observaciones",
   },
   instrumentos: {
-    titulo: "Instrumentos bancarios",
-    subtitulo: "DLC, SBLC o LC del contrato. El Financial Partner lo recibe y administra; la monetización está dentro de cada instrumento.",
-    vazio: "No hay instrumentos en este contrato.",
+    titulo: "Garantías bancarias",
+    subtitulo: "DLC, SBLC o LC que garantizan el contrato. El Financial Partner la recibe y administra; la monetización está dentro de cada garantía.",
+    vazio: "No hay garantías en este contrato.",
     semNumero: "Sin número",
     valorFace: "valor nominal",
     validade: "Vencimiento",
@@ -474,8 +478,8 @@ export const es: Dicionario = {
     alertaApresentacao: "Presentar documentos en {dias} día(s)",
     alertaValidade: "Vence en {dias} día(s)",
     status: "Estado",
-    excluirConfirma: "¿Eliminar el instrumento \"{numero}\"?",
-    novo: "Nuevo instrumento",
+    excluirConfirma: "¿Eliminar la garantía \"{numero}\"?",
+    novo: "Nueva garantía",
     tipo: "Tipo",
     financialPartner: "Financial Partner (recibe y administra)",
     bancoEmissor: "Banco emisor",
@@ -483,8 +487,8 @@ export const es: Dicionario = {
     moeda: "Moneda",
     dataEmissao: "Emisión",
     observacoes: "Observaciones",
-    salvar: "Guardar instrumento",
-    salvo: "Instrumento guardado.",
+    salvar: "Guardar garantía",
+    salvo: "Garantía guardada.",
   },
   monetizacao: {
     titulo: "Monetización",
@@ -526,6 +530,12 @@ export const es: Dicionario = {
     salva: "Remuneración guardada.",
   },
   enums: {
+    eventoSaldo: {
+      carregamento: "en la carga",
+      bl: "contra BL",
+      documentos: "contra presentación de documentos",
+      descarga: "en la descarga",
+    },
     contaContrato: {
       propria: "La propia empresa",
       projeto: "Proyecto (bajo gestión)",
@@ -591,10 +601,6 @@ export const es: Dicionario = {
     tipoPreco: {
       fixo: "Fijo",
       formula: "Fórmula (índice ± prima)",
-    },
-    formaPagamento: {
-      lc: "Carta de crédito (LC)",
-      tt_documentos: "TT contra documentos",
     },
     statusContrato: {
       rascunho: "En negociación",

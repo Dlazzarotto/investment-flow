@@ -370,9 +370,14 @@ export const zh: Dicionario = {
     sobGestao: "受托管理",
     sobGestaoNota: "归属于投资者项目的合同。不计入公司业绩；公司收取管理报酬。",
     faltaTitulo: "待收与待装运将随装运模块提供",
-    faltaTexto: "合同已显示销售和采购数量。待装运和待收款来自每次装运（船名、提单、质量检验报告）以及信用证或凭单电汇的发票——这是下一阶段。在此之前显示零比说明这一点更糟。",
+    faltaTexto: "合同已显示销售和采购数量。待装运和待收款来自每次装运（卡车或船舶、提单、质量检验报告）以及协商的付款安排——这是下一阶段。在此之前显示零比说明这一点更糟。",
   },
   contratos: {
+    pctAntecipado: "预付款（%）",
+    eventoSaldo: "尾款支付时点",
+    pagamentoAjuda: "由双方协商：例如预付 30 %，余款凭提单支付；或在卡车装货时付 100 %（国内 FOB 销售）。信用证属于担保，请在“银行担保”中登记。",
+    maisDias: "+{dias} 天",
+    antecipado: "预付",
     empresaCompra: "买方：公司自身（贸易商）。",
     empresaVende: "卖方：公司自身（贸易商）。",
     financialPartner: "金融合作方（可选）",
@@ -408,7 +413,6 @@ export const zh: Dicionario = {
     faixa: "范围：{min} 至 {max}",
     precoUnitario: "单价",
     valorProjetado: "预估金额",
-    formaPagamento: "付款",
     provisoriaNota: "装运时临时结算 {pct} %",
     projecaoAviso: "金额按合同约定预估。最终价格由每次装运决定（计价期指数和质量检验报告）。",
     editar: "编辑合同",
@@ -462,9 +466,9 @@ export const zh: Dicionario = {
     observacoes: "备注",
   },
   instrumentos: {
-    titulo: "银行金融工具",
-    subtitulo: "合同的 DLC、SBLC 或 LC。由金融合作方接收并管理；变现记录在每个工具之下。",
-    vazio: "此合同暂无金融工具。",
+    titulo: "银行担保",
+    subtitulo: "为合同提供担保的 DLC、SBLC 或 LC。由金融合作方接收并管理；变现记录在每项担保之下。",
+    vazio: "此合同暂无担保。",
     semNumero: "无编号",
     valorFace: "面值",
     validade: "有效期至",
@@ -474,8 +478,8 @@ export const zh: Dicionario = {
     alertaApresentacao: "{dias} 天内交单",
     alertaValidade: "{dias} 天后到期",
     status: "状态",
-    excluirConfirma: "删除金融工具“{numero}”？",
-    novo: "新建金融工具",
+    excluirConfirma: "删除担保“{numero}”？",
+    novo: "新建担保",
     tipo: "类型",
     financialPartner: "金融合作方（接收并管理）",
     bancoEmissor: "开证行",
@@ -483,8 +487,8 @@ export const zh: Dicionario = {
     moeda: "币种",
     dataEmissao: "开立日期",
     observacoes: "备注",
-    salvar: "保存金融工具",
-    salvo: "金融工具已保存。",
+    salvar: "保存担保",
+    salvo: "担保已保存。",
   },
   monetizacao: {
     titulo: "变现",
@@ -526,6 +530,12 @@ export const zh: Dicionario = {
     salva: "报酬已保存。",
   },
   enums: {
+    eventoSaldo: {
+      carregamento: "装货时",
+      bl: "凭提单",
+      documentos: "交单时",
+      descarga: "卸货时",
+    },
     contaContrato: {
       propria: "公司自身",
       projeto: "项目（受托管理）",
@@ -591,10 +601,6 @@ export const zh: Dicionario = {
     tipoPreco: {
       fixo: "固定价",
       formula: "公式价（指数 ± 升贴水）",
-    },
-    formaPagamento: {
-      lc: "信用证（LC）",
-      tt_documentos: "凭单电汇（TT）",
     },
     statusContrato: {
       rascunho: "谈判中",

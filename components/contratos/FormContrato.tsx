@@ -6,7 +6,7 @@ import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { rotuloUnidade } from "@/lib/i18n";
 import {
-  ASSINANTES_CONTRATO, BASES_COMISSAO, CONTAS_CONTRATO, DIRECOES_CONTRATO, FORMAS_PAGAMENTO, INCOTERMS, MODALIDADES_CONTRATO, MOEDAS, PAPEIS_CONTRATO,
+  ASSINANTES_CONTRATO, BASES_COMISSAO, CONTAS_CONTRATO, DIRECOES_CONTRATO, EVENTOS_SALDO, INCOTERMS, MODALIDADES_CONTRATO, MOEDAS, PAPEIS_CONTRATO,
   STATUS_CONTRATO, TIPOS_PRECO, UNIDADES_VOLUME,
   type ActionState, type Cliente, type Commodity, type Contrato, type Projeto,
 } from "@/lib/types";
@@ -220,15 +220,22 @@ export function FormContrato({ acao, organizacaoId, clientes, commodities, proje
       </Bloco>
 
       <Bloco titulo={t.blocoPagamento}>
-        <Campo col={2} rotulo={t.formaPagamento} id="forma_pagamento">
-          <select id="forma_pagamento" name="forma_pagamento" className="campo" defaultValue={v.forma_pagamento ?? "lc"}>
-            {FORMAS_PAGAMENTO.map((o) => <option key={o} value={o}>{e.formaPagamento[o]}</option>)}
+        {/* Carta de crédito é GARANTIA (seção de instrumentos), não forma de pagamento:
+            aqui vai o cronograma que as partes negociaram. */}
+        <Campo col={2} rotulo={t.pctAntecipado} id="pct_antecipado">
+          <input id="pct_antecipado" name="pct_antecipado" type="number" inputMode="decimal" step="any" min="0" max="100"
+                 className="campo num" defaultValue={num(v.pct_antecipado ?? 0)} />
+        </Campo>
+        <Campo col={2} rotulo={t.eventoSaldo} id="evento_saldo">
+          <select id="evento_saldo" name="evento_saldo" className="campo" defaultValue={v.evento_saldo ?? "bl"}>
+            {EVENTOS_SALDO.map((o) => <option key={o} value={o}>{e.eventoSaldo[o]}</option>)}
           </select>
         </Campo>
         <Campo col={2} rotulo={t.prazoPagamento} id="prazo_pagamento_dias">
           <input id="prazo_pagamento_dias" name="prazo_pagamento_dias" type="number" inputMode="numeric" min="0" max="365"
                  className="campo num" defaultValue={num(v.prazo_pagamento_dias ?? 0)} />
         </Campo>
+        <p className="text-sm text-stone sm:col-span-6">{t.pagamentoAjuda}</p>
         <Campo col={2} rotulo={t.pctProvisoria} id="pct_provisoria">
           <input id="pct_provisoria" name="pct_provisoria" type="number" inputMode="decimal" step="any" min="0" max="99.99"
                  className="campo num" defaultValue={num(v.pct_provisoria)} placeholder={t.semProvisoria} />
