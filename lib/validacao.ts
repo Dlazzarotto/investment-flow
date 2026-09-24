@@ -4,7 +4,7 @@ import { fmtTexto, type Dicionario } from "./i18n";
 import {
   CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
-  ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
+  TIPOS_DOCUMENTO_CLIENTE, ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
   BASES_COMISSAO, DIRECOES_CONTRATO, EVENTOS_SALDO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
 } from "./types";
 
@@ -395,6 +395,27 @@ export function criarSchemas(d: Dicionario) {
         ctx.addIssue({ code: "custom", path: ["valor"], message: v.pctMax });
       }
       if (r.inicio && r.fim && r.fim < r.inicio) ctx.addIssue({ code: "custom", path: ["fim"], message: v.periodoInvertido });
+    }),
+    /** Registro do documento DEPOIS de o arquivo subir ao bucket (0021). */
+    documentoCliente: z.object({
+      organizacao_id: uuid,
+      cliente_id: uuid,
+      tipo: z.enum(TIPOS_DOCUMENTO_CLIENTE, enumMsg(v.dadosInvalidos)),
+      nome_arquivo: z.string().trim().min(1, v.nomeObrigatorio).max(200, v.nomeLongo),
+      caminho: z.string().min(1).max(500),
+      tamanho: z.coerce.number().int().min(0).max(20 * 1024 * 1024).optional(),
+      mime: textoOpcional(120),
+      emitido_em: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      validade: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
+      observacoes: z.string().trim().max(1000, v.descricaoLonga).optional().transform((x) => x || null),
+    }).superRefine((x, ctx) => {
+      // O caminho tem que começar pela pasta da empresa e do cliente — é o que o Storage confere.
+      if (!x.caminho.startsWith(`${x.organizacao_id}/clientes/${x.cliente_id}/`)) {
+        ctx.addIssue({ code: "custom", path: ["caminho"], message: v.dadosInvalidos });
+      }
+      if (x.emitido_em && x.validade && x.validade < x.emitido_em) {
+        ctx.addIssue({ code: "custom", path: ["validade"], message: v.periodoInvertido });
+      }
     }),
     statusInstrumento: z.object({ id: uuid, status: z.enum(STATUS_INSTRUMENTO, enumMsg(v.dadosInvalidos)) }),
     statusMonetizacao: z.object({ id: uuid, status: z.enum(STATUS_MONETIZACAO, enumMsg(v.dadosInvalidos)) }),

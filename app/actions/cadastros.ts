@@ -175,3 +175,37 @@ export async function excluirParametro(fd: FormData): Promise<void> {
   if (error) throw new Error(traduzirErroBanco(error, "parametro", d));
   revalidatePath("/commodities");
 }
+
+// ---------------------------------------------------------------------------
+// Documentos do cliente (0021): o navegador sobe o arquivo ao bucket privado
+// (as políticas do Storage conferem a empresa); aqui só se registra o que ele é.
+// ---------------------------------------------------------------------------
+
+export async function registrarDocumento(meta: Record<string, string>): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).documentoCliente.safeParse(meta);
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+  const supabase = createClient();
+  const { error } = await supabase.from("cliente_documentos").insert(parsed.data);
+  if (error) {
+    // Sem registro, o arquivo ficaria órfão no bucket: sai também.
+    await supabase.storage.from("documentos").remove([parsed.data.caminho]);
+    return { ok: false, erro: traduzirErroBanco(error, "documento", d) };
+  }
+  revalidatePath("/clientes");
+  return { ok: true, sucesso: d.documentos.salvo };
+}
+
+export async function excluirDocumento(fd: FormData): Promise<void> {
+  const { d } = obterD();
+  const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
+  if (!id.success) return;
+  const supabase = createClient();
+  const { data, error } = await supabase.from("cliente_documentos").delete().eq("id", id.data).select("caminho").maybeSingle();
+  if (error) throw new Error(traduzirErroBanco(error, "documento", d));
+  if (data?.caminho) {
+    const { error: e2 } = await supabase.storage.from("documentos").remove([data.caminho]);
+    if (e2) throw new Error(fmtTexto(d.banco.falha, { entidade: d.entidades.documento, msg: e2.message }));
+  }
+  revalidatePath("/clientes");
+}

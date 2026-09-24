@@ -42,6 +42,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      monetização, remuneração da gestão; projeto só entra em empresa de quem grava)
                        0020_pagamento_negociado.sql (pagamento = % antecipado + saldo no carregamento/BL/documentos/
                                                      descarga + prazo; forma_pagamento LC/TT aposentada)
+                       0021_documentos_clientes.sql (CIS/LOI/ICPO/KYC… do cliente: tabela + bucket PRIVADO "documentos";
+                                                     políticas do Storage pela 1ª pasta do caminho = empresa)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
@@ -69,7 +71,7 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
 components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
-tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
+tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
                        schema*.test.sql (psql)
 ```
 
@@ -78,7 +80,7 @@ tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, ia.
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 128 testes, todos devem passar
+npm test          # vitest — 132 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -189,6 +191,21 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   vendas, por unidade, performance (% do lucro — "a confirmar" até haver resultado). "Por ano" e "sobre contratos"
   são horizontes diferentes e o painel mostra separados. O investidor não vê esta tabela.
 - **Projeto vira agrupador opcional** (JV/investidor); o investidor continua vendo só a parte dele.
+- **Documentos do cliente (0021):** o navegador sobe o arquivo direto ao bucket privado `documentos` no caminho
+  `<organizacao_id>/clientes/<cliente_id>/<uuid>-<nome>`; as políticas de `storage.objects` conferem a empresa pela
+  1ª pasta (com `case` + regex antes do `::uuid`, para nome estranho negar em vez de quebrar). Só depois grava o
+  registro; se o registro falha, o arquivo é removido. Abrir = link assinado de 60 s. Selo "Sem CIS" na ficha: o
+  CIS (com a LOI) abre o cliente. Testar localmente exige stub do Storage (buckets, objects com RLS, foldername()).
+- **Preço de minério de ferro (material do usuário, para a etapa de embarques):**
+  `Preço final (USD/DMT) = Referência + Σ (teor − base) × VIU por ponto + Lump Premium + Diferencial Comercial`.
+  Base mais limpa para 64–66 % Fe é a referência 65 % Fe (Fastmarkets MB-IRO-0009; VIUs Fe 0019, SiO₂ 0020,
+  Al₂O₃ 0021, P 0024). O "preço-alvo" (ex.: US$ 119) entra como DIFERENCIAL COMERCIAL sobre o índice, não como preço
+  fixo. Quantidade faturável em DMT = WMT × (1 − umidade). Nunca escalar proporcionalmente (preço 62 % × 64/62).
+  ARMADILHAS a tratar no cálculo: (1) VIU de SiO₂/Al₂O₃/P é por ponto × diferença da base, não valor fixo (a planilha
+  do usuário os trata como fixos); P costuma ser por 0,01 %; (2) Lump Premium da Platts é em US$/dmtu — multiplica
+  pelo teor de Fe (25,50 ¢/dmtu × 62 = US$ 15,81/dmt), não é US$/dmt direto; (3) não misturar base 65 % Fastmarkets
+  com prêmio de lump normalizado a 62 % Platts sem conversão; (4) teor mínimo/rejeição vêm de min/max dos
+  parâmetros da commodity (0015 já tem referência, mínimo, máximo e ajuste_por_ponto).
 - **Projeto criado antes da empresa fica com `organizacao_id` vazio** e some do contrato e do painel (a FK composta
   exige a mesma empresa). O aviso `ProjetosForaDaEmpresa` (painel e contratos) traz com um clique — só os projetos
   de que o usuário é DONO; projeto compartilhado não muda de empresa por decisão de quem só participa.
