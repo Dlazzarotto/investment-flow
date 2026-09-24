@@ -80,5 +80,10 @@ describe("Mensagens traduzidas", () => {
       .toBe("La suma de las participaciones supera el 100 % (total: 101.00 %). Ajuste los porcentajes.");
     expect(traduzirErroBanco(err("42501"), "venda", obterDicionario("zh"))).toBe("您没有执行此操作的权限。");
     expect(traduzirErroBanco(err("22003", "numeric field overflow"), "investimento", obterDicionario("en"))).toMatch(/^Value outside the range/);
+    // 23503 tem dois sentidos: apagar o que um contrato usa, ou gravar apontando para outra empresa.
+    expect(traduzirErroBanco(err("23503", 'update or delete on table "clientes" violates foreign key constraint "contratos_contraparte_fk" on table "contratos"'),
+      "cliente", obterDicionario("pt"))).toMatch(/^Não é possível excluir: este cliente está em uso/);
+    expect(traduzirErroBanco(err("23503", 'insert or update on table "contratos" violates foreign key constraint "contratos_contraparte_fk"'),
+      "contrato", obterDicionario("pt"))).toBe(obterDicionario("pt").banco.travas);
   });
 });

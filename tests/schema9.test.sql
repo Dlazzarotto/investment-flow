@@ -90,23 +90,34 @@ do $$ begin
   insert into contratos (organizacao_id, contraparte_id, commodity_id, volume, preco_fixo)
   values ('a1000000-0000-0000-0000-000000000000', 'b2000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001', 1, 10);
   raise exception 'DEVERIA falhar: contraparte da B';
-exception when check_violation then raise notice 'OK contraparte de outra empresa é recusada'; end $$;
+exception when foreign_key_violation then raise notice 'OK contraparte de outra empresa é recusada'; end $$;
 do $$ begin
   insert into contratos (organizacao_id, contraparte_id, commodity_id, volume, preco_fixo)
   values ('a1000000-0000-0000-0000-000000000000', 'a2000000-0000-0000-0000-000000000001', 'b3000000-0000-0000-0000-000000000001', 1, 10);
   raise exception 'DEVERIA falhar: commodity da B';
-exception when check_violation then raise notice 'OK commodity de outra empresa é recusada'; end $$;
+exception when foreign_key_violation then raise notice 'OK commodity de outra empresa é recusada'; end $$;
 do $$ begin
   insert into contratos (organizacao_id, contraparte_id, commodity_id, volume, preco_fixo, projeto_id)
   values ('a1000000-0000-0000-0000-000000000000', 'a2000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001', 1, 10, 'b4000000-0000-0000-0000-000000000001');
   raise exception 'DEVERIA falhar: projeto da B';
-exception when check_violation then raise notice 'OK projeto de outra empresa é recusado'; end $$;
+exception when foreign_key_violation then raise notice 'OK projeto de outra empresa é recusado'; end $$;
 
 -- 4. Cliente com contrato não pode ser apagado.
 do $$ begin
   delete from clientes where id = 'a2000000-0000-0000-0000-000000000001';
   raise exception 'DEVERIA falhar: cliente com contrato';
 exception when foreign_key_violation then raise notice 'OK cliente com contrato não some'; end $$;
+
+-- 4b. Projeto apagado solta o contrato: projeto_id vira null, a empresa fica.
+insert into projetos (id, nome, data_inicio, moeda, organizacao_id) values
+  ('a4000000-0000-0000-0000-000000000001', 'JV Corumbá', '2026-01-01', 'USD', 'a1000000-0000-0000-0000-000000000000');
+update contratos set projeto_id = 'a4000000-0000-0000-0000-000000000001' where numero = 'DSD-2026-001';
+delete from projetos where id = 'a4000000-0000-0000-0000-000000000001';
+do $$ declare r record; begin
+  select projeto_id, organizacao_id into r from contratos where numero = 'DSD-2026-001';
+  if r.projeto_id is not null or r.organizacao_id is null then raise exception 'projeto apagado deveria só soltar o contrato'; end if;
+  raise notice 'OK projeto apagado solta o contrato e mantém a empresa';
+end $$;
 
 -- 5. Sigilo entre empresas: B, master e estranho não veem nem escrevem nos contratos da A.
 set local request.jwt.claim.sub = 'b0000000-0000-0000-0000-00000000000b';

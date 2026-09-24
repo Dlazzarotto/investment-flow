@@ -21,7 +21,7 @@
 -- Contraparte vem de `clientes` (comprador, vendedor…); fornecedor é prestador
 -- de serviço e entra nos custos do embarque, não aqui.
 --
--- Blocos curtos, cada função com etiqueta própria. Idempotente.
+-- Blocos curtos e SEM função: a trava de empresa é chave estrangeira composta. Idempotente.
 -- Depende de 0007, 0008, 0009, 0014 e 0015. Teste: tests/schema9.test.sql.
 
 -- ---------------------------------------------------------------------------
@@ -67,10 +67,11 @@ create table if not exists public.contratos (
   organizacao_id        uuid not null references public.organizacoes (id) on delete cascade,
   -- Referência interna (ex.: "DSD-2026-014"); opcional, única na empresa.
   numero                text check (numero is null or char_length(trim(numero)) between 1 and 60),
-  -- restrict: apagar o cliente não pode sumir com o contrato assinado com ele.
-  contraparte_id        uuid not null references public.clientes (id) on delete restrict,
-  commodity_id          uuid not null references public.commodities (id) on delete restrict,
-  projeto_id            uuid references public.projetos (id) on delete set null,
+  -- As chaves para contraparte, commodity e projeto são COMPOSTAS com a empresa
+  -- (BLOCO 3): é o próprio banco que garante que tudo é da mesma empresa.
+  contraparte_id        uuid not null,
+  commodity_id          uuid not null,
+  projeto_id            uuid,
   estimativa_id         uuid references public.estimativas_custo (id) on delete set null,
 
   direcao               public.direcao_contrato not null default 'venda',
@@ -140,39 +141,52 @@ create unique index if not exists contratos_numero_uq
   on public.contratos (organizacao_id, lower(trim(numero))) where numero is not null;
 
 -- ---------------------------------------------------------------------------
--- BLOCO 3 — tudo da mesma empresa
+-- BLOCO 3 — tudo da mesma empresa, por chave estrangeira composta
 -- ---------------------------------------------------------------------------
--- As FKs garantem que a contraparte existe, não que é DESTA empresa. Sem esta
--- trava, um id copiado de outra trading entraria no contrato.
-create or replace function public.tg_contrato_mesma_empresa()
-returns trigger language plpgsql security definer set search_path = public as $ctr$
-begin
-  if not exists (select 1 from public.clientes c
-                  where c.id = new.contraparte_id and c.organizacao_id = new.organizacao_id) then
-    raise exception 'A contraparte não pertence a esta empresa.' using errcode = 'check_violation';
-  end if;
-  if not exists (select 1 from public.commodities k
-                  where k.id = new.commodity_id and k.organizacao_id = new.organizacao_id) then
-    raise exception 'A commodity não pertence a esta empresa.' using errcode = 'check_violation';
-  end if;
-  if new.projeto_id is not null and not exists (
-       select 1 from public.projetos p
-        where p.id = new.projeto_id and p.organizacao_id = new.organizacao_id) then
-    raise exception 'O projeto não pertence a esta empresa.' using errcode = 'check_violation';
-  end if;
-  if new.estimativa_id is not null and not exists (
-       select 1 from public.estimativas_custo e join public.projetos p on p.id = e.projeto_id
-        where e.id = new.estimativa_id and p.organizacao_id = new.organizacao_id) then
-    raise exception 'A estimativa não pertence a esta empresa.' using errcode = 'check_violation';
-  end if;
-  return new;
-end $ctr$;
+-- Chave simples garante que a contraparte EXISTE, não que é DESTA empresa: um
+-- id copiado de outra trading entraria no contrato. Com (id, organizacao_id)
+-- dos dois lados, a linha só existe se contraparte, commodity e projeto forem
+-- da mesma empresa do contrato. Sem função nem trigger — a primeira versão
+-- desta migration usava uma trigger em PL/pgSQL e o SQL Editor do Supabase
+-- partiu o corpo dela no meio ("unterminated dollar-quoted string").
+--
+-- A estimativa de origem fica com chave simples: não tem empresa própria (é do
+-- projeto), e o RLS dela já impede ler a de outra empresa.
 
+-- Limpa o que a primeira versão possa ter deixado, se ela entrou pela metade.
 drop trigger if exists contrato_mesma_empresa on public.contratos;
 
-create trigger contrato_mesma_empresa
-  before insert or update on public.contratos
-  for each row execute function public.tg_contrato_mesma_empresa();
+drop function if exists public.tg_contrato_mesma_empresa();
+
+alter table public.contratos drop constraint if exists contratos_contraparte_id_fkey;
+
+alter table public.contratos drop constraint if exists contratos_commodity_id_fkey;
+
+alter table public.contratos drop constraint if exists contratos_projeto_id_fkey;
+
+-- O lado referenciado precisa de unicidade no par (id, empresa).
+create unique index if not exists clientes_id_org_uq on public.clientes (id, organizacao_id);
+
+create unique index if not exists commodities_id_org_uq on public.commodities (id, organizacao_id);
+
+create unique index if not exists projetos_id_org_uq on public.projetos (id, organizacao_id);
+
+alter table public.contratos drop constraint if exists contratos_contraparte_fk;
+
+-- restrict: apagar o cliente não pode sumir com o contrato assinado com ele.
+alter table public.contratos add constraint contratos_contraparte_fk
+  foreign key (contraparte_id, organizacao_id) references public.clientes (id, organizacao_id) on delete restrict;
+
+alter table public.contratos drop constraint if exists contratos_commodity_fk;
+
+alter table public.contratos add constraint contratos_commodity_fk
+  foreign key (commodity_id, organizacao_id) references public.commodities (id, organizacao_id) on delete restrict;
+
+alter table public.contratos drop constraint if exists contratos_projeto_fk;
+
+-- Projeto apagado solta o contrato (só projeto_id vira null; a empresa fica).
+alter table public.contratos add constraint contratos_projeto_fk
+  foreign key (projeto_id, organizacao_id) references public.projetos (id, organizacao_id) on delete set null (projeto_id);
 
 -- ---------------------------------------------------------------------------
 -- BLOCO 4 — acesso
@@ -224,5 +238,5 @@ create trigger historico_contratos
 -- Tem que voltar true nas três colunas.
 -- ---------------------------------------------------------------------------
 select to_regclass('public.contratos') is not null as tabela,
-       exists (select 1 from pg_trigger where tgname = 'contrato_mesma_empresa') as trava_empresa,
+       (select count(*) from pg_constraint where conname in ('contratos_contraparte_fk', 'contratos_commodity_fk', 'contratos_projeto_fk')) = 3 as trava_empresa,
        (select count(*) from pg_policies where tablename = 'contratos') = 4 as politicas;

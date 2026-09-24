@@ -37,7 +37,7 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0017_painel_empresa_corrige.sql (a 0016 falhava em TODA chamada — "moeda" ambígua; USD só
                                                      entra sem projeto; receita do mês sem venda futura)
                        0018_contratos.sql (contrato comercial: compra/venda, trader/agente, preço fixo/fórmula,
-                                                     LC/TT; trava de mesma empresa; escrever exige empresa em dia)
+                                                     LC/TT; mesma empresa por FK composta; escrever exige empresa em dia)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/[id]/     dashboard (page.tsx), investimentos/, aportes/, vendas/, despesas/, participantes/,
                        custeio/ (cadeia + lista de estimativas) e custeio/[estimativaId]/ (lançamento por etapa e
@@ -196,6 +196,11 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   saída vira variável; um `moeda` solto que coincida com ela dá "column reference is ambiguous" — e só na
   CHAMADA, nunca no `create`. Foi assim que a 0016 saiu quebrada. "Criou sem erro" não prova nada: função nova
   ganha teste em `tests/schemaN.test.sql`, rodado num Postgres local antes de entregar.
+- **Trava entre tabelas: chave estrangeira COMPOSTA, não trigger.** A 0018 nasceu com uma trigger PL/pgSQL e o
+  SQL Editor partiu o corpo dela no meio mesmo com etiqueta nomeada (`$ctr$`). "Mesma empresa" virou
+  `foreign key (x_id, organizacao_id) references tabela (id, organizacao_id)` + índice único `(id, organizacao_id)`
+  do lado referenciado: declarativo, sem corpo para o editor quebrar, e o banco garante sozinho. Função PL/pgSQL
+  nova só quando não houver alternativa declarativa.
 - **Empresa do usuário é por filiação** (`minha_organizacao()`), nunca "a primeira linha que o RLS deixa ver": o
   master enxerga todas as `organizacoes`, e a primeira visível seria a de outra empresa.
 
