@@ -365,6 +365,9 @@ export const es: Dicionario = {
     faltaTexto: "Los contratos ya dicen cuánto se vendió y se compró. Lo que falta embarcar y cobrar sale de cada EMBARQUE (buque, BL, informe de calidad) y de las facturas por LC o TT contra documentos: es la próxima etapa. Mostrar cero antes de eso sería peor que decir esto.",
   },
   contratos: {
+    foraDaEmpresaTitulo: "{n} proyecto(s) suyo(s) aún fuera de la empresa",
+    foraDaEmpresaTexto: "Se crearon antes de que la empresa existiera. Fuera de ella, no entran en el panel ni pueden vincularse a un contrato.",
+    trazerParaEmpresa: "Traer a la empresa",
     titulo: "Contratos",
     subtitulo: "El centro de la operación: cada compra y cada venta, con contraparte, commodity, precio y pago.",
     novo: "Nuevo contrato",

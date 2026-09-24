@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { PainelEmpresa } from "@/components/PainelEmpresa";
+import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpresa";
 import {
   acessoSuspenso, ehMaster, listarCarteira, listarCommodities, listarContratos, listarProjetos, minhaOrganizacao,
-  obterPainelEmpresa,
+  obterPainelEmpresa, obterUsuario,
 } from "@/lib/consultas";
 import { resumoContratos } from "@/lib/contratos";
 import { obterD } from "@/lib/i18n/server";
@@ -17,8 +18,8 @@ export const dynamic = "force-dynamic";
  */
 export default async function PainelPage() {
   const { d } = obterD();
-  const [projetos, carteira, master, org] = await Promise.all([
-    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(),
+  const [projetos, carteira, master, org, usuario] = await Promise.all([
+    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(), obterUsuario(),
   ]);
   // Sem empresa não há painel de empresa. /painel é a entrada de TODOS, então
   // quem não é ADM (investidor, membro de projeto, conta nova) segue para
@@ -41,6 +42,8 @@ export default async function PainelPage() {
       )}
       <h1 className="text-2xl">{t.titulo}</h1>
       <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: org.organizacao.nome })}</p>
+      <ProjetosForaDaEmpresa organizacaoId={org.organizacao.id}
+                             projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
       <PainelEmpresa painel={painel} contratos={resumoContratos(contratos)}
                      nomesCommodity={new Map(commodities.map((c) => [c.id, c.nome]))} />
     </Shell>

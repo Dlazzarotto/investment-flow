@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
+import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpresa";
 import { FormContrato, type ValoresContrato } from "@/components/contratos/FormContrato";
 import { criarContrato } from "@/app/actions/contratos";
 import {
   ehMaster, listarCarteira, listarClientes, listarCommodities, listarItensEstimativa, listarProjetos, minhaOrganizacao,
-  obterEstimativa,
+  obterEstimativa, obterUsuario,
 } from "@/lib/consultas";
 import { calcularCusteio } from "@/lib/custeio";
 import { obterD } from "@/lib/i18n/server";
@@ -22,8 +23,8 @@ const normal = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
 export default async function NovoContratoPage({ searchParams }: { searchParams: { estimativa?: string } }) {
   const { d } = obterD();
   const t = d.contratos;
-  const [projetos, carteira, master, org] = await Promise.all([
-    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(),
+  const [projetos, carteira, master, org, usuario] = await Promise.all([
+    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(), obterUsuario(),
   ]);
   if (!org) redirect("/projetos");
   const orgId = org.organizacao.id;
@@ -56,6 +57,8 @@ export default async function NovoContratoPage({ searchParams }: { searchParams:
       <Link href="/contratos" className="text-navy underline">← {t.voltar}</Link>
       <h1 className="mt-2 text-2xl">{t.novo}</h1>
       <p className="mt-1 text-stone">{origem ? `${t.daProposta}: ${origem}` : t.novoSubtitulo}</p>
+      <ProjetosForaDaEmpresa organizacaoId={orgId}
+                             projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
       <div className="mt-6 max-w-4xl">
         <FormContrato acao={criarContrato} organizacaoId={orgId} clientes={clientes} commodities={commodities}
                       projetos={projetos.filter((p) => p.organizacao_id === orgId)} valores={valores}

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
+import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpresa";
 import { FormContrato } from "@/components/contratos/FormContrato";
 import { SeloStatus } from "@/components/contratos/SeloStatus";
 import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { atualizarContrato, excluirContrato } from "@/app/actions/contratos";
 import {
-  ehMaster, listarCarteira, listarClientes, listarCommodities, listarProjetos, minhaOrganizacao, obterContrato,
+  ehMaster, listarCarteira, listarClientes, listarCommodities, listarProjetos, minhaOrganizacao, obterContrato, obterUsuario,
 } from "@/lib/consultas";
 import { comissaoAgente, faixaVolume, precoUnitario, valorContrato } from "@/lib/contratos";
 import { obterD } from "@/lib/i18n/server";
@@ -19,8 +20,8 @@ export default async function ContratoPage({ params }: { params: { id: string } 
   const { locale, d } = obterD();
   const f = formatadores(locale);
   const t = d.contratos;
-  const [projetos, carteira, master, org] = await Promise.all([
-    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(),
+  const [projetos, carteira, master, org, usuario] = await Promise.all([
+    listarProjetos(), listarCarteira(), ehMaster(), minhaOrganizacao(), obterUsuario(),
   ]);
   if (!org) redirect("/projetos");
   const orgId = org.organizacao.id;
@@ -74,6 +75,8 @@ export default async function ContratoPage({ params }: { params: { id: string } 
 
       <section className="secao max-w-4xl">
         <h2>{t.editar}</h2>
+        <ProjetosForaDaEmpresa organizacaoId={orgId}
+                               projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
         <FormContrato acao={atualizarContrato} organizacaoId={orgId} clientes={clientes} commodities={commodities}
                       projetos={projetos.filter((p) => p.organizacao_id === orgId)} valores={contrato}
                       rotuloSalvar={d.comum.salvar} />

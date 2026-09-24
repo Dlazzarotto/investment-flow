@@ -365,6 +365,9 @@ export const zh: Dicionario = {
     faltaTexto: "合同已显示销售和采购数量。待装运和待收款来自每次装运（船名、提单、质量检验报告）以及信用证或凭单电汇的发票——这是下一阶段。在此之前显示零比说明这一点更糟。",
   },
   contratos: {
+    foraDaEmpresaTitulo: "您有 {n} 个项目尚未归入公司",
+    foraDaEmpresaTexto: "这些项目创建于公司设立之前。未归入公司时，它们不计入总览，也无法关联到合同。",
+    trazerParaEmpresa: "归入公司",
     titulo: "合同",
     subtitulo: "业务的核心：每一笔采购和销售，包含交易对手、商品、价格和付款方式。",
     novo: "新建合同",

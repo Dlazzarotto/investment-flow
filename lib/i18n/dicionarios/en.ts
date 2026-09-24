@@ -365,6 +365,9 @@ export const en: Dicionario = {
     faltaTexto: "Contracts already tell how much was sold and bought. What is left to ship and to collect comes from each SHIPMENT (vessel, B/L, quality report) and from the invoices under LC or TT against documents — that is the next stage. Showing zero before that would be worse than saying this.",
   },
   contratos: {
+    foraDaEmpresaTitulo: "{n} of your project(s) still outside the company",
+    foraDaEmpresaTexto: "They were created before the company existed. Outside it, they are left out of the overview and cannot be linked to a contract.",
+    trazerParaEmpresa: "Bring into the company",
     titulo: "Contracts",
     subtitulo: "The core of the operation: every purchase and sale, with counterparty, commodity, price and payment.",
     novo: "New contract",

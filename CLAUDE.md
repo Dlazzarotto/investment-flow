@@ -169,6 +169,9 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
 - **Pagamento: LC ou TT contra documentos**, com provisória opcional. Prazo de apresentação da LC é risco — alertar.
 - **Contraparte vem de `clientes`** (comprador/vendedor); fornecedor é prestador e entra nos custos do embarque.
 - **Projeto vira agrupador opcional** (JV/investidor); o investidor continua vendo só a parte dele.
+- **Projeto criado antes da empresa fica com `organizacao_id` vazio** e some do contrato e do painel (a FK composta
+  exige a mesma empresa). O aviso `ProjetosForaDaEmpresa` (painel e contratos) traz com um clique — só os projetos
+  de que o usuário é DONO; projeto compartilhado não muda de empresa por decisão de quem só participa.
 - Painel: "Operação" vem primeiro — contratos ativos, em negociação, contratado por moeda e posição por
   commodity (comprado − vendido; toneladas não se somam com barris).
 

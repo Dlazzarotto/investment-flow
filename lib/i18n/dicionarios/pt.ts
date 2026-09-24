@@ -365,6 +365,9 @@ export const pt = {
     faltaTexto: "Os contratos já dizem quanto foi vendido e comprado. O que falta embarcar e o que falta receber sai de cada EMBARQUE (navio, BL, laudo de qualidade) e das faturas por LC ou TT contra documentos — é a próxima etapa. Mostrar zero antes disso seria pior do que dizer isto.",
   },
   contratos: {
+    foraDaEmpresaTitulo: "{n} projeto(s) seu(s) ainda fora da empresa",
+    foraDaEmpresaTexto: "Foram criados antes de a empresa existir. Fora dela, não entram no painel nem podem ser ligados a um contrato.",
+    trazerParaEmpresa: "Trazer para a empresa",
     titulo: "Contratos",
     subtitulo: "O centro da operação: cada compra e cada venda, com contraparte, commodity, preço e pagamento.",
     novo: "Novo contrato",

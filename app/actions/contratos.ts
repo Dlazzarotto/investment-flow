@@ -9,8 +9,8 @@ import { traduzirErroBanco } from "./erros";
 
 /**
  * Contratos comerciais (0018). Quem decide se pode é o banco: RLS por
- * administração da empresa + empresa em dia, e a trigger que recusa contraparte,
- * commodity, projeto ou estimativa de outra empresa.
+ * administração da empresa + empresa em dia, e as chaves compostas que recusam
+ * contraparte, commodity ou projeto de outra empresa.
  */
 
 export async function criarContrato(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -62,3 +62,22 @@ export async function excluirContrato(fd: FormData): Promise<void> {
   redirect("/contratos");
 }
 
+
+/**
+ * Traz para a empresa os projetos do usuário que nasceram antes dela (organizacao_id
+ * vazio). Sem isso eles não aparecem para contrato: a chave composta da 0018 exige
+ * projeto e contrato da MESMA empresa. Só os projetos de que ele é DONO — projeto
+ * compartilhado por outra pessoa não muda de empresa por decisão de quem só participa.
+ */
+export async function trazerProjetosParaEmpresa(fd: FormData): Promise<void> {
+  const { d } = obterD();
+  const org = criarSchemas(d).uuid.safeParse(fd.get("organizacao_id"));
+  if (!org.success) return;
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase.from("projetos").update({ organizacao_id: org.data })
+    .is("organizacao_id", null).eq("owner_id", user.id);
+  if (error) throw new Error(traduzirErroBanco(error, "projeto", d));
+  revalidatePath("/", "layout");
+}
