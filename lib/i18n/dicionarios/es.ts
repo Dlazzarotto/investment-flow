@@ -10,7 +10,7 @@ export const es: Dicionario = {
     semPermissao: "Sin permiso para esta operación.",
     editar: "Editar", cancelar: "Cancelar", salvar: "Guardar", acoes: "Acciones", alteracaoSalva: "Cambio guardado.",
   },
-  nav: { commodities: "Commodities", clientes: "Clientes", fornecedores: "Proveedores", geral: "General", abrirMenu: "Abrir menú", conta: "Mi cuenta", plataforma: "Plataforma", custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
+  nav: { painel: "Panel", commodities: "Commodities", clientes: "Clientes", fornecedores: "Proveedores", geral: "General", abrirMenu: "Abrir menú", conta: "Mi cuenta", plataforma: "Plataforma", custeio: "Costeo", aportes: "Aportes", carteira: "Mi cartera", dashboard: "Panel", investimentos: "Inversiones", vendas: "Ventas", despesas: "Gastos", parceria: "Alianza",
     projetoAtivo: "Proyecto activo", escolha: "Elija un proyecto…", secoes: "Secciones del proyecto" },
   login: {
     esqueciSenha: "Olvidé mi contraseña",
@@ -340,6 +340,15 @@ export const es: Dicionario = {
     semFornecedores: "Ningún proveedor", semFornecedoresTexto: "Registre quién presta servicios o provee mercadería.",
     semEmpresa: "Sin empresa", semEmpresaTexto: "Clientes y proveedores pertenecen a una empresa. Cree la suya en la pantalla de proyectos para empezar.",
     inativo: "Inactivo", semTipo: "Sin tipo",
+  },
+  painel: {
+    titulo: "Panel de la empresa", subtitulo: "Toda la operación de {nome}: cartera, resultado y lo que sigue abierto.",
+    carteira: "Cartera", resultado: "Resultado consolidado",
+    ativos: "{n} activo(s)", vendasQtd: "{n} venta(s)",
+    receita: "Ingresos", receitaMes: "Ingresos del mes", saida: "Salida",
+    saidaNota: "Inversión + costo de ventas + gastos", saldo: "Saldo",
+    faltaTitulo: "Por cobrar y por embarcar aún no aparecen aquí",
+    faltaTexto: "Ambos números salen del CONTRATO, y el contrato nace de la SCO: LOI y CIS abren el cliente, el cliente se vuelve estimación, la estimación genera la SCO, y la SCO dice si es de 1 año o de 1 carga. Un contrato de 1 año tiene varios embarques, y de los embarques salen lo que falta embarcar y lo que falta cobrar. Mostrar cero antes de eso sería peor que decir esto.",
   },
   enums: {
     tipoCliente: { investidor: "Inversor", comprador: "Comprador", vendedor: "Vendedor", monetizador: "Monetizador" },

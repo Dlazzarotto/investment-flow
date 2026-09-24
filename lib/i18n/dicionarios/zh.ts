@@ -10,7 +10,7 @@ export const zh: Dicionario = {
     semPermissao: "您没有执行此操作的权限。",
     editar: "编辑", cancelar: "取消", salvar: "保存", acoes: "操作", alteracaoSalva: "修改已保存。",
   },
-  nav: { commodities: "大宗商品", clientes: "客户", fornecedores: "供应商", geral: "通用", abrirMenu: "打开菜单", conta: "我的账户", plataforma: "平台", custeio: "成本核算", aportes: "出资", carteira: "我的投资组合", dashboard: "仪表盘", investimentos: "投资", vendas: "销售", despesas: "费用", parceria: "合作",
+  nav: { painel: "总览", commodities: "大宗商品", clientes: "客户", fornecedores: "供应商", geral: "通用", abrirMenu: "打开菜单", conta: "我的账户", plataforma: "平台", custeio: "成本核算", aportes: "出资", carteira: "我的投资组合", dashboard: "仪表盘", investimentos: "投资", vendas: "销售", despesas: "费用", parceria: "合作",
     projetoAtivo: "当前项目", escolha: "选择项目…", secoes: "项目板块" },
   login: {
     esqueciSenha: "忘记密码",
@@ -340,6 +340,15 @@ export const zh: Dicionario = {
     semFornecedores: "暂无供应商", semFornecedoresTexto: "登记服务提供方或供货方。",
     semEmpresa: "尚未创建公司", semEmpresaTexto: "客户和供应商属于公司。请先在项目页面创建您的公司。",
     inativo: "停用", semTipo: "未分类",
+  },
+  painel: {
+    titulo: "公司总览", subtitulo: "{nome} 的全部经营：客户组合、经营结果与未了事项。",
+    carteira: "客户与资源", resultado: "合并结果",
+    ativos: "其中 {n} 个启用", vendasQtd: "{n} 笔销售",
+    receita: "收入", receitaMes: "本月收入", saida: "支出",
+    saidaNota: "投资 + 销售成本 + 费用", saldo: "结余",
+    faltaTitulo: "待收与待装运尚未显示",
+    faltaTexto: "这两个数字来自合同，而合同源于 SCO：LOI 与 CIS 建立客户，客户转为估算，估算生成 SCO，而 SCO 说明是一年期还是单批货。一年期合同含多个装运，待装运与待收款均由装运产生。在此之前显示零，不如在此说明。",
   },
   enums: {
     tipoCliente: { investidor: "投资人", comprador: "买方", vendedor: "卖方", monetizador: "资金方" },

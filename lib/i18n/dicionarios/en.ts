@@ -10,7 +10,7 @@ export const en: Dicionario = {
     semPermissao: "You don't have permission for this operation.",
     editar: "Edit", cancelar: "Cancel", salvar: "Save", acoes: "Actions", alteracaoSalva: "Change saved.",
   },
-  nav: { commodities: "Commodities", clientes: "Clients", fornecedores: "Suppliers", geral: "General", abrirMenu: "Open menu", conta: "My account", plataforma: "Platform", custeio: "Costing", aportes: "Contributions", carteira: "My portfolio", dashboard: "Dashboard", investimentos: "Investments", vendas: "Sales", despesas: "Expenses", parceria: "Partnership",
+  nav: { painel: "Overview", commodities: "Commodities", clientes: "Clients", fornecedores: "Suppliers", geral: "General", abrirMenu: "Open menu", conta: "My account", plataforma: "Platform", custeio: "Costing", aportes: "Contributions", carteira: "My portfolio", dashboard: "Dashboard", investimentos: "Investments", vendas: "Sales", despesas: "Expenses", parceria: "Partnership",
     projetoAtivo: "Active project", escolha: "Choose a project…", secoes: "Project sections" },
   login: {
     esqueciSenha: "I forgot my password",
@@ -340,6 +340,15 @@ export const en: Dicionario = {
     semFornecedores: "No suppliers", semFornecedoresTexto: "Register who provides services or supplies goods.",
     semEmpresa: "No company", semEmpresaTexto: "Clients and suppliers belong to a company. Create yours on the projects screen to start.",
     inativo: "Inactive", semTipo: "No type",
+  },
+  painel: {
+    titulo: "Company overview", subtitulo: "The whole operation of {nome}: portfolio, result and what is still open.",
+    carteira: "Portfolio", resultado: "Consolidated result",
+    ativos: "{n} active", vendasQtd: "{n} sale(s)",
+    receita: "Revenue", receitaMes: "Revenue this month", saida: "Outflow",
+    saidaNota: "Investment + cost of sales + expenses", saldo: "Balance",
+    faltaTitulo: "Receivable and pending shipment are not here yet",
+    faltaTexto: "Both numbers come from the CONTRACT, and the contract is born from the SCO: LOI and CIS open the client, the client becomes an estimate, the estimate generates the SCO, and the SCO says whether it is for 1 year or 1 cargo. A 1-year contract has several shipments, and it is from the shipments that pending shipment and receivable come. Showing zero before that would be worse than saying this.",
   },
   enums: {
     tipoCliente: { investidor: "Investor", comprador: "Buyer", vendedor: "Seller", monetizador: "Monetiser" },

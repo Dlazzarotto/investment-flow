@@ -39,7 +39,7 @@ export async function atualizarSessao(request: NextRequest) {
   }
   if (user && rotaDeEntrada) {
     const url = request.nextUrl.clone();
-    url.pathname = "/projetos";
+    url.pathname = "/painel";
     url.search = "";
     return NextResponse.redirect(url);
   }

@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, Commodity, CommodityParametro, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
+  Cliente, Commodity, CommodityParametro, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
+  PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -164,12 +165,22 @@ export const obterResumo = cache(async (projetoId: string): Promise<ResumoProjet
   };
 });
 
-/** Organização do usuário logado (com os sócios), ou null se ainda não criou/entrou em uma. */
+/**
+ * Organização do usuário logado (com os sócios), ou null se ainda não criou/entrou em uma.
+ *
+ * Pela FILIAÇÃO (minha_organizacao(), a mesma que o banco usa para vincular projeto
+ * novo), não por "a primeira que o RLS deixa ver": o master enxerga TODAS as
+ * empresas (0009), e a primeira visível seria a empresa mais antiga da plataforma
+ * — de outra pessoa. O /painel chamaria painel_empresa() com ela e cairia no erro.
+ */
 export const minhaOrganizacao = cache(async (): Promise<{ organizacao: Organizacao; membros: OrganizacaoMembro[] } | null> => {
   const supabase = createClient();
-  const { data: orgs, error } = await supabase.from("organizacoes").select("*").order("criado_em").limit(1);
+  const { data: id, error: e0 } = await supabase.rpc("minha_organizacao");
+  if (e0) throw new Error(e0.message);
+  if (!id) return null;
+  const { data: org, error } = await supabase.from("organizacoes").select("*").eq("id", id).maybeSingle();
   if (error) throw new Error(error.message);
-  const organizacao = (orgs?.[0] ?? null) as Organizacao | null;
+  const organizacao = (org ?? null) as Organizacao | null;
   if (!organizacao) return null;
   const { data: membros, error: e2 } = await supabase.from("organizacao_membros").select("*")
     .eq("organizacao_id", organizacao.id).order("criado_em");
@@ -307,4 +318,13 @@ export const listarParametros = cache(async (commodityIds: string[]): Promise<Co
     .in("commodity_id", commodityIds).order("ordem").order("nome");
   if (error) throw new Error(error.message);
   return (data ?? []) as CommodityParametro[];
+});
+
+/** Painel consolidado da empresa (uma linha por moeda); vazio sem organização. */
+export const obterPainelEmpresa = cache(async (organizacaoId?: string): Promise<PainelEmpresa[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("painel_empresa", { p_organizacao_id: organizacaoId });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PainelEmpresa[];
 });

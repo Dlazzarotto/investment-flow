@@ -52,7 +52,7 @@ export function PainelMaster({ painel, empresas, faturas }: Props) {
     <>
       <section className="secao">
         <h2>{t.panorama}</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
           <Widget rotulo={t.ativos} valor={String(contagens?.ativas ?? 0)} ajuda={t.ativosAjuda}
                   ativo={filtro === "ativas"} aoClicar={() => setFiltro("ativas")} />
           <Widget rotulo={t.inativos} valor={String(contagens?.inativas ?? 0)} ajuda={t.inativosAjuda}
@@ -66,7 +66,7 @@ export function PainelMaster({ painel, empresas, faturas }: Props) {
         {painel.map((p) => (
           <div key={p.moeda} className="mt-3">
             {painel.length > 1 && <p className="mb-2 text-sm font-semibold text-stone">{p.moeda}</p>}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <Widget rotulo={t.contratoMensal} valor={f.moeda(Number(p.contrato_mensal), p.moeda)}
                       ajuda={t.contratoMensalAjuda} destaque />
               <Widget rotulo={t.aReceber} valor={f.moeda(Number(p.a_receber), p.moeda)} ajuda={t.aReceberAjuda}
@@ -118,7 +118,10 @@ function Widget({ rotulo, valor, ajuda, aoClicar, ativo = false, alerta = false,
   const conteudo = (
     <>
       <p className="text-sm text-stone">{rotulo}</p>
-      <p className={`num mt-1 text-2xl font-semibold ${cor}`}>{valor}</p>
+      {/* text-lg e 4 colunas so no xl: em lg o cartao ficava com 156px para um
+          numero de 219px, e o espaco do Intl em "US$ 2.980.000,00" e NAO-QUEBRAVEL,
+          entao o texto nao quebra linha — transborda. */}
+      <p className={`num mt-1 text-lg font-semibold ${cor}`}>{valor}</p>
       {ajuda && <p className="mt-1 text-sm text-stone">{ajuda}</p>}
     </>
   );

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   // caminhoInterno barra "?next=//evil.com": o link vem de fora, do e-mail.
-  const next = caminhoInterno(searchParams.get("next"), "/projetos");
+  const next = caminhoInterno(searchParams.get("next"));
   const supabase = createClient();
 
   const code = searchParams.get("code");
