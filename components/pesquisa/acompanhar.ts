@@ -45,13 +45,13 @@ export function useAcompanharPesquisas(pendentes: string[]) {
 
 /** Pede uma pesquisa nova; devolve o id ou a mensagem de erro já traduzida pelo servidor. */
 export async function pedirPesquisa(corpo: { commodity_id: string; grade_id?: string; base?: string; detalhado?: boolean; modo?: "livre" | "bolsas" }):
-  Promise<{ id?: string; erro?: string }> {
+  Promise<{ id?: string; commodity_id?: string; erro?: string }> {
   try {
     const r = await fetch("/api/pesquisa-mercado", {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(corpo),
     });
-    const j = (await r.json()) as { id?: string; erro?: string };
-    return r.ok ? { id: j.id } : { erro: j.erro ?? String(r.status) };
+    const j = (await r.json()) as { id?: string; commodity_id?: string; erro?: string };
+    return r.ok ? { id: j.id, commodity_id: j.commodity_id } : { erro: j.erro ?? String(r.status) };
   } catch (e) {
     return { erro: e instanceof Error ? e.message : String(e) };
   }

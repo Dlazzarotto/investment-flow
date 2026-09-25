@@ -4,19 +4,21 @@ import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/client";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { CartaoPesquisa } from "./CartaoPesquisa";
+import { OpcoesCommodity } from "./OpcoesCommodity";
+import { PREFIXO_MERCADO } from "@/lib/adocao-constantes";
 import { pedirPesquisa, useAcompanharPesquisas } from "./acompanhar";
-import type { Commodity, CommodityGrade, PesquisaMercado as Pesquisa } from "@/lib/types";
+import type { Commodity, CommodityGrade, CommodityPadrao, PesquisaMercado as Pesquisa } from "@/lib/types";
 
 /**
  * Pesquisa de mercado na aba Commodities: escolhe a commodity (e o grade e a base,
  * se quiser), o agente pesquisa, e o resultado fica no histórico da commodity.
  */
-export function PesquisaMercado({ commodities, grades, pesquisas, configurada }:
-  { commodities: Commodity[]; grades: CommodityGrade[]; pesquisas: Pesquisa[]; configurada: boolean }) {
+export function PesquisaMercado({ commodities, catalogo, grades, pesquisas, configurada }:
+  { commodities: Commodity[]; catalogo: CommodityPadrao[]; grades: CommodityGrade[]; pesquisas: Pesquisa[]; configurada: boolean }) {
   const { d } = useI18n();
   const t = d.pesquisa;
   const ativas = commodities.filter((c) => c.ativo);
-  const [commodity, setCommodity] = useState(ativas[0]?.id ?? "");
+  const [commodity, setCommodity] = useState(ativas[0]?.id ?? (catalogo[0] ? `${PREFIXO_MERCADO}${catalogo[0].codigo}` : ""));
   const [grade, setGrade] = useState("");
   const [base, setBase] = useState("");
   const [detalhado, setDetalhado] = useState(false);
@@ -26,7 +28,7 @@ export function PesquisaMercado({ commodities, grades, pesquisas, configurada }:
   const { ativas: emAndamento, acompanhar } = useAcompanharPesquisas(pesquisas.filter((p) => p.status === "pesquisando").map((p) => p.id));
 
   if (!configurada) return <p className="rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{t.naoConfigurada}</p>;
-  if (ativas.length === 0) return <p className="text-stone">{t.semCommodities}</p>;
+  if (!commodity) return <p className="text-stone">{t.semCommodities}</p>;
 
   const historico = pesquisas.filter((p) => p.commodity_id === commodity).slice(0, 10);
   const gradesDela = grades.filter((g) => g.commodity_id === commodity && g.ativo);
@@ -34,7 +36,10 @@ export function PesquisaMercado({ commodities, grades, pesquisas, configurada }:
     setErro(null);
     iniciar(async () => {
       const r = await pedirPesquisa({ commodity_id: commodity, grade_id: grade || undefined, base: base || undefined, detalhado });
-      if (r.erro) setErro(r.erro); else if (r.id) { acompanhar(r.id); router.refresh(); }
+      if (r.erro) { setErro(r.erro); return; }
+      // Escolha do catálogo do mercado foi adotada pela empresa: o seletor passa a apontar para ela.
+      if (r.commodity_id) setCommodity(r.commodity_id);
+      if (r.id) { acompanhar(r.id); router.refresh(); }
     });
   };
 
@@ -44,7 +49,7 @@ export function PesquisaMercado({ commodities, grades, pesquisas, configurada }:
         <div className="sm:col-span-2">
           <label className="rotulo" htmlFor="pm-commodity">{t.commodity}</label>
           <select id="pm-commodity" className="campo" value={commodity} onChange={(e) => { setCommodity(e.target.value); setGrade(""); }}>
-            {ativas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            <OpcoesCommodity commodities={commodities} catalogo={catalogo} />
           </select>
         </div>
         <div className="sm:col-span-2">

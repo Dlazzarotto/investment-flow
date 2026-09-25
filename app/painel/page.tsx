@@ -6,7 +6,7 @@ import { pesquisaConfigurada } from "@/lib/ia/pesquisador";
 import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpresa";
 import {
   acessoSuspenso, capitalPorProjeto, ehMaster, listarCarteira, listarCommodities, listarContratos, listarInstrumentos,
-  listarMonetizacoes, listarPesquisas, listarProjetos, listarRemuneracoes, minhaOrganizacao, obterCommoditiesPainel, obterPainelEmpresa, obterUsuario,
+  listarMonetizacoes, listarCommoditiesPadrao, listarPesquisas, listarProjetos, listarRemuneracoes, minhaOrganizacao, obterCommoditiesPainel, obterPainelEmpresa, obterUsuario,
 } from "@/lib/consultas";
 import {
   alertasInstrumentos, baseDoProjeto, projetarRemuneracao, receitaDaEmpresa, resumoContratos, resumoMonetizacoes,
@@ -42,7 +42,7 @@ export default async function PainelPage() {
   ]);
   const resumo = resumoContratos(contratos);
   // Preços de mercado (0031): a escolha é de cada usuário; as pesquisas, da empresa.
-  const [escolhidas, pesquisas] = await Promise.all([obterCommoditiesPainel(), listarPesquisas(orgId, 300)]);
+  const [escolhidas, pesquisas, catalogo] = await Promise.all([obterCommoditiesPainel(), listarPesquisas(orgId, 300), listarCommoditiesPadrao()]);
   const gestao = remuneracoes.map((r) => {
     const projeto = projetosDaEmpresa.find((p) => p.id === r.projeto_id);
     return { moeda: projeto?.moeda ?? "USD" as const,
@@ -70,7 +70,7 @@ export default async function PainelPage() {
       <section className="secao">
         <h2>{d.precosPainel.titulo}</h2>
         <p className="mb-4 text-stone">{d.precosPainel.subtitulo}</p>
-        <PrecosMercado organizacaoId={orgId} commodities={commodities} escolhidas={escolhidas}
+        <PrecosMercado organizacaoId={orgId} commodities={commodities} catalogo={catalogo} escolhidas={escolhidas}
                        pesquisas={pesquisas.filter((p) => p.modo === "bolsas" && escolhidas.includes(p.commodity_id))}
                        posicoes={resumo.volumes} configurada={pesquisaConfigurada()} />
       </section>

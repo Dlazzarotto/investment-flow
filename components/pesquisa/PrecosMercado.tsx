@@ -10,7 +10,8 @@ import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { PRACAS, variacao, type CotacaoBolsa } from "@/lib/pesquisa";
 import { pedirPesquisa, useAcompanharPesquisas } from "./acompanhar";
-import type { Commodity, PesquisaMercado } from "@/lib/types";
+import { OpcoesCommodity } from "./OpcoesCommodity";
+import type { Commodity, CommodityPadrao, PesquisaMercado } from "@/lib/types";
 
 interface Posicao { commodity_id: string; unidade: string; venda: number; compra: number }
 
@@ -24,8 +25,8 @@ interface Celula { c: CotacaoBolsa; v: number | null }
  * contrato aparece como "não negociado", nunca com número emprestado. A variação
  * só é mostrada contra a pesquisa anterior da mesma bolsa, moeda e unidade.
  */
-export function PrecosMercado({ organizacaoId, commodities, escolhidas, pesquisas, posicoes, configurada }: {
-  organizacaoId: string; commodities: Commodity[]; escolhidas: string[]; pesquisas: PesquisaMercado[];
+export function PrecosMercado({ organizacaoId, commodities, catalogo, escolhidas, pesquisas, posicoes, configurada }: {
+  organizacaoId: string; commodities: Commodity[]; catalogo: CommodityPadrao[]; escolhidas: string[]; pesquisas: PesquisaMercado[];
   posicoes: Posicao[]; configurada: boolean;
 }) {
   const { d, locale } = useI18n();
@@ -154,13 +155,13 @@ export function PrecosMercado({ organizacaoId, commodities, escolhidas, pesquisa
       {erro && <div className="mt-3"><Mensagem estado={{ ok: false, erro }} /></div>}
 
       <button type="button" className="btn-quieto mt-4 px-3" aria-expanded={editando} onClick={() => setEditando(!editando)}>{t.editar}</button>
-      {editando && <Escolha organizacaoId={organizacaoId} commodities={commodities} escolhidas={escolhidas} aoSalvar={() => setEditando(false)} />}
+      {editando && <Escolha organizacaoId={organizacaoId} commodities={commodities} catalogo={catalogo} escolhidas={escolhidas} aoSalvar={() => setEditando(false)} />}
     </div>
   );
 }
 
-function Escolha({ organizacaoId, commodities, escolhidas, aoSalvar }:
-  { organizacaoId: string; commodities: Commodity[]; escolhidas: string[]; aoSalvar: () => void }) {
+function Escolha({ organizacaoId, commodities, catalogo, escolhidas, aoSalvar }:
+  { organizacaoId: string; commodities: Commodity[]; catalogo: CommodityPadrao[]; escolhidas: string[]; aoSalvar: () => void }) {
   const { d } = useI18n();
   const t = d.precosPainel;
   const [estado, formAction] = useAcaoFormulario(async (s, fd) => {
@@ -168,7 +169,6 @@ function Escolha({ organizacaoId, commodities, escolhidas, aoSalvar }:
     if (r.ok) aoSalvar();
     return r;
   });
-  const ativas = commodities.filter((c) => c.ativo || escolhidas.includes(c.id));
   return (
     <form action={formAction} className="mt-3 grid gap-3 rounded-md border border-stone-light bg-white p-4 sm:grid-cols-3">
       <input type="hidden" name="organizacao_id" value={organizacaoId} />
@@ -177,7 +177,7 @@ function Escolha({ organizacaoId, commodities, escolhidas, aoSalvar }:
           <label className="rotulo" htmlFor={`painel-c${i}`}>{fmtTexto(t.escolher, { n: i + 1 })}</label>
           <select id={`painel-c${i}`} name="commodity_id" className="campo" defaultValue={escolhidas[i] ?? ""}>
             <option value="">{t.nenhuma}</option>
-            {ativas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            <OpcoesCommodity commodities={commodities} catalogo={catalogo} incluir={escolhidas} />
           </select>
         </div>
       ))}

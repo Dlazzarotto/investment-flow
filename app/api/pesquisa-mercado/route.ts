@@ -6,13 +6,15 @@ import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { especificacaoDoGrade } from "@/lib/catalogo";
 import { montarPergunta, montarPerguntaBolsas, type IdiomaPesquisa } from "@/lib/pesquisa";
+import { adotarDoMercado, PREFIXO_MERCADO } from "@/lib/adocao";
 import { iniciarPesquisa, pesquisaConfigurada } from "@/lib/ia/pesquisador";
 import type { Commodity, CommodityGrade, CommodityParametro } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 const entrada = z.object({
-  commodity_id: z.string().uuid(),
+  // uuid da commodity da empresa, ou "mercado:<codigo>" do catálogo — adotada aqui antes de pesquisar.
+  commodity_id: z.union([z.string().uuid(), z.string().regex(/^mercado:[a-z0-9_]{2,40}$/)]),
   grade_id: z.union([z.literal(""), z.string().uuid()]).optional().transform((x) => x || null),
   base: z.string().trim().max(160).optional().transform((x) => x || null),
   detalhado: z.boolean().optional().default(false),
@@ -34,8 +36,14 @@ export async function POST(req: NextRequest) {
   if (!org) return NextResponse.json({ erro: d.comum.semPermissao }, { status: 403 });
 
   const supabase = createClient();
+  let commodityId = parsed.data.commodity_id;
+  if (commodityId.startsWith(PREFIXO_MERCADO)) {
+    const r = await adotarDoMercado(supabase, org.organizacao.id, commodityId.slice(PREFIXO_MERCADO.length), d);
+    if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: 403 });
+    commodityId = r.id;
+  }
   const { data: c } = await supabase.from("commodities").select("*")
-    .eq("id", parsed.data.commodity_id).eq("organizacao_id", org.organizacao.id).maybeSingle();
+    .eq("id", commodityId).eq("organizacao_id", org.organizacao.id).maybeSingle();
   if (!c) return NextResponse.json({ erro: d.banco.naoEncontrado }, { status: 404 });
   const commodity = c as Commodity;
   let grade: CommodityGrade | null = null;
@@ -74,5 +82,5 @@ export async function POST(req: NextRequest) {
     await supabase.from("pesquisas_mercado").update({ status: "falhou", erro: msg, concluida_em: new Date().toISOString() }).eq("id", linha.id);
     return NextResponse.json({ erro: fmtTexto(d.pesquisa.falhou, { msg }) }, { status: 502 });
   }
-  return NextResponse.json({ id: linha.id });
+  return NextResponse.json({ id: linha.id, commodity_id: commodity.id });
 }
