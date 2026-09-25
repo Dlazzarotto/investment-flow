@@ -223,8 +223,7 @@ export const en: Dicionario = {
   },
   organizacao: {
     titulo: "Partners' organization", subtitulo: "Partners of the organization are administrators of every project linked to it, without per-project invitations.",
-    criar: "Create organization", nome: "Organization name", nomePlaceholder: "E.g. Northern Investors Group", criada: "Organization {nome} created.", jaTemUma: "You already belong to an organization. Ask a partner to link the project to it.",
-    semOrganizacao: "You don't have an organization yet. Create one to manage projects together with the other partners.",
+    semOrganizacao: "This account is not linked to any company yet. Access is granted by the platform administration or by an invitation from a registered company.",
     socios: "Partners", emailSocio: "Partner email", adicionar: "Add partner", socioAdicionado: "Partner {email} added.", removerConfirma: "Remove {email} from the organization?",
     avisoEmail: "The link is by the partner's confirmed account email.", vinculado: "Project linked to organization {nome}", naoVinculado: "Project not linked to an organization",
     vincular: "Link to organization", desvincular: "Unlink", vinculoAjuda: "When linked, every partner of the organization administers this project.",

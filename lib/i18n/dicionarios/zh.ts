@@ -223,8 +223,7 @@ export const zh: Dicionario = {
   },
   organizacao: {
     titulo: "合伙人组织", subtitulo: "组织中的合伙人自动成为所有关联项目的管理员，无需逐个项目邀请。",
-    criar: "创建组织", nome: "组织名称", nomePlaceholder: "例如：北方投资集团", criada: "组织 {nome} 已创建。", jaTemUma: "您已属于某个组织。请让一位合伙人将项目关联到该组织。",
-    semOrganizacao: "您还没有组织。创建一个组织，与其他合伙人共同管理项目。",
+    semOrganizacao: "此账户尚未关联任何公司。访问权限由平台管理方开通，或由已注册公司发出邀请。",
     socios: "合伙人", emailSocio: "合伙人邮箱", adicionar: "添加合伙人", socioAdicionado: "已添加合伙人 {email}。", removerConfirma: "将 {email} 从组织中移除？",
     avisoEmail: "通过合伙人账户已确认的邮箱进行关联。", vinculado: "项目已关联至组织 {nome}", naoVinculado: "项目未关联组织",
     vincular: "关联至组织", desvincular: "取消关联", vinculoAjuda: "关联后，组织中的所有合伙人均可管理此项目。",

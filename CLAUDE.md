@@ -48,6 +48,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      viram contratos concluídos com venda_origem_id; resumo_projeto sem dupla contagem)
                        0023_master_plataforma.sql + 0024_master_sai_da_dsd.sql (master da plataforma em conta própria;
                                                      o gmail fica só ADM da DSD — a 0024 só age com a conta nova confirmada)
+                       0025_cadastro_so_por_convite.sql (conta avulsa não cria empresa — criar_organizacao revogada — nem projeto
+                                                     fora de empresa; admin do projeto volta a editar o projeto, só não o muda de empresa)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -80,7 +82,8 @@ components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenario
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13/14 rodam da raiz)
+                       schema*.test.sql (psql; schema13–15 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+                       DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
 ## Comandos
@@ -144,7 +147,11 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
 - **A Investment Flow é a plataforma; a DSD é uma empresa CLIENTE dela, como qualquer outra.** Master e ADM de
   empresa são contas diferentes: master = `david@peaceontax.com` (0023); `david.lazzarotto@gmail.com` é só ADM da
   DSD (a 0024 o tira do master, e só depois de a conta nova existir com e-mail confirmado). Master sem empresa entra
-  em `/master`, nunca na tela que oferece "criar organização".
+  em `/master`.
+- **Conta só nasce por convite, e conta sem convite é vazia (0025).** A tela de login não tem "criar conta";
+  `/criar-conta` existe porque o convidado e o ADM liberado pelo master entram por ela. A trava não é a tela (a chave
+  pública do Supabase está no navegador): é o banco. `criar_organizacao()` está revogada — empresa só nasce por
+  `criar_empresa()` do master — e projeto só nasce dentro da empresa de quem grava.
 - **Master libera empresas e NÃO lê os dados delas.** Nenhuma policy de projeto,
   custo, cliente ou documento menciona `eh_master()` — é isso que torna o sistema vendável a tradings
   concorrentes entre si. Ele vê `organizacoes` e `organizacao_membros`, e mais nada.

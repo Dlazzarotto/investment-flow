@@ -78,9 +78,6 @@ export function criarSchemas(d: Dicionario) {
       data: dataISO,
       observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
     }),
-    organizacao: z.object({
-      nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),
-    }),
     organizacaoMembro: z.object({
       organizacao_id: uuid,
       email: z.string().trim().email(v.emailInvalido).max(320, v.nomeLongo),

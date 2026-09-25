@@ -223,8 +223,7 @@ export const pt = {
   },
   organizacao: {
     titulo: "Organização dos sócios", subtitulo: "Os sócios da organização são administradores de todos os projetos vinculados a ela, sem convite projeto a projeto.",
-    criar: "Criar organização", nome: "Nome da organização", nomePlaceholder: "Ex.: Grupo Investidores Norte", criada: "Organização {nome} criada.", jaTemUma: "Você já faz parte de uma organização. Peça a um sócio para vincular o projeto a ela.",
-    semOrganizacao: "Você ainda não tem uma organização. Crie uma para administrar os projetos junto com os outros sócios.",
+    semOrganizacao: "Esta conta ainda não está ligada a nenhuma empresa. O acesso é liberado pela administração da plataforma ou por convite de uma empresa já cadastrada.",
     socios: "Sócios", emailSocio: "E-mail do sócio", adicionar: "Adicionar sócio", socioAdicionado: "Sócio {email} adicionado.", removerConfirma: "Remover {email} da organização?",
     avisoEmail: "O vínculo é pelo e-mail confirmado da conta do sócio.", vinculado: "Projeto vinculado à organização {nome}", naoVinculado: "Projeto não vinculado a uma organização",
     vincular: "Vincular à organização", desvincular: "Desvincular", vinculoAjuda: "Vinculado, todos os sócios da organização administram este projeto.",

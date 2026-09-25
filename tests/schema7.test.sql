@@ -8,6 +8,15 @@ insert into auth.users (id, email, email_confirmed_at) values
   ('44444444-4444-4444-4444-444444444444', 'fora@x.com',    now())
 on conflict do nothing;
 
+-- 0025: projeto só nasce dentro de uma empresa. O dono dos projetos de teste é ADM de
+-- uma, criada aqui como o master criaria (a conta não cria a própria).
+update auth.users set email = coalesce(email, 'dono-legado@x.com'), email_confirmed_at = coalesce(email_confirmed_at, now())
+ where id = '11111111-1111-1111-1111-111111111111';
+insert into organizacoes (id, nome, criado_por) values
+  ('0f000000-0000-0000-0000-000000000000', 'Empresa de teste', '11111111-1111-1111-1111-111111111111') on conflict do nothing;
+insert into organizacao_membros (organizacao_id, email)
+select '0f000000-0000-0000-0000-000000000000', email from auth.users where id = '11111111-1111-1111-1111-111111111111'
+on conflict do nothing;
 set local role authenticated;
 set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 
@@ -17,7 +26,7 @@ do $$ begin raise notice 'OK insert com RETURNING em projetos (bug da 0004 corri
 delete from projetos where nome = 'Retorno';
 
 -- organização criada pelo dono, com o sócio S
-select criar_organizacao('Grupo XYZ') as org \gset
+\set org 0f000000-0000-0000-0000-000000000000
 insert into organizacao_membros (organizacao_id, email) values (:'org', 'Socio@X.com');
 
 insert into projetos (nome, data_inicio, moeda, tipo_parceria, participacao_pct, organizacao_id)

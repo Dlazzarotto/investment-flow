@@ -223,8 +223,7 @@ export const es: Dicionario = {
   },
   organizacao: {
     titulo: "Organización de los socios", subtitulo: "Los socios de la organización son administradores de todos los proyectos vinculados a ella, sin invitación proyecto por proyecto.",
-    criar: "Crear organización", nome: "Nombre de la organización", nomePlaceholder: "Ej.: Grupo Inversores Norte", criada: "Organización {nome} creada.", jaTemUma: "Usted ya pertenece a una organización. Pida a un socio que vincule el proyecto a ella.",
-    semOrganizacao: "Aún no tiene una organización. Cree una para administrar los proyectos junto con los demás socios.",
+    semOrganizacao: "Esta cuenta aún no está vinculada a ninguna empresa. El acceso lo libera la administración de la plataforma o una invitación de una empresa ya registrada.",
     socios: "Socios", emailSocio: "Correo del socio", adicionar: "Agregar socio", socioAdicionado: "Socio {email} agregado.", removerConfirma: "¿Quitar a {email} de la organización?",
     avisoEmail: "El vínculo es por el correo confirmado de la cuenta del socio.", vinculado: "Proyecto vinculado a la organización {nome}", naoVinculado: "Proyecto no vinculado a una organización",
     vincular: "Vincular a la organización", desvincular: "Desvincular", vinculoAjuda: "Vinculado, todos los socios de la organización administran este proyecto.",

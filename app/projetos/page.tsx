@@ -6,7 +6,7 @@ import { Vazio } from "@/components/ui/Vazio";
 import { criarProjeto } from "@/app/actions/projetos";
 import { acessoSuspenso, ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterResumo, obterUsuario } from "@/lib/consultas";
 import { STATUS_PROJETO, type StatusProjeto } from "@/lib/types";
-import { FormAdicionarSocio, FormCriarOrganizacao } from "@/components/forms/FormOrganizacao";
+import { FormAdicionarSocio } from "@/components/forms/FormOrganizacao";
 import { BotaoRemoverSocio } from "@/components/BotaoRemoverSocio";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
@@ -91,10 +91,13 @@ export default async function ProjetosPage({ searchParams }: { searchParams: { s
           </ul>
         )}
       </section>
-      <section className="secao max-w-3xl">
-        <h2>{d.projetos.novo}</h2>
-        <FormProjeto action={criarProjeto} />
-      </section>
+      {/* Projeto é da empresa (0025): sem empresa, o banco recusa — a tela não oferece. */}
+      {org && (
+        <section className="secao max-w-3xl">
+          <h2>{d.projetos.novo}</h2>
+          <FormProjeto action={criarProjeto} />
+        </section>
+      )}
 
       <section className="secao max-w-3xl">
         <h2>{d.organizacao.titulo}</h2>
@@ -123,10 +126,8 @@ export default async function ProjetosPage({ searchParams }: { searchParams: { s
             <div className="mt-6"><FormAdicionarSocio organizacaoId={org.organizacao.id} /></div>
           </>
         ) : (
-          <>
-            <p className="mb-4 text-stone">{d.organizacao.semOrganizacao}</p>
-            <FormCriarOrganizacao />
-          </>
+          // Empresa só nasce pelo master (criar_empresa); a conta avulsa não cria a sua (0025).
+          <p role="status" className="rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{d.organizacao.semOrganizacao}</p>
         )}
       </section>
     </Shell>
