@@ -28,7 +28,9 @@ export default async function PainelPage() {
   // quem não é ADM (investidor, membro de projeto, conta nova) segue para
   // /projetos, que já decide: investidor vai para a carteira, conta nova cria a
   // organização ali. Era esse o caminho antes de a entrada virar /painel.
-  if (!org) redirect("/projetos");
+  // O master da plataforma (0023) não é de empresa nenhuma: entra no painel dele,
+  // não na tela que oferece "criar organização".
+  if (!org) redirect(master ? "/master" : "/projetos");
   const orgId = org.organizacao.id;
   const projetosDaEmpresa = projetos.filter((p) => p.organizacao_id === orgId);
   const [painel, suspenso, contratos, commodities, instrumentos, monetizacoes, remuneracoes, capital] = await Promise.all([

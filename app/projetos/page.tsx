@@ -27,6 +27,9 @@ export default async function ProjetosPage({ searchParams }: { searchParams: { s
   // registrar os próprios aportes, e isso não pode expulsá-lo da lista de projetos.
   const operacionais = projetos.filter((p) => p.owner_id === usuario?.id || !carteira.some((c) => c.projeto_id === p.id));
   if (operacionais.length === 0 && carteira.length > 0 && !org) redirect("/carteira");
+  // Master sem empresa e sem projeto: a casa dele é /master. Aqui ele só veria o
+  // convite para criar uma organização — e dono da plataforma não é cliente dela.
+  if (master && !org && projetos.length === 0 && carteira.length === 0) redirect("/master");
   // Projeto é o que a empresa ADMINISTRA (0022): cartão com status e resultado.
   const status = (STATUS_PROJETO as readonly string[]).includes(searchParams.status ?? "")
     ? (searchParams.status as StatusProjeto) : null;

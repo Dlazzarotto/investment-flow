@@ -46,6 +46,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      políticas do Storage pela 1ª pasta do caminho = empresa)
                        0022_projetos_sob_gestao.sql (status do projeto; projeto novo nasce 0 % da empresa; vendas da 1ª versão
                                                      viram contratos concluídos com venda_origem_id; resumo_projeto sem dupla contagem)
+                       0023_master_plataforma.sql + 0024_master_sai_da_dsd.sql (master da plataforma em conta própria;
+                                                     o gmail fica só ADM da DSD — a 0024 só age com a conta nova confirmada)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -78,7 +80,7 @@ components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenario
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql)
+                       schema*.test.sql (psql; schema13/14 rodam da raiz)
 ```
 
 ## Comandos
@@ -139,7 +141,11 @@ Mapa completo e ordem de construção: https://claude.ai/code/artifact/162870f8-
 O sistema deixa de ser um painel de projetos e vira plataforma vendida por assinatura a empresas de trade.
 Decisões fechadas com o usuário (não reabrir sem pedido):
 
-- **Master (`david.lazzarotto@gmail.com`) libera empresas e NÃO lê os dados delas.** Nenhuma policy de projeto,
+- **A Investment Flow é a plataforma; a DSD é uma empresa CLIENTE dela, como qualquer outra.** Master e ADM de
+  empresa são contas diferentes: master = `david@peaceontax.com` (0023); `david.lazzarotto@gmail.com` é só ADM da
+  DSD (a 0024 o tira do master, e só depois de a conta nova existir com e-mail confirmado). Master sem empresa entra
+  em `/master`, nunca na tela que oferece "criar organização".
+- **Master libera empresas e NÃO lê os dados delas.** Nenhuma policy de projeto,
   custo, cliente ou documento menciona `eh_master()` — é isso que torna o sistema vendável a tradings
   concorrentes entre si. Ele vê `organizacoes` e `organizacao_membros`, e mais nada.
 - **Plano e assentos moram no banco, não no contrato.** `organizacoes.plano/assentos/ativa/vigencia_ate` só o
