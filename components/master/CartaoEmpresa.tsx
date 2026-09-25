@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import {
-  adicionarAdmin, alternarPagamento, atualizarContrato, excluirFatura, removerAdmin,
+  adicionarAdmin, alternarPagamento, atualizarContrato, excluirEmpresa, excluirFatura, removerAdmin, trocarAdmin,
 } from "@/app/actions/master";
+import { ConviteAcesso } from "./ConviteAcesso";
+import { mesmoNome } from "@/lib/texto";
 import { FormFatura } from "./FormFatura";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -18,7 +20,7 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const t = d.master;
-  const [aba, setAba] = useState<"nenhuma" | "contrato" | "faturas">("nenhuma");
+  const [aba, setAba] = useState<"nenhuma" | "contrato" | "faturas" | "convite">("nenhuma");
 
   const vencida = !e.em_dia && e.ativa;
   const uso = e.assentos === null ? `${e.assentos_usados} / ${t.semTeto}` : `${e.assentos_usados} / ${e.assentos}`;
@@ -62,15 +64,7 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
         <p className="text-sm font-semibold text-navy">{t.admins}</p>
         <ul className="mt-2 grid gap-2">
           {e.admins.map((email) => (
-            <li key={email} className="flex flex-wrap items-center justify-between gap-2">
-              <span className="break-all">{email}</span>
-              <form action={removerAdmin}
-                    onSubmit={(ev) => { if (!window.confirm(fmtTexto(t.removerConfirma, { email }))) ev.preventDefault(); }}>
-                <input type="hidden" name="organizacao_id" value={e.id} />
-                <input type="hidden" name="email" value={email} />
-                <button type="submit" className="btn-perigo px-3">{d.comum.remover}</button>
-              </form>
-            </li>
+            <LinhaAdmin key={email} organizacaoId={e.id} email={email} unico={e.admins.length === 1} />
           ))}
         </ul>
         <FormAdmin organizacaoId={e.id} />
@@ -83,10 +77,18 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
                 onClick={() => setAba(aba === "faturas" ? "nenhuma" : "faturas")}>
           {t.faturas} ({faturas.length})
         </button>
+        <button type="button" className="btn-quieto"
+                onClick={() => setAba(aba === "convite" ? "nenhuma" : "convite")}>{t.reenviarConvite}</button>
       </div>
 
-      {aba === "contrato" && <div className="mt-4"><FormContrato empresa={e} aoFechar={() => setAba("nenhuma")} /></div>}
+      {aba === "contrato" && (
+        <div className="mt-4">
+          <FormContrato empresa={e} aoFechar={() => setAba("nenhuma")} />
+          <ExcluirEmpresa id={e.id} nome={e.nome} />
+        </div>
+      )}
       {aba === "faturas" && <Faturas empresa={e} faturas={faturas} />}
+      {aba === "convite" && <ConviteAcesso empresa={e.nome} emails={e.admins} />}
     </article>
   );
 }
@@ -187,6 +189,10 @@ function FormContrato({ empresa: e, aoFechar }: { empresa: EmpresaPlataforma; ao
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-6">
       <input type="hidden" name="id" value={e.id} />
+      <div className="sm:col-span-6">
+        <label className="rotulo" htmlFor={`nome-${e.id}`}>{t.nomeEmpresa}</label>
+        <input id={`nome-${e.id}`} name="nome" required maxLength={120} className="campo" defaultValue={e.nome} />
+      </div>
       <div className="sm:col-span-2">
         <label className="rotulo" htmlFor={`plano-${e.id}`}>{t.plano}</label>
         <select id={`plano-${e.id}`} name="plano" className="campo" defaultValue={e.plano}>
@@ -235,5 +241,76 @@ function FormContrato({ empresa: e, aoFechar }: { empresa: EmpresaPlataforma; ao
       </div>
       <div className="sm:col-span-6"><Mensagem estado={estado} /></div>
     </form>
+  );
+}
+
+/**
+ * Um administrador: editar troca o e-mail (entra o novo, sai o antigo — funciona
+ * até com o único); remover só aparece quando há mais de um, porque o banco
+ * recusa deixar a empresa sem ninguém.
+ */
+function LinhaAdmin({ organizacaoId, email, unico }: { organizacaoId: string; email: string; unico: boolean }) {
+  const { d } = useI18n();
+  const t = d.master;
+  const [editando, setEditando] = useState(false);
+  const [estTroca, acaoTroca] = useAcaoFormulario(trocarAdmin);
+  const [estRem, acaoRem] = useAcaoFormulario(removerAdmin);
+  return (
+    <li className="rounded-md border border-stone-light p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="break-all">{email}</span>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-quieto px-3" onClick={() => setEditando(!editando)}>
+            {editando ? d.comum.cancelar : d.comum.editar}
+          </button>
+          {!unico && (
+            <form action={acaoRem}
+                  onSubmit={(ev) => { if (!window.confirm(fmtTexto(t.removerConfirma, { email }))) ev.preventDefault(); }}>
+              <input type="hidden" name="organizacao_id" value={organizacaoId} />
+              <input type="hidden" name="email" value={email} />
+              <button type="submit" className="btn-perigo px-3">{d.comum.remover}</button>
+            </form>
+          )}
+        </div>
+      </div>
+      {editando && (
+        <form key={estTroca.versao} action={acaoTroca} className="mt-3 flex flex-wrap items-end gap-2">
+          <input type="hidden" name="organizacao_id" value={organizacaoId} />
+          <input type="hidden" name="email_antigo" value={email} />
+          <div className="min-w-[14rem] flex-1">
+            <label className="rotulo" htmlFor={`troca-${organizacaoId}-${email}`}>{t.trocarEmail}</label>
+            <input id={`troca-${organizacaoId}-${email}`} name="email" type="email" required maxLength={320}
+                   className="campo" defaultValue={email} />
+          </div>
+          <SubmitButton className="btn-quieto">{d.comum.salvar}</SubmitButton>
+        </form>
+      )}
+      <Mensagem estado={estTroca} />
+      <Mensagem estado={estRem} />
+    </li>
+  );
+}
+
+/** Só empresa vazia se exclui (excluir_empresa, 0028); o banco confere, a tela explica. */
+function ExcluirEmpresa({ id, nome }: { id: string; nome: string }) {
+  const { d } = useI18n();
+  const t = d.master;
+  const [digitado, setDigitado] = useState("");
+  const [estado, formAction] = useAcaoFormulario(excluirEmpresa);
+  return (
+    <section className="mt-6 border-t border-stone-light pt-4">
+      <h4 className="font-semibold text-loss">{t.excluirEmpresa}</h4>
+      <p className="mt-1 text-stone">{t.excluirEmpresaTexto}</p>
+      <form action={formAction} className="mt-3 grid gap-3 sm:max-w-md"
+            onSubmit={(ev) => { if (!window.confirm(`${t.excluirEmpresa}: ${nome}?`)) ev.preventDefault(); }}>
+        <input type="hidden" name="id" value={id} />
+        <input type="hidden" name="nome" value={nome} />
+        <label className="rotulo" htmlFor={`excl-${id}`}>{t.excluirEmpresaDigite}: <strong className="text-navy">{nome}</strong></label>
+        <input id={`excl-${id}`} name="confirmacao" className="campo" autoComplete="off"
+               value={digitado} onChange={(ev) => setDigitado(ev.target.value)} />
+        <button type="submit" disabled={!mesmoNome(digitado, nome)} className="btn-perigo border border-loss">{t.excluirEmpresa}</button>
+        <Mensagem estado={estado} />
+      </form>
+    </section>
   );
 }

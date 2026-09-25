@@ -6,6 +6,7 @@ import { fmtTexto } from "@/lib/i18n";
 import { criarSchemas, formParaObjeto, primeiroErro } from "@/lib/validacao";
 import type { ActionState } from "@/lib/types";
 import { traduzirErroBanco } from "./erros";
+import { mesmoNome } from "@/lib/texto";
 
 /**
  * Libera uma empresa nova e senta o ADM dela.
@@ -63,20 +64,68 @@ export async function adicionarAdmin(_: ActionState, fd: FormData): Promise<Acti
   return { ok: true, sucesso: fmtTexto(d.master.adminAdicionado, { email: parsed.data.email }) };
 }
 
-export async function removerAdmin(fd: FormData): Promise<void> {
+/**
+ * Remove um administrador. O banco recusa o último (0007): empresa sem ninguém
+ * vira dado órfão. Devolve a mensagem em vez de lançar — lançar derrubava a
+ * página inteira com "Algo deu errado".
+ */
+export async function removerAdmin(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
-  const schemas = criarSchemas(d);
-  const org = schemas.uuid.safeParse(fd.get("organizacao_id"));
+  const org = criarSchemas(d).uuid.safeParse(fd.get("organizacao_id"));
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
-  if (!org.success || !email) return;
+  if (!org.success || !email) return { ok: false, erro: d.validacao.dadosInvalidos };
+  const supabase = createClient();
+  const { data, error } = await supabase.from("organizacao_membros").delete()
+    .eq("organizacao_id", org.data).eq("email_normalizado", email).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
+  if (!data?.length) return { ok: false, erro: d.banco.naoEncontrado };
+  revalidatePath("/master");
+  return { ok: true, sucesso: fmtTexto(d.master.adminRemovido, { email }) };
+}
+
+/**
+ * Troca o e-mail de um administrador: inclui o novo e só então tira o antigo.
+ * Nessa ordem a empresa nunca fica sem ninguém — e trocar o ÚNICO administrador
+ * funciona, o que "remover e adicionar" não deixava.
+ */
+export async function trocarAdmin(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).organizacaoMembro.safeParse(formParaObjeto(fd));
+  const antigo = String(fd.get("email_antigo") ?? "").trim().toLowerCase();
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+  const novo = parsed.data.email.trim().toLowerCase();
+  if (!antigo || novo === antigo) return { ok: false, erro: d.validacao.dadosInvalidos };
 
   const supabase = createClient();
-  // O trigger organizacao_ultimo_socio (0007) recusa remover o último: empresa
-  // sem administrador nenhum viraria dado órfão que nem o master alcança.
-  const { error } = await supabase.from("organizacao_membros").delete()
-    .eq("organizacao_id", org.data).eq("email_normalizado", email);
-  if (error) throw new Error(traduzirErroBanco(error, "empresa", d));
+  const { error } = await supabase.from("organizacao_membros")
+    .insert({ organizacao_id: parsed.data.organizacao_id, email: novo });
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
+  const { error: e2 } = await supabase.from("organizacao_membros").delete()
+    .eq("organizacao_id", parsed.data.organizacao_id).eq("email_normalizado", antigo);
+  // O novo já entrou: melhor avisar que o antigo ficou do que desfazer a troca.
+  if (e2) return { ok: false, erro: traduzirErroBanco(e2, "empresa", d) };
   revalidatePath("/master");
+  return { ok: true, sucesso: fmtTexto(d.master.adminTrocado, { antigo, novo }) };
+}
+
+/**
+ * Exclui empresa criada por engano ou para teste. O banco (excluir_empresa, 0028)
+ * só aceita empresa VAZIA — tudo o que é dela sai em cascata, então empresa com
+ * dados se suspende, não se exclui. O nome digitado confere que é a empresa certa.
+ */
+export async function excluirEmpresa(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
+  if (!id.success) return { ok: false, erro: d.validacao.idInvalido };
+  if (!mesmoNome(String(fd.get("confirmacao") ?? ""), String(fd.get("nome") ?? ""))) {
+    return { ok: false, erro: d.master.excluirEmpresaNome };
+  }
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("excluir_empresa", { p_organizacao_id: id.data });
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
+  if (!data) return { ok: false, erro: d.master.empresaComDados };
+  revalidatePath("/master");
+  return { ok: true, sucesso: d.master.empresaExcluida };
 }
 
 // ---------------------------------------------------------------------------

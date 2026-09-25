@@ -54,6 +54,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      o delete direto esbarrava em contratos_conta_ck desde a 0022)
                        0027_uma_empresa_por_email.sql (índice único global em organizacao_membros.email_normalizado: quem
                                                      administra uma empresa nunca entra em outra — nem pelo master, nem como sócio)
+                       0028_excluir_empresa.sql (excluir_empresa(): master exclui empresa VAZIA; a trava do último ADM impedia
+                                                     excluir qualquer empresa; check NOT VALID: e-mail do master não administra empresa)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -85,8 +87,8 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
 components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
-tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13–17 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+tests/                 calculos.test.ts, custeio.test.ts, texto.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
+                       schema*.test.sql (psql; schema13–18 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
                        DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
@@ -95,7 +97,7 @@ tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, doc
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 133 testes, todos devem passar
+npm test          # vitest — 135 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -160,6 +162,11 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   global, não por empresa. O master não libera empresa com e-mail de ADM de outra, e o ADM não traz como sócio quem
   já é de outra. Acesso a um PROJETO de outra empresa (projeto_membros/investidor) é outra coisa e continua possível.
   Empresa nova nasce zerada; o master copia o link de /criar-conta na própria tela depois de liberar.
+- **No master, por empresa (0028):** editar nome (no Contrato), trocar o e-mail do ADM (entra o novo, sai o antigo —
+  funciona com o único), remover ADM só quando há mais de um, "Reenviar convite" (link + copiar + mailto: abre o
+  e-mail de quem usa, sem depender do SMTP do Supabase) e excluir empresa VAZIA. Empresa com dados se suspende.
+  Ação de formulário do master devolve mensagem, nunca lança: lançar derruba a página em "Algo deu errado".
+- **Confirmar exclusão digitando o nome** usa `mesmoNome()` (lib/texto.ts): ignora maiúsculas, acentos e espaços.
 - **Master libera empresas e NÃO lê os dados delas.** Nenhuma policy de projeto,
   custo, cliente ou documento menciona `eh_master()` — é isso que torna o sistema vendável a tradings
   concorrentes entre si. Ele vê `organizacoes` e `organizacao_membros`, e mais nada.
