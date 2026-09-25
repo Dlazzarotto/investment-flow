@@ -58,7 +58,10 @@ export function Cadastro<T>(p: Props<T>) {
                               chave={p.chave} aoCancelar={() => fechar()} aoSalvar={(m) => fechar(m)} />
                 ) : (
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">{p.resumo(item)}</div>
+                    {/* flex-1 + min-w-0 + basis-64: o resumo ocupa o que sobra (no celular, a linha toda,
+                        e os botões descem) e NÃO cresce até a largura
+                        de uma tabela aberta dentro dele (que então rola no próprio lugar). */}
+                    <div className="min-w-0 flex-1 basis-64">{p.resumo(item)}</div>
                     <div className="flex gap-2">
                       <button type="button" className="btn-quieto px-3"
                               aria-label={`${d.comum.editar} ${p.nome(item)}`}

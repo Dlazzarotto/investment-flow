@@ -6,6 +6,7 @@ import {
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
   STATUS_PROJETO, TIPOS_DOCUMENTO_CLIENTE, ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
   BASES_COMISSAO, DIRECOES_CONTRATO, EVENTOS_SALDO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
+  BASES_PRECO, DOCUMENTOS_EXIGIDOS, EMBALAGENS, LOCAIS_INSPECAO, MODAIS_INTERIOR, PARTES_RESPONSAVEIS, PORTES_NAVIO, TIPOS_LOCAL,
 } from "./types";
 
 /** Limites das colunas do banco: numeric(14,3) para quantidade/volume e numeric(16,2) para valores. */
@@ -40,6 +41,13 @@ export function criarSchemas(d: Dicionario) {
   /** Campo de texto opcional: vazio vira null em vez de string em branco. */
   const textoOpcional = (max: number) =>
     z.string().trim().max(max, v.nomeLongo).optional().transform((x) => x || null);
+  const idOpcional = z.union([z.literal(""), uuid]).optional().transform((x) => x || null);
+  /** Enum opcional: vazio vira null ("não informado"), valor fora da lista é erro. */
+  const enumOpcional = <T extends readonly [string, ...string[]]>(lista: T) =>
+    z.union([z.literal(""), z.enum(lista, enumMsg(v.dadosInvalidos))]).optional().transform((x) => (x ? x : null));
+  /** Valor em dinheiro opcional, não negativo: vazio vira null. */
+  const valorOpcional = z.union([z.literal(""), z.coerce.number().min(0, v.valorNegativo).lt(MAX_VALOR, v.dadosInvalidos)]).optional()
+    .transform((x) => (typeof x === "number" ? x : null));
   /** Número opcional: campo em branco vira null, não zero — "não informado" não é "zero". */
   const numeroOpcional = () =>
     z.union([z.literal(""), z.coerce.number().finite()]).optional()
@@ -199,14 +207,41 @@ export function criarSchemas(d: Dicionario) {
     commodity: z.object({
       organizacao_id: uuid,
       nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
-      categoria: textoOpcional(80),
+      // 0029: o grupo substitui a "categoria" em texto livre (que fica só para leitura).
+      grupo_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
       unidade_padrao: z.string().trim().min(1, v.unidadeObrigatoria).max(40, v.unidadeLonga),
       bolsa: textoOpcional(160),
       observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
       ativo: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
     }),
+    /** Grupo criado pela empresa (0029); os padrão vêm prontos. */
+    grupoCommodity: z.object({
+      organizacao_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(80, v.nomeLongo),
+    }),
+    grade: z.object({
+      organizacao_id: uuid,
+      commodity_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(120, v.nomeLongo),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+    }),
+    local: z.object({
+      organizacao_id: uuid,
+      nome: z.string().trim().min(1, v.nomeObrigatorio).max(160, v.nomeLongo),
+      tipo: z.enum(TIPOS_LOCAL, enumMsg(v.dadosInvalidos)),
+      pais: textoOpcional(80),
+      regiao: textoOpcional(120),
+      // UN/LOCODE: país (2 letras) + local (3), com ou sem espaço — "BR SSZ", "UYNVP".
+      unlocode: z.string().trim().toUpperCase().optional().transform((x) => x || null)
+        .refine((x) => x === null || /^[A-Z]{2} ?[A-Z0-9]{3}$/.test(x), v.unlocodeInvalido),
+      calado_max_m: z.union([z.literal(""), z.coerce.number().min(0, v.caladoInvalido).max(40, v.caladoInvalido)]).optional()
+        .transform((x) => (typeof x === "number" ? x : null)),
+      observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+      ativo: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
+    }),
     parametro: z.object({
       commodity_id: uuid,
+      grade_id: z.union([z.literal(""), uuid]).optional().transform((x) => x || null),
       nome: z.string().trim().min(1, v.nomeObrigatorio).max(80, v.nomeLongo),
       unidade: z.string().trim().min(1, v.unidadeObrigatoria).max(20, v.unidadeLonga),
       referencia: numeroOpcional(),
@@ -298,6 +333,39 @@ export function criarSchemas(d: Dicionario) {
       inicio_entregas: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
       fim_entregas: z.union([z.literal(""), dataISO]).optional().transform((x) => x || null),
       observacoes: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+      // 0029 — produto, rota, logística, inspeção e documentos.
+      grade_id: idOpcional,
+      especificacao: z.string().trim().max(2000, v.descricaoLonga).optional().transform((x) => x || null),
+      embalagem: enumOpcional(EMBALAGENS),
+      base_preco: enumOpcional(BASES_PRECO),
+      origem_id: idOpcional,
+      ponto_carga_id: idOpcional,
+      destino: textoOpcional(160),
+      ponto_descarga_id: idOpcional,
+      destino_final_id: idOpcional,
+      transbordo_id: idOpcional,
+      rota_fluvial: textoOpcional(300),
+      barcacas_qtd: z.union([z.literal(""), z.coerce.number().int().min(0, v.dadosInvalidos).max(500, v.dadosInvalidos)]).optional()
+        .transform((x) => (typeof x === "number" ? x : null)),
+      barcaca_obs: textoOpcional(300),
+      porte_navio: enumOpcional(PORTES_NAVIO),
+      navio_nome: textoOpcional(120),
+      navio_imo: z.string().trim().optional().transform((x) => x || null)
+        .refine((x) => x === null || /^[0-9]{7}$/.test(x), v.imoInvalido),
+      calado_max_m: z.union([z.literal(""), z.coerce.number().min(0, v.caladoInvalido).max(40, v.caladoInvalido)]).optional()
+        .transform((x) => (typeof x === "number" ? x : null)),
+      frete_valor: valorOpcional,
+      taxa_carga_dia: valorOpcional,
+      taxa_descarga_dia: valorOpcional,
+      demurrage_dia: valorOpcional,
+      despatch_dia: valorOpcional,
+      entrega_interior: enumOpcional(MODAIS_INTERIOR),
+      entrega_interior_obs: textoOpcional(300),
+      inspetora: textoOpcional(120),
+      inspecao_local: enumOpcional(LOCAIS_INSPECAO),
+      inspecao_custo: enumOpcional(PARTES_RESPONSAVEIS),
+      documentos_exigidos: z.array(z.enum(DOCUMENTOS_EXIGIDOS, enumMsg(v.dadosInvalidos))).default([])
+        .transform((x) => Array.from(new Set(x))),
     }).superRefine((c, ctx) => {
       // Trader vendendo: a empresa é o vendedor, falta o comprador. Comprando: o
       // contrário. Intermediando: as duas pontas são clientes.

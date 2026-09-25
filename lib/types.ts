@@ -163,7 +163,7 @@ export interface FluxoMensal {
 }
 
 /** Estado devolvido pelas server actions para os formulários */
-export type ActionState = { ok: boolean; erro?: string; sucesso?: string };
+export type ActionState = { ok: boolean; erro?: string; sucesso?: string; /** Id do que foi criado, quando a tela precisa selecioná-lo. */ id?: string };
 
 /** Estimativa de valor médio de mercado gerada por IA (tabela estimativas_ia) */
 export type Confianca = "baixa" | "media" | "alta";
@@ -429,10 +429,83 @@ export interface Fornecedor {
   atualizado_em: string;
 }
 
+/**
+ * Grupo de commodity (0029). O padrão do mercado vem com `organizacao_id` vazio e
+ * `codigo` (o rótulo sai de d.enums.grupoCommodity, nos 4 idiomas); o da empresa
+ * vem com `nome`.
+ */
+export interface CommodityGrupo {
+  id: string;
+  organizacao_id: string | null;
+  codigo: string | null;
+  nome: string | null;
+  ordem: number;
+}
+
+/** Grade de uma commodity (0029): "Fines 62% Fe", "GMO Grade 2". Tem especificação própria. */
+export interface CommodityGrade {
+  id: string;
+  organizacao_id: string;
+  commodity_id: string;
+  nome: string;
+  observacoes: string | null;
+  ativo: boolean;
+  criado_em: string;
+}
+
+export const TIPOS_LOCAL = ["mina", "porto", "terminal_fluvial", "armazem", "ferrovia", "cidade", "outro"] as const;
+export type TipoLocal = (typeof TIPOS_LOCAL)[number];
+
+/** Local da empresa (0029): origem, ponto de carga/descarga, transbordo, destino final. */
+export interface Local {
+  id: string;
+  organizacao_id: string;
+  nome: string;
+  tipo: TipoLocal;
+  pais: string | null;
+  regiao: string | null;
+  unlocode: string | null;
+  /** Calado máximo, em metros — limita o porte do navio. */
+  calado_max_m: number | null;
+  observacoes: string | null;
+  ativo: boolean;
+  criado_em: string;
+}
+
+export const EMBALAGENS = ["granel", "big_bag", "sacaria", "conteiner", "tambor", "isotanque", "outro"] as const;
+export type Embalagem = (typeof EMBALAGENS)[number];
+export const BASES_PRECO = ["mt", "wmt", "dmt", "dmtu", "bbl", "mmbtu", "lb", "oz", "bushel", "unidade"] as const;
+export type BasePreco = (typeof BASES_PRECO)[number];
+export const PORTES_NAVIO = [
+  "handysize", "handymax", "supramax", "ultramax", "panamax", "kamsarmax", "post_panamax", "capesize", "vloc",
+  "tanque_mr", "aframax", "suezmax", "vlcc", "conteineiro", "outro",
+] as const;
+export type PorteNavio = (typeof PORTES_NAVIO)[number];
+export const LOCAIS_INSPECAO = ["carregamento", "descarga", "ambos"] as const;
+export type LocalInspecao = (typeof LOCAIS_INSPECAO)[number];
+export const PARTES_RESPONSAVEIS = ["vendedor", "comprador", "dividido"] as const;
+export type ParteResponsavel = (typeof PARTES_RESPONSAVEIS)[number];
+export const MODAIS_INTERIOR = ["caminhao", "ferrovia", "barcaca", "duto", "nenhuma"] as const;
+export type ModalInterior = (typeof MODAIS_INTERIOR)[number];
+/** Espelha contratos_documentos_ck (0029). */
+export const DOCUMENTOS_EXIGIDOS = [
+  "bl", "fatura_comercial", "packing_list", "certificado_origem", "certificado_qualidade", "certificado_peso",
+  "draft_survey", "apolice_seguro", "fitossanitario", "nao_radioatividade", "certificado_fumigacao", "mates_receipt",
+] as const;
+export type DocumentoExigido = (typeof DOCUMENTOS_EXIGIDOS)[number];
+/** Espelha a lista pronta de commodity_grupos (0029). */
+export const GRUPOS_PADRAO = [
+  "minerios", "metais_basicos", "metais_preciosos", "petroleo_derivados", "gas_natural", "carvao",
+  "graos_oleaginosas", "softs", "fertilizantes", "quimicos", "proteinas", "florestais",
+] as const;
+export type GrupoPadrao = (typeof GRUPOS_PADRAO)[number];
+
 /** Catálogo de commodities da empresa (0015). */
 export interface Commodity {
   id: string;
   organizacao_id: string;
+  /** 0029: grupo padrão ou da empresa. `categoria` é o texto livre de antes. */
+  grupo_id: string | null;
   nome: string;
   categoria: string | null;
   unidade_padrao: string;
@@ -452,6 +525,8 @@ export interface Commodity {
 export interface CommodityParametro {
   id: string;
   commodity_id: string;
+  /** 0029: com grade, é a especificação do grade; sem, é o padrão da commodity. */
+  grade_id: string | null;
   nome: string;
   unidade: string;
   /** Teor que o índice de mercado assume (62 no "62% Fe"). */
@@ -520,6 +595,36 @@ export interface Contrato {
   /** Obsoleto desde a 0019: as partes moram em contrato_partes. */
   contraparte_id: string | null;
   commodity_id: string;
+  grade_id: string | null;
+  especificacao: string | null;
+  embalagem: Embalagem | null;
+  base_preco: BasePreco | null;
+  origem_id: string | null;
+  ponto_carga_id: string | null;
+  /** País ou região de destino. O porto é `ponto_descarga_id`. */
+  destino: string | null;
+  ponto_descarga_id: string | null;
+  destino_final_id: string | null;
+  transbordo_id: string | null;
+  rota_fluvial: string | null;
+  barcacas_qtd: number | null;
+  barcaca_obs: string | null;
+  porte_navio: PorteNavio | null;
+  navio_nome: string | null;
+  navio_imo: string | null;
+  calado_max_m: number | null;
+  /** Por unidade do contrato, na moeda do contrato. */
+  frete_valor: number | null;
+  taxa_carga_dia: number | null;
+  taxa_descarga_dia: number | null;
+  demurrage_dia: number | null;
+  despatch_dia: number | null;
+  entrega_interior: ModalInterior | null;
+  entrega_interior_obs: string | null;
+  inspetora: string | null;
+  inspecao_local: LocalInspecao | null;
+  inspecao_custo: ParteResponsavel | null;
+  documentos_exigidos: DocumentoExigido[];
   projeto_id: string | null;
   conta: ContaContrato;
   assinante: AssinanteContrato;
