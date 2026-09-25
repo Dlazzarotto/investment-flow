@@ -20,7 +20,7 @@ export const CATEGORIAS_DESPESA = [
 ] as const;
 export type CategoriaDespesa = (typeof CATEGORIAS_DESPESA)[number];
 
-export const UNIDADES_VOLUME = ["Toneladas", "m³", "Barris", "Unidades", "Contêineres", "Horas"] as const;
+export const UNIDADES_VOLUME = ["Toneladas", "m³", "Barris", "Onças troy", "MMBtu", "Unidades", "Contêineres", "Horas"] as const;
 
 export interface Projeto {
   id: string;
@@ -70,7 +70,11 @@ export interface Aporte {
   criado_em: string;
 }
 
-export interface Organizacao { id: string; nome: string; criado_por: string; criado_em: string }
+export interface Organizacao {
+  id: string; nome: string; criado_por: string; criado_em: string;
+  /** Teto de assentos do plano (0009); null = sem teto. Só o master altera. */
+  assentos: number | null;
+}
 export interface OrganizacaoMembro { id: string; organizacao_id: string; email: string; email_normalizado: string; criado_em: string }
 
 /** Totais do projeto para qualquer membro (public.resumo_projeto). */
@@ -500,12 +504,95 @@ export const GRUPOS_PADRAO = [
 ] as const;
 export type GrupoPadrao = (typeof GRUPOS_PADRAO)[number];
 
+/** Catálogo do mercado (0030), gerado da mesma fonte que a migration e os dicionários. */
+export const COMMODITIES_PADRAO = [
+  "iron_ore",
+  "iron_ore_pellets",
+  "manganese_ore",
+  "chrome_ore",
+  "copper_concentrate",
+  "zinc_concentrate",
+  "lead_concentrate",
+  "bauxite",
+  "spodumene",
+  "copper_cathode",
+  "aluminium",
+  "zinc",
+  "nickel",
+  "lead",
+  "tin",
+  "pig_iron",
+  "steel_billet",
+  "gold",
+  "silver",
+  "platinum",
+  "palladium",
+  "crude_oil",
+  "diesel_en590",
+  "jet_a1",
+  "gasoline",
+  "fuel_oil",
+  "naphtha",
+  "lpg",
+  "lng",
+  "natural_gas",
+  "thermal_coal",
+  "coking_coal",
+  "petcoke",
+  "soybeans",
+  "corn",
+  "wheat",
+  "soybean_meal",
+  "soybean_oil",
+  "rice",
+  "sunflower_oil",
+  "sugar_icumsa45",
+  "sugar_vhp",
+  "coffee_arabica",
+  "coffee_robusta",
+  "cocoa",
+  "cotton",
+  "orange_juice",
+  "ethanol",
+  "urea",
+  "dap",
+  "map",
+  "potash",
+  "ammonium_nitrate",
+  "ammonia",
+  "sulphur",
+  "methanol",
+  "caustic_soda",
+  "sulphuric_acid",
+  "polyethylene",
+  "polypropylene",
+  "beef",
+  "chicken",
+  "pork",
+  "pulp_bekp",
+  "pulp_nbsk",
+  "timber",
+  "wood_pellets",
+] as const;
+export type CommodityPadraoCodigo = (typeof COMMODITIES_PADRAO)[number];
+
+/** Item do catálogo do mercado (0030): só leitura, igual para todas as empresas. */
+export interface CommodityPadrao {
+  codigo: CommodityPadraoCodigo;
+  grupo_codigo: GrupoPadrao;
+  unidade: string;
+  referencia: string | null;
+  ordem: number;
+}
+
 /** Catálogo de commodities da empresa (0015). */
 export interface Commodity {
   id: string;
   organizacao_id: string;
   /** 0029: grupo padrão ou da empresa. `categoria` é o texto livre de antes. */
   grupo_id: string | null;
+  /** 0030: de qual item do catálogo do mercado ela veio (null = criada pela empresa). */
+  padrao_codigo: CommodityPadraoCodigo | null;
   nome: string;
   categoria: string | null;
   unidade_padrao: string;

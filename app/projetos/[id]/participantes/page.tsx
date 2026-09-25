@@ -15,7 +15,6 @@ import {
 } from "@/lib/consultas";
 import { RemuneracaoGestao } from "@/components/contratos/RemuneracaoGestao";
 import { baseDoProjeto, projetarRemuneracao } from "@/lib/contratos";
-import { vincularOrganizacao } from "@/app/actions/organizacao";
 import { permissoes } from "@/lib/permissoes";
 import { totalParticipacao } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
@@ -110,28 +109,6 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
           <h2>{d.gestao.titulo}</h2>
           <p className="mb-4 text-stone">{fmtTexto(d.gestao.subtitulo, { empresa: org!.organizacao.nome })}</p>
           <RemuneracaoGestao linhas={linhasGestao} organizacaoId={org!.organizacao.id} projetoId={projeto.id} moeda={projeto.moeda} />
-        </section>
-      )}
-
-      {pode.administrar && (
-        <section className="secao max-w-3xl">
-          <h2>{d.organizacao.titulo}</h2>
-          {org ? (
-            <>
-              <p className="text-stone">{projeto.organizacao_id === org.organizacao.id
-                ? fmtTexto(d.organizacao.vinculado, { nome: org.organizacao.nome }) : d.organizacao.naoVinculado}</p>
-              <p className="mb-3 text-stone">{d.organizacao.vinculoAjuda}</p>
-              <form action={vincularOrganizacao}>
-                <input type="hidden" name="projeto_id" value={projeto.id} />
-                <input type="hidden" name="organizacao_id" value={projeto.organizacao_id === org.organizacao.id ? "" : org.organizacao.id} />
-                <button type="submit" className={projeto.organizacao_id === org.organizacao.id ? "btn-quieto" : "btn-navy"}>
-                  {projeto.organizacao_id === org.organizacao.id ? d.organizacao.desvincular : d.organizacao.vincular}
-                </button>
-              </form>
-            </>
-          ) : (
-            <p className="text-stone">{d.organizacao.semOrganizacao}</p>
-          )}
         </section>
       )}
 

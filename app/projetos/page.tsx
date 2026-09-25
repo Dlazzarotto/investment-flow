@@ -6,8 +6,6 @@ import { Vazio } from "@/components/ui/Vazio";
 import { criarProjeto } from "@/app/actions/projetos";
 import { acessoSuspenso, ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterResumo, obterUsuario } from "@/lib/consultas";
 import { STATUS_PROJETO, type StatusProjeto } from "@/lib/types";
-import { FormAdicionarSocio } from "@/components/forms/FormOrganizacao";
-import { BotaoRemoverSocio } from "@/components/BotaoRemoverSocio";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
@@ -99,37 +97,12 @@ export default async function ProjetosPage({ searchParams }: { searchParams: { s
         </section>
       )}
 
-      <section className="secao max-w-3xl">
-        <h2>{d.organizacao.titulo}</h2>
-        <p className="mb-4 text-stone">{d.organizacao.subtitulo}</p>
-        {org ? (
-          <>
-            <p className="text-lg font-semibold text-navy">{org.organizacao.nome}</p>
-            <p className="mb-4 rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{d.organizacao.avisoEmail}</p>
-            <h3 className="mb-3 text-lg text-navy">{d.organizacao.socios}</h3>
-            <div className="overflow-x-auto">
-              <table className="tabela">
-                <thead><tr><th>{d.organizacao.emailSocio}</th><th>{d.comum.data}</th><th>{d.comum.acoes}</th></tr></thead>
-                <tbody>
-                  {org.membros.map((s) => (
-                    <tr key={s.id} className={s.email_normalizado === emailAtual ? "bg-navy-soft/60" : ""}>
-                      <td className="break-all font-medium">{s.email}</td>
-                      <td className="whitespace-nowrap">{f.data(s.criado_em)}</td>
-                      <td>{org.membros.length > 1 && (
-                        <BotaoRemoverSocio id={s.id} confirmacao={fmtTexto(d.organizacao.removerConfirma, { email: s.email })} rotulo={d.comum.remover} />
-                      )}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-6"><FormAdicionarSocio organizacaoId={org.organizacao.id} /></div>
-          </>
-        ) : (
-          // Empresa só nasce pelo master (criar_empresa); a conta avulsa não cria a sua (0025).
-          <p role="status" className="rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{d.organizacao.semOrganizacao}</p>
-        )}
-      </section>
+      {/* A equipe da empresa mora em Conta e empresa (/conta); aqui só o aviso para quem não tem empresa. */}
+      {!org && (
+        <p role="status" className="secao max-w-3xl rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">
+          {d.organizacao.semOrganizacao}
+        </p>
+      )}
     </Shell>
   );
 }

@@ -59,6 +59,9 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0029_catalogo_locais_termos.sql (Grupo → Commodity → Grade → Especificação; grupos padrão + da empresa;
                                                      cadastro de Locais com calado; contrato com grade, packing, base de preço, rota, navio,
                                                      barcaça, transbordo, frete, demurrage, inspeção e documentos exigidos)
+                       0030_catalogo_commodities_mercado.sql (67 commodities do mercado nos 12 grupos, só leitura; a empresa ADOTA
+                                                     com um toque (commodities.padrao_codigo); as antigas encaixadas pelo nome. GERADA junto com
+                                                     os dicionários e COMMODITIES_PADRAO — editar a fonte, não o SQL à mão)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -91,7 +94,7 @@ components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenario
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13–19 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+                       schema*.test.sql (psql; schema13–20 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
                        DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
@@ -170,6 +173,10 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   e-mail de quem usa, sem depender do SMTP do Supabase) e excluir empresa VAZIA. Empresa com dados se suspende.
   Ação de formulário do master devolve mensagem, nunca lança: lançar derruba a página em "Algo deu errado".
 - **Confirmar exclusão digitando o nome** usa `mesmoNome()` (lib/texto.ts): ignora maiúsculas, acentos e espaços.
+- **Equipe da empresa mora em "Conta e empresa" (/conta), não em Projetos.** Quem está em `organizacao_membros` é
+  ADMINISTRADOR da empresa (vê tudo, ocupa assento) — não "sócio" (vocabulário da 1ª versão). A tela mostra
+  assentos em uso (`assentos_ocupados`) e traduz a trava do plano. "Vincular/desvincular projeto da organização"
+  saiu: desde 0022/0025 projeto é sempre da empresa, e desvincular o tirava do painel (ou quebrava com contrato).
 - **Master libera empresas e NÃO lê os dados delas.** Nenhuma policy de projeto,
   custo, cliente ou documento menciona `eh_master()` — é isso que torna o sistema vendável a tradings
   concorrentes entre si. Ele vê `organizacoes` e `organizacao_membros`, e mais nada.
@@ -268,6 +275,12 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
 - **Grupos: lista pronta + da empresa.** Os 12 padrão têm `organizacao_id` vazio e `codigo` (rótulo em
   `d.enums.grupoCommodity`); os da empresa têm `nome`. Commodity só entra em grupo padrão ou da própria empresa
   (política RESTRITIVA `commodities_grupo_valido`). `commodities.categoria` (texto livre) ficou só para leitura.
+- **Grupo sem commodity dentro foi erro (0029 → 0030).** O usuário quer escolher o grupo e VER as commodities dele.
+  `commodities_padrao` traz 67 do mercado, cada uma no seu grupo, com unidade e referência de preço; o nome vem de
+  `d.enums.commodityPadrao` (4 idiomas). Na tela de Commodities o grupo mostra o "Catálogo do mercado" (um toque
+  adiciona) e as da empresa; no contrato, o seletor lista "Da empresa" + "Catálogo do mercado", e escolher uma do
+  catálogo a adota na hora (`adotarCommodity`). O número do grupo é o que há para ESCOLHER (empresa + mercado não
+  adotado), nunca só as da empresa — "(0)" em grupo cheio parece vazio. No celular, grupos em `<select>`.
 - **Locais** (mina, porto, terminal fluvial, armazém, ferrovia, cidade) com país, UN/LOCODE e calado máximo. O
   contrato escolhe origem, ponto de carga, transbordo, ponto de descarga e destino final dessa lista (FK composta:
   mesma empresa). `porto_embarque`/`porto_destino` (texto) ficaram como legado, preservados e exibidos.

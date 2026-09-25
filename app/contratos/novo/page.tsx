@@ -5,7 +5,7 @@ import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpr
 import { FormContrato, type ValoresContrato } from "@/components/contratos/FormContrato";
 import { criarContrato } from "@/app/actions/contratos";
 import {
-  ehMaster, listarCarteira, listarClientes, listarCommodities, listarGrades, listarGrupos, listarLocais, listarParametros, listarItensEstimativa, listarProjetos, minhaOrganizacao,
+  ehMaster, listarCarteira, listarClientes, listarCommodities, listarCommoditiesPadrao, listarGrades, listarGrupos, listarLocais, listarParametros, listarItensEstimativa, listarProjetos, minhaOrganizacao,
   obterEstimativa, obterUsuario,
 } from "@/lib/consultas";
 import { calcularCusteio } from "@/lib/custeio";
@@ -32,6 +32,7 @@ export default async function NovoContratoPage({ searchParams }: { searchParams:
   const [clientes, commodities, grupos, grades, locais] = await Promise.all([
     listarClientes(orgId), listarCommodities(orgId), listarGrupos(orgId), listarGrades(orgId), listarLocais(orgId),
   ]);
+  const catalogo = await listarCommoditiesPadrao();
   // Commodity pode nascer no próprio contrato (0029); cliente, não — ele tem documentos (CIS) próprios.
   if (clientes.length === 0) redirect(direcao === "compra" ? "/compras" : "/vendas");
   const parametros = await listarParametros(commodities.map((c) => c.id));
@@ -66,7 +67,7 @@ export default async function NovoContratoPage({ searchParams }: { searchParams:
                              projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
       <div className="mt-6 max-w-4xl">
         <FormContrato acao={criarContrato} organizacaoId={orgId} clientes={clientes} commodities={commodities}
-                      grupos={grupos} grades={grades} parametros={parametros} locais={locais}
+                      grupos={grupos} catalogo={catalogo} grades={grades} parametros={parametros} locais={locais}
                       projetos={projetos.filter((p) => p.organizacao_id === orgId)} valores={valores}
                       rotuloSalvar={t.criar} />
       </div>
