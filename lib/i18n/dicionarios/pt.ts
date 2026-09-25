@@ -34,6 +34,7 @@ export const pt = {
     cadastroDesativado: "O cadastro de novas contas está desativado.",
   },
   projetos: {
+    naoExcluido: "O projeto não foi excluído: só o dono exclui, e com a empresa em dia.",
     deOutrasEmpresas: "Projetos de outras empresas em que você participa",
     status: "Status",
     participacaoEmpresa: "Participação da empresa (%)",
@@ -459,6 +460,8 @@ export const pt = {
     projetos: "Projetos",
   },
   contratos: {
+    convertidoAviso: "Veio de uma venda da 1ª versão: volume, preço, moeda, conta e status ficam travados, porque o resultado do projeto é lido da venda original. Para refazer, exclua o contrato (a venda antiga sai junto) e crie outro.",
+    convertidoTravado: "Os números deste contrato vêm de uma venda da 1ª versão e não podem ser alterados. Exclua-o e crie outro para refazer.",
     daEmpresa: "Da empresa",
     doMercado: "Catálogo do mercado (adiciona ao escolher)",
     blocoProduto: "Produto",
@@ -714,6 +717,7 @@ export const pt = {
     capex: "Investimentos (capex)",
   },
   resumoProjeto: {
+    outraMoeda: "Em {moeda}, fora do resultado do projeto (em {projeto}).",
     desde: "desde {data}",
     status: "Status do projeto",
     resultado: "Resultado do projeto",

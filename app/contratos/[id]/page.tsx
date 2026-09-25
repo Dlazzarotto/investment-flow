@@ -124,6 +124,9 @@ export default async function ContratoPage({ params, searchParams }: { params: {
           contrato.conta === "projeto" ? `${d.enums.contaContrato.projeto}: ${projetos.find((p) => p.id === contrato.projeto_id)?.nome ?? ""}` : null,
         ].filter(Boolean).join(" · ")}
       </p>
+      {contrato.venda_origem_id && (
+        <p role="note" className="mt-3 rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{t.convertidoAviso}</p>
+      )}
       {searchParams.erro === "partes" && <p role="alert" className="mt-3 rounded-md border-l-4 border-loss bg-red-50 px-4 py-3 text-loss">{t.erroPartes}</p>}
       <dl className="mt-3 grid gap-2 sm:grid-cols-3">
         <div><dt className="text-sm text-stone">{t.vendedor}</dt><dd className="font-semibold">{nome(parte("vendedor")) ?? org.organizacao.nome}</dd></div>

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { FormAporte } from "@/components/forms/FormAporte";
 import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { Vazio } from "@/components/ui/Vazio";
@@ -15,6 +16,9 @@ export default async function AportesPage({ params }: { params: { id: string } }
   const projeto = await obterProjeto(params.id);
   const papel = await obterPapel(projeto.id);
   const pode = permissoes(papel);
+  // A aba some da lateral para gerente e escritório, e o RLS (0032) já não lhes dá
+  // linha nenhuma; sem isto a URL direta abria a tela vazia de capital.
+  if (!pode.verInvestimentos) redirect(`/projetos/${projeto.id}`);
   const [participantes, aportes] = await Promise.all([listarParticipantes(projeto.id), listarAportes(projeto.id)]);
   const resumo = resumoAportes(participantes, aportes);
   const nomePorId = new Map(participantes.map((p) => [p.id, p.nome]));

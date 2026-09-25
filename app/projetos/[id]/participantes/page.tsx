@@ -37,7 +37,7 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
   const [remuneracoes, contratos, capital] = daEmpresa
     ? await Promise.all([listarRemuneracoes(org!.organizacao.id), listarContratos(org!.organizacao.id), capitalPorProjeto([projeto.id])])
     : [[], [], new Map<string, number>()];
-  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0);
+  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0, projeto.moeda);
   const linhasGestao = remuneracoes.filter((r) => r.projeto_id === projeto.id)
     .map((r) => ({ ...r, ...projetarRemuneracao(r, base) }));
   const alocado = totalParticipacao(projeto, participantes);

@@ -6,7 +6,7 @@ import {
 import type { Contrato } from "@/lib/types";
 
 const base: Contrato = {
-  id: "1", organizacao_id: "o", numero: null, contraparte_id: "c", commodity_id: "ferro", projeto_id: null,
+  id: "1", organizacao_id: "o", venda_origem_id: null, numero: null, contraparte_id: "c", commodity_id: "ferro", projeto_id: null,
   estimativa_id: null, conta: "propria", assinante: "empresa", direcao: "venda", papel: "principal", modalidade: "spot", status: "assinado",
   volume: 50000, tolerancia_pct: 10, unidade: "Toneladas", incoterm: "FOB", porto_embarque: null,
   porto_destino: null, moeda: "USD", tipo_preco: "fixo", preco_fixo: 100, indice: null, premio: 0,
@@ -107,7 +107,8 @@ describe("Resumo dos contratos (painel)", () => {
     ]);
     expect(g.volumes).toEqual([]);
     expect(g.valores).toEqual([{ moeda: "USD", venda: 0, compra: 0, comissao: 100_000, semPreco: 0 }]);
-    expect(g.sobGestao).toEqual([{ projeto_id: "mineradora", moeda: "USD", contratos: 2, venda: 10_000_000, compra: 0, semPreco: 0 }]);
+    // A carga intermediada não é do projeto: sob gestão fica só a venda própria dele (sem dupla contagem).
+    expect(g.sobGestao).toEqual([{ projeto_id: "mineradora", moeda: "USD", contratos: 1, venda: 5_000_000, compra: 0, semPreco: 0 }]);
   });
 });
 

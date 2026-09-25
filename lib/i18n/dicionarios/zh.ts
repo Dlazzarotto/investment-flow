@@ -34,6 +34,7 @@ export const zh: Dicionario = {
     cadastroDesativado: "新账户注册已停用。",
   },
   projetos: {
+    naoExcluido: "项目未删除：只有所有者可以删除，且公司须处于正常状态。",
     deOutrasEmpresas: "您参与的其他公司的项目",
     status: "状态",
     participacaoEmpresa: "公司持股（%）",
@@ -459,6 +460,8 @@ export const zh: Dicionario = {
     projetos: "项目",
   },
   contratos: {
+    convertidoAviso: "来自第一版的销售：数量、价格、币种、账户和状态均已锁定，因为项目结果读取的是原始销售。如需重做，请删除该合同（旧销售会一并删除）后新建。",
+    convertidoTravado: "此合同的数值来自第一版的销售，不能修改。请删除后新建以重做。",
     daEmpresa: "本公司",
     doMercado: "市场目录（选择即添加）",
     blocoProduto: "产品",
@@ -714,6 +717,7 @@ export const zh: Dicionario = {
     capex: "投资（资本支出）",
   },
   resumoProjeto: {
+    outraMoeda: "币种为 {moeda}，不计入项目结果（项目币种 {projeto}）。",
     desde: "自 {data}",
     status: "项目状态",
     resultado: "项目业绩",

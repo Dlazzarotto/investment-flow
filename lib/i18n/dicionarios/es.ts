@@ -34,6 +34,7 @@ export const es: Dicionario = {
     cadastroDesativado: "El registro de nuevas cuentas está desactivado.",
   },
   projetos: {
+    naoExcluido: "El proyecto no se eliminó: solo el dueño lo elimina, y con la empresa al día.",
     deOutrasEmpresas: "Proyectos de otras empresas en los que participa",
     status: "Estado",
     participacaoEmpresa: "Participación de la empresa (%)",
@@ -459,6 +460,8 @@ export const es: Dicionario = {
     projetos: "Proyectos",
   },
   contratos: {
+    convertidoAviso: "Vino de una venta de la 1.ª versión: volumen, precio, moneda, cuenta y estado quedan bloqueados, porque el resultado del proyecto se lee de la venta original. Para rehacerlo, elimine el contrato (la venta antigua se va con él) y cree otro.",
+    convertidoTravado: "Las cifras de este contrato vienen de una venta de la 1.ª versión y no se pueden cambiar. Elimínelo y cree otro para rehacerlo.",
     daEmpresa: "De la empresa",
     doMercado: "Catálogo del mercado (se agrega al elegir)",
     blocoProduto: "Producto",
@@ -714,6 +717,7 @@ export const es: Dicionario = {
     capex: "Inversiones (capex)",
   },
   resumoProjeto: {
+    outraMoeda: "En {moeda}, fuera del resultado del proyecto (en {projeto}).",
     desde: "desde {data}",
     status: "Estado del proyecto",
     resultado: "Resultado del proyecto",

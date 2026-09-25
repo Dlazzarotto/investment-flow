@@ -97,13 +97,13 @@ export async function trocarAdmin(_: ActionState, fd: FormData): Promise<ActionS
   if (!antigo || novo === antigo) return { ok: false, erro: d.validacao.dadosInvalidos };
 
   const supabase = createClient();
-  const { error } = await supabase.from("organizacao_membros")
-    .insert({ organizacao_id: parsed.data.organizacao_id, email: novo });
+  // Troca o e-mail NA MESMA LINHA: inserir o novo antes de apagar o antigo esbarrava
+  // no teto de assentos (plano de 1 assento nunca trocava o ADM). O índice único
+  // global (0027) continua barrando e-mail que já é de outra empresa.
+  const { data, error } = await supabase.from("organizacao_membros").update({ email: novo })
+    .eq("organizacao_id", parsed.data.organizacao_id).eq("email_normalizado", antigo).select("id");
   if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
-  const { error: e2 } = await supabase.from("organizacao_membros").delete()
-    .eq("organizacao_id", parsed.data.organizacao_id).eq("email_normalizado", antigo);
-  // O novo já entrou: melhor avisar que o antigo ficou do que desfazer a troca.
-  if (e2) return { ok: false, erro: traduzirErroBanco(e2, "empresa", d) };
+  if (!data?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/master");
   return { ok: true, sucesso: fmtTexto(d.master.adminTrocado, { antigo, novo }) };
 }

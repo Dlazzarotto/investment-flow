@@ -717,6 +717,8 @@ export type BaseComissao = (typeof BASES_COMISSAO)[number];
 export interface Contrato {
   id: string;
   organizacao_id: string;
+  /** Venda da 1ª versão de onde o contrato veio (0022). Com ela, os números ficam travados (0032). */
+  venda_origem_id: string | null;
   numero: string | null;
   /** Obsoleto desde a 0019: as partes moram em contrato_partes. */
   contraparte_id: string | null;

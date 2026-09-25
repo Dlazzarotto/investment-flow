@@ -38,7 +38,7 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
   ]);
   const m = projeto.moeda;
   const doProjeto = contratos.filter((c) => c.projeto_id === projeto.id && c.conta === "projeto");
-  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0);
+  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0, projeto.moeda);
   const ganhos = remuneracoes.filter((r) => r.projeto_id === projeto.id).map((r) => ({ r, p: projetarRemuneracao(r, base) }));
   const alocado = participantes.reduce((s, p) => s + Number(p.percentual), 0) + Number(projeto.participacao_pct);
 
@@ -134,6 +134,9 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
                       <p className="num mt-1 text-stone">
                         {f.numero(Number(c.volume), 0)} {rotuloUnidade(c.unidade, d)} · {v === null ? d.contratos.valorAConfirmar : f.moeda(v, c.moeda)}
                       </p>
+                      {c.moeda !== projeto.moeda && (
+                        <p className="mt-1 text-sm text-orange-deep">{fmtTexto(t.outraMoeda, { moeda: c.moeda, projeto: projeto.moeda })}</p>
+                      )}
                     </Link>
                   </li>
                 );

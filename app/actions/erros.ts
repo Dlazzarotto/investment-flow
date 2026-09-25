@@ -22,6 +22,7 @@ export function traduzirErroBanco(err: PostgrestError, entidade: Entidade, d: Di
       return fmtTexto(d.banco.participacao, { total: m ? fmtTexto(d.banco.totalSufixo, { v: m[1] }) : "" });
     }
     if (err.message.includes("contratos_conta_ck")) return d.banco.contaProjeto;
+    if (err.message.includes("contrato_convertido")) return d.contratos.convertidoTravado;
     return d.banco.travas;
   }
   // numeric_value_out_of_range: estoura numeric(16,2)/numeric(18,2) (ex.: quantidade × valor unitário enorme)

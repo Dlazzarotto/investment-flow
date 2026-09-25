@@ -46,7 +46,7 @@ export default async function PainelPage() {
   const gestao = remuneracoes.map((r) => {
     const projeto = projetosDaEmpresa.find((p) => p.id === r.projeto_id);
     return { moeda: projeto?.moeda ?? "USD" as const,
-             ...projetarRemuneracao(r, baseDoProjeto(contratos, r.projeto_id, capital.get(r.projeto_id) ?? 0)) };
+             ...projetarRemuneracao(r, baseDoProjeto(contratos, r.projeto_id, capital.get(r.projeto_id) ?? 0, projeto?.moeda)) };
   });
   const receita = receitaDaEmpresa(resumo, resumoMonetizacoes(monetizacoes, instrumentos), gestao);
   const alertas = alertasInstrumentos(instrumentos, hojeISO()).map((a) => {

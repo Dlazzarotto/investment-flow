@@ -50,7 +50,8 @@ export async function excluirProjeto(_: ActionState, fd: FormData): Promise<Acti
   const { data, error } = await supabase.rpc("excluir_projeto", { p_projeto_id: id.data });
   if (error) return { ok: false, erro: traduzirErroBanco(error, "projeto", d) };
   // false: não é o dono (ou o projeto já não existe) — nada foi apagado.
-  if (!data) return { ok: false, erro: d.membros.somenteDono };
+  // false: não é o dono, o projeto já não existe ou a empresa está suspensa (0032).
+  if (!data) return { ok: false, erro: d.projetos.naoExcluido };
   revalidatePath("/", "layout");
   redirect("/projetos");
 }

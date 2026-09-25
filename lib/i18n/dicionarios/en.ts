@@ -34,6 +34,7 @@ export const en: Dicionario = {
     cadastroDesativado: "New account sign-up is disabled.",
   },
   projetos: {
+    naoExcluido: "The project was not deleted: only the owner can delete it, and only with the company in good standing.",
     deOutrasEmpresas: "Projects of other companies you take part in",
     status: "Status",
     participacaoEmpresa: "Company stake (%)",
@@ -459,6 +460,8 @@ export const en: Dicionario = {
     projetos: "Projects",
   },
   contratos: {
+    convertidoAviso: "Came from a first-version sale: volume, price, currency, account and status are locked, because the project result is read from the original sale. To redo it, delete the contract (the old sale goes with it) and create another.",
+    convertidoTravado: "This contract's figures come from a first-version sale and cannot be changed. Delete it and create another to redo it.",
     daEmpresa: "Company’s",
     doMercado: "Market catalogue (added when chosen)",
     blocoProduto: "Product",
@@ -714,6 +717,7 @@ export const en: Dicionario = {
     capex: "Investments (capex)",
   },
   resumoProjeto: {
+    outraMoeda: "In {moeda}, outside the project result (in {projeto}).",
     desde: "since {data}",
     status: "Project status",
     resultado: "Project result",

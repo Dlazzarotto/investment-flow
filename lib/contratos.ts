@@ -94,9 +94,12 @@ export function resumoContratos(contratos: Campos[]): ResumoContratos {
 
   for (const c of ativos) {
     if (c.papel === "agente") {
+      // Intermediação é receita da EMPRESA em qualquer conta (decisão já tomada). E
+      // NÃO entra em "sob gestão": o projeto não é dono da carga — somar o valor
+      // cheio dela ali contava o mesmo contrato duas vezes, em lugares opostos.
       const com = comissaoAgente(c);
       if (com === null) din(c.moeda).semPreco += 1; else din(c.moeda).comissao += com;
-      if (c.conta !== "projeto" || !c.projeto_id) continue;
+      continue;
     }
     if (c.conta === "projeto" && c.projeto_id) {
       const k = `${c.projeto_id}|${c.moeda}`;
@@ -220,9 +223,13 @@ export interface BaseRemuneracao {
  * cujo valor não dá para projetar (fórmula sem índice) deixa `vendas` null — o %
  * sobre vendas fica "a confirmar" em vez de sair menor do que é.
  */
-export function baseDoProjeto(contratos: Campos[], projetoId: string, capital: number): BaseRemuneracao {
+export function baseDoProjeto(contratos: Campos[], projetoId: string, capital: number, moeda?: Moeda): BaseRemuneracao {
+  // Concluído também: a venda realizada é justamente a base de "% sobre vendas" — antes
+  // a base caía a zero no momento em que o contrato era concluído. E só na moeda do
+  // projeto: somar USD numa base rotulada em BRL dá um número que não existe.
   const vendas = contratos.filter((c) => c.conta === "projeto" && c.projeto_id === projetoId
-    && c.direcao === "venda" && c.papel === "principal" && STATUS_ATIVOS.includes(c.status));
+    && c.direcao === "venda" && c.papel === "principal" && (STATUS_ATIVOS.includes(c.status) || c.status === "concluido")
+    && (!moeda || c.moeda === moeda));
   const valores = vendas.map(valorContrato);
   return {
     capital,
