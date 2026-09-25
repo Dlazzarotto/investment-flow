@@ -45,7 +45,7 @@ export default async function CommoditiesPage({ searchParams }: { searchParams: 
         ) : aba === "pesquisa" ? (
           <>
             <p className="mb-4 text-stone">{d.pesquisa.subtitulo}</p>
-            <PesquisaMercado commodities={commodities} grades={grades} pesquisas={pesquisas.filter((p) => p.modo !== "bolsas")} configurada={pesquisaConfigurada()} />
+            <PesquisaMercado commodities={commodities} catalogo={catalogo} grades={grades} pesquisas={pesquisas.filter((p) => p.modo !== "bolsas")} configurada={pesquisaConfigurada()} />
           </>
         ) : (
           <ListaCommodities grupos={grupos} catalogo={catalogo} commodities={commodities} grades={grades} parametros={parametros}
