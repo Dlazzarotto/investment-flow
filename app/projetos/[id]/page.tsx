@@ -12,6 +12,7 @@ import { obterD } from "@/lib/i18n/server";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { STATUS_PROJETO } from "@/lib/types";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 export const dynamic = "force-dynamic";
 
@@ -51,12 +52,12 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
           </p>
         </div>
         {pode.administrar && (
-          <form action={mudarStatusProjeto}>
+          <FormAcao action={mudarStatusProjeto}>
             <input type="hidden" name="id" value={projeto.id} />
             <SelectAutoSubmit name="status" defaultValue={projeto.status} className="campo w-auto" ariaLabel={t.status}>
               {STATUS_PROJETO.map((s) => <option key={s} value={s}>{d.enums.statusProjeto[s]}</option>)}
             </SelectAutoSubmit>
-          </form>
+          </FormAcao>
         )}
       </div>
       {projeto.descricao && <p className="mt-3">{projeto.descricao}</p>}

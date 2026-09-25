@@ -1,4 +1,5 @@
 "use client";
+import { FormAcao } from "@/components/ui/FormAcao";
 import { useState } from "react";
 import {
   criarInstrumento, criarMonetizacao, excluirInstrumento, excluirMonetizacao, mudarStatusInstrumento, mudarStatusMonetizacao,
@@ -71,17 +72,17 @@ export function Instrumentos(p: Props) {
                 ))}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <form action={mudarStatusInstrumento}>
+                <FormAcao action={mudarStatusInstrumento}>
                   <input type="hidden" name="id" value={i.id} />
                   <SelectAutoSubmit name="status" defaultValue={i.status} className="campo w-auto" ariaLabel={t.status}>
                     {STATUS_INSTRUMENTO.map((s) => <option key={s} value={s}>{d.enums.statusInstrumento[s]}</option>)}
                   </SelectAutoSubmit>
-                </form>
-                <form action={excluirInstrumento}
+                </FormAcao>
+                <FormAcao action={excluirInstrumento}
                       onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirConfirma, { numero: i.numero ?? t.semNumero }))) e.preventDefault(); }}>
                   <input type="hidden" name="id" value={i.id} />
                   <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                </form>
+                </FormAcao>
               </div>
             </div>
 
@@ -98,17 +99,17 @@ export function Instrumentos(p: Props) {
                             : p.projetos.find((x) => x.id === m.projeto_id)?.nome}
                       </p>
                       <div className="flex flex-wrap items-center gap-2">
-                        <form action={mudarStatusMonetizacao}>
+                        <FormAcao action={mudarStatusMonetizacao}>
                           <input type="hidden" name="id" value={m.id} />
                           <SelectAutoSubmit name="status" defaultValue={m.status} className="campo w-auto" ariaLabel={t.status}>
                             {STATUS_MONETIZACAO.map((s) => <option key={s} value={s}>{d.enums.statusMonetizacao[s]}</option>)}
                           </SelectAutoSubmit>
-                        </form>
-                        <form action={excluirMonetizacao}
+                        </FormAcao>
+                        <FormAcao action={excluirMonetizacao}
                               onSubmit={(e) => { if (!window.confirm(d.monetizacao.excluirConfirma)) e.preventDefault(); }}>
                           <input type="hidden" name="id" value={m.id} />
                           <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                        </form>
+                        </FormAcao>
                       </div>
                     </div>
                     <dl className="mt-2 grid gap-2 sm:grid-cols-3">

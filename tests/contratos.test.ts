@@ -82,8 +82,8 @@ describe("Resumo dos contratos (painel)", () => {
 
   it("conta ativos (assinado + em execução) e em negociação (rascunho)", () => {
     expect(r.ativos).toBe(6);
-    expect(r.ativosProprios).toBe(5); // o de agente é intermediação, não operação própria
-    expect(r.emNegociacao).toBe(1);
+    // Mesmo recorte das listas /vendas e /compras: cartão e lista mostram o mesmo número.
+    expect(r.porDirecao).toEqual({ venda: { ativos: 5, negociacao: 1 }, compra: { ativos: 1, negociacao: 0 } });
   });
   it("dinheiro por moeda, sem somar BRL com USD; agente entra como comissão", () => {
     const usd = r.valores.find((v) => v.moeda === "USD")!;
@@ -97,7 +97,7 @@ describe("Resumo dos contratos (painel)", () => {
     expect(r.volumes.find((v) => v.unidade === "Barris")!.venda).toBe(10);
   });
   it("lista vazia não quebra", () => {
-    expect(resumoContratos([])).toEqual({ ativos: 0, ativosProprios: 0, emNegociacao: 0, volumes: [], valores: [], sobGestao: [] });
+    expect(resumoContratos([])).toEqual({ ativos: 0, porDirecao: { venda: { ativos: 0, negociacao: 0 }, compra: { ativos: 0, negociacao: 0 } }, volumes: [], valores: [], sobGestao: [] });
   });
   it("contrato por conta de projeto vai para 'sob gestão' e não infla a empresa", () => {
     const g = resumoContratos([

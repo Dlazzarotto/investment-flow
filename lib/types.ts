@@ -200,6 +200,12 @@ export interface EstimativaIA {
  */
 export const PAPEIS_MEMBRO = ["admin", "manager", "escritorio", "investidor"] as const;
 export type PapelMembro = (typeof PAPEIS_MEMBRO)[number];
+/**
+ * Papéis que se DÃO por membro/convite. "investidor" existe no enum do banco, mas
+ * investidor entra pelo e-mail em Participantes: por membro ele caía numa carteira
+ * vazia (minha_carteira só lê participantes) e numa página inexistente.
+ */
+export const PAPEIS_CONVIDAVEIS = ["admin", "manager", "escritorio"] as const satisfies readonly PapelMembro[];
 
 /** Papel do usuário logado no projeto; null quando não tem acesso. */
 export type PapelNoProjeto = PapelMembro | "dono" | null;

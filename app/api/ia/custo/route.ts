@@ -1,3 +1,4 @@
+import { traduzirErroBanco } from "@/app/actions/erros";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { data: est, error } = await supabase.from("estimativas_custo").select("*")
     .eq("id", estimativa_id).maybeSingle();
-  if (error) return NextResponse.json({ erro: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ erro: traduzirErroBanco(error, "item", d) }, { status: 500 });
   if (!est) return NextResponse.json({ erro: d.banco.naoEncontrado }, { status: 404 });
   const e = est as EstimativaCusto;
 

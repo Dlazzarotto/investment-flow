@@ -2,6 +2,7 @@
 export const pt = {
   meta: { titulo: "Investment-Flow System", descricao: "Investimentos, receitas e parcerias por projeto" },
   comum: {
+    nadaAlterado: "Nada foi alterado: sem permissão para isso (a empresa pode estar suspensa) ou o registro já não existe.",
     acessoSuspenso: "Acesso suspenso", acessoSuspensoTexto: "O contrato desta empresa está suspenso ou com a vigência vencida. O histórico continua aqui, mas não é possível lançar nem alterar nada até a regularização.",
     app: "Aportes", sair: "Sair", idioma: "Idioma", salvando: "Salvando…", excluir: "Excluir", remover: "Remover",
     total: "Total", data: "Data", categoria: "Categoria", unidade: "Unidade", contato: "Contato", nome: "Nome",
@@ -33,6 +34,7 @@ export const pt = {
     cadastroDesativado: "O cadastro de novas contas está desativado.",
   },
   projetos: {
+    deOutrasEmpresas: "Projetos de outras empresas em que você participa",
     status: "Status",
     participacaoEmpresa: "Participação da empresa (%)",
     participacaoEmpresaAjuda: "A empresa administra o projeto. Preencha só se ela também for sócia.",
@@ -209,10 +211,14 @@ export const pt = {
     unidadeLonga: "Unidade muito longa (máx. 40 caracteres).", valorAlto: "{campo} é grande demais.", idInvalido: "Identificador inválido.",
   },
   banco: {
+    numeroDuplicado: "Já existe um {entidade} com esse número.",
+    emailDuplicado: "Este e-mail já está cadastrado neste projeto.",
+    referenciaInvalida: "Um item escolhido não existe mais ou é de outra empresa. Recarregue a página e escolha de novo.",
+    contaProjeto: "Contrato por conta de projeto precisa ter o projeto escolhido.",
     emUso: "Não é possível excluir: este {entidade} está em uso (por exemplo, em um contrato).",
     duplicado: "Já existe um {entidade} com esse nome.", participacao: "A soma das participações ultrapassa 100 %{total}. Ajuste os percentuais.",
-    totalSufixo: " (total: {v} %)", travas: "Os dados não passaram nas travas do banco (valores devem ser maiores que zero).",
-    falha: "Falha ao salvar {entidade}: {msg}", naoEncontrado: "Projeto não encontrado.",
+    totalSufixo: " (total: {v} %)", travas: "Os dados não passaram nas regras do banco. Confira os valores informados.",
+    falha: "Falha ao salvar {entidade}: {msg}", naoEncontrado: "Registro não encontrado.",
     foraDaFaixa: "Valor fora da faixa aceita pelo banco (grande demais ou com casas decimais a mais).",
   },
   entidades: {
@@ -428,8 +434,11 @@ export const pt = {
     ativos: "{n} ativo(s)",
     operacao: "Operação própria",
     contratosAtivos: "Contratos ativos",
+    vendasAtivas: "Vendas ativas",
+    comprasAtivas: "Compras ativas",
+    vendasNegociacao: "Vendas em negociação",
+    comprasNegociacao: "Compras em negociação",
     contratosAtivosNota: "Assinados e em execução",
-    emNegociacao: "Em negociação",
     contratadoVenda: "Contratado em venda",
     contratadoCompra: "Contratado em compra",
     semPreco: "Sem preço projetável",
@@ -542,6 +551,7 @@ export const pt = {
     criar: "Criar contrato",
     atualizado: "Contrato atualizado.",
     filtros: "Filtrar por status",
+    filtroAtivos: "Ativos",
     todos: "Todos",
     vendaECompra: "Venda e compra",
     vazioTitulo: "Nenhum contrato aqui",

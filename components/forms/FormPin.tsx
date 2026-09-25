@@ -5,6 +5,7 @@ import { Mensagem } from "@/components/ui/Mensagem";
 import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 const PIN_MIN = 6;
 
@@ -34,11 +35,11 @@ export function FormPin({ projetoId, temPin }: { projetoId: string; temPin: bool
         <div className="sm:col-span-3"><Mensagem estado={estado} /></div>
       </form>
       {temPin && (
-        <form action={removerPin} className="mt-4"
+        <FormAcao action={removerPin} className="mt-4"
               onSubmit={(e) => { if (!window.confirm(t.pinRemoverConfirma)) e.preventDefault(); }}>
           <input type="hidden" name="projeto_id" value={projetoId} />
           <button type="submit" className="btn-perigo px-3">{t.pinRemover}</button>
-        </form>
+        </FormAcao>
       )}
     </>
   );

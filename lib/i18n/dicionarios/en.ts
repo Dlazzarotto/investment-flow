@@ -2,6 +2,7 @@ import type { Dicionario } from "./pt";
 export const en: Dicionario = {
   meta: { titulo: "Investment-Flow System", descricao: "Investments, revenue and partnerships per project" },
   comum: {
+    nadaAlterado: "Nothing was changed: no permission for this (the company may be suspended) or the record no longer exists.",
     acessoSuspenso: "Access suspended", acessoSuspensoTexto: "This company's contract is suspended or past its term. The history is still here, but nothing can be entered or changed until it is settled.",
     app: "Capital", sair: "Sign out", idioma: "Language", salvando: "Saving…", excluir: "Delete", remover: "Remove",
     total: "Total", data: "Date", categoria: "Category", unidade: "Unit", contato: "Contact", nome: "Name",
@@ -33,6 +34,7 @@ export const en: Dicionario = {
     cadastroDesativado: "New account sign-up is disabled.",
   },
   projetos: {
+    deOutrasEmpresas: "Projects of other companies you take part in",
     status: "Status",
     participacaoEmpresa: "Company stake (%)",
     participacaoEmpresaAjuda: "The company manages the project. Fill in only if it is also a partner.",
@@ -209,10 +211,14 @@ export const en: Dicionario = {
     unidadeLonga: "Unit is too long (max. 40 characters).", valorAlto: "{campo} is too large.", idInvalido: "Invalid identifier.",
   },
   banco: {
+    numeroDuplicado: "A {entidade} with this number already exists.",
+    emailDuplicado: "This e-mail is already registered in this project.",
+    referenciaInvalida: "A selected item no longer exists or belongs to another company. Reload the page and choose again.",
+    contaProjeto: "A contract on a project's account needs the project selected.",
     emUso: "Cannot delete: this {entidade} is in use (for example, in a contract).",
     duplicado: "A {entidade} with this name already exists.", participacao: "Total stakes exceed 100 %{total}. Adjust the percentages.",
-    totalSufixo: " (total: {v} %)", travas: "The data failed the database checks (values must be greater than zero).",
-    falha: "Failed to save {entidade}: {msg}", naoEncontrado: "Project not found.",
+    totalSufixo: " (total: {v} %)", travas: "The data failed the database rules. Check the values entered.",
+    falha: "Failed to save {entidade}: {msg}", naoEncontrado: "Record not found.",
     foraDaFaixa: "Value outside the range accepted by the database (too large or too many decimal places).",
   },
   entidades: {
@@ -428,8 +434,11 @@ export const en: Dicionario = {
     ativos: "{n} active",
     operacao: "Own operations",
     contratosAtivos: "Active contracts",
+    vendasAtivas: "Active sales",
+    comprasAtivas: "Active purchases",
+    vendasNegociacao: "Sales in negotiation",
+    comprasNegociacao: "Purchases in negotiation",
     contratosAtivosNota: "Signed and in execution",
-    emNegociacao: "Under negotiation",
     contratadoVenda: "Contracted sales",
     contratadoCompra: "Contracted purchases",
     semPreco: "No projectable price",
@@ -542,6 +551,7 @@ export const en: Dicionario = {
     criar: "Create contract",
     atualizado: "Contract updated.",
     filtros: "Filter by status",
+    filtroAtivos: "Active",
     todos: "All",
     vendaECompra: "Sales and purchases",
     vazioTitulo: "No contracts here",

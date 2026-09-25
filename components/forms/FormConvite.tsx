@@ -5,7 +5,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
-import { PAPEIS_MEMBRO } from "@/lib/types";
+import { PAPEIS_CONVIDAVEIS } from "@/lib/types";
 
 /**
  * Gera o link de convite. A action devolve o caminho no campo `sucesso`; o token
@@ -43,7 +43,7 @@ export function FormConvite({ projetoId }: { projetoId: string }) {
         <div className="sm:col-span-3">
           <label className="rotulo" htmlFor="c_papel">{t.papelDoLink}</label>
           <select id="c_papel" name="papel" className="campo" defaultValue="escritorio">
-            {PAPEIS_MEMBRO.map((p) => <option key={p} value={p}>{d.enums.papelMembro[p]}</option>)}
+            {PAPEIS_CONVIDAVEIS.map((p) => <option key={p} value={p}>{d.enums.papelMembro[p]}</option>)}
           </select>
         </div>
         <div className="sm:col-span-1">

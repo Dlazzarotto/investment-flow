@@ -58,19 +58,22 @@ export async function atualizarEtapa(_: ActionState, fd: FormData): Promise<Acti
   return { ok: true, sucesso: fmtTexto(d.custeio.etapaAtualizada, { nome: campos.nome }) };
 }
 
-export async function excluirEtapa(fd: FormData): Promise<void> {
+export async function excluirEtapa(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const parsed = criarSchemas(d).id.safeParse(formParaObjeto(fd));
-  if (!parsed.success) return;
+  if (!parsed.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const erroPin = await conferirPin(fd, parsed.data.projeto_id, d);
-  if (erroPin) throw new Error(erroPin);
+  if (erroPin) return { ok: false, erro: erroPin };
 
   const supabase = createClient();
   // Os itens lançados nessa etapa não somem: ficam sem etapa (on delete set null).
-  const { error } = await supabase.from("projeto_etapas").delete()
-    .eq("id", parsed.data.id).eq("projeto_id", parsed.data.projeto_id);
-  if (error) throw new Error(traduzirErroBanco(error, "etapa", d));
+  const { data: apagados, error } = await supabase.from("projeto_etapas").delete()
+    .eq("id", parsed.data.id).eq("projeto_id", parsed.data.projeto_id).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "etapa", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath(`/projetos/${parsed.data.projeto_id}`, "layout");
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -113,17 +116,19 @@ export async function atualizarEstimativa(_: ActionState, fd: FormData): Promise
   return { ok: true, sucesso: d.custeio.estimativaAtualizada };
 }
 
-export async function excluirEstimativa(fd: FormData): Promise<void> {
+export async function excluirEstimativa(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const parsed = criarSchemas(d).id.safeParse(formParaObjeto(fd));
-  if (!parsed.success) return;
+  if (!parsed.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const erroPin = await conferirPin(fd, parsed.data.projeto_id, d);
-  if (erroPin) throw new Error(erroPin);
+  if (erroPin) return { ok: false, erro: erroPin };
 
   const supabase = createClient();
-  const { error } = await supabase.from("estimativas_custo").delete()
-    .eq("id", parsed.data.id).eq("projeto_id", parsed.data.projeto_id);
-  if (error) throw new Error(traduzirErroBanco(error, "estimativa", d));
+  const { data: apagados, error } = await supabase.from("estimativas_custo").delete()
+    .eq("id", parsed.data.id).eq("projeto_id", parsed.data.projeto_id).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "estimativa", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath(`/projetos/${parsed.data.projeto_id}`, "layout");
   redirect(`/projetos/${parsed.data.projeto_id}/custeio`);
 }
@@ -184,17 +189,20 @@ export async function atualizarItem(_: ActionState, fd: FormData): Promise<Actio
   return { ok: true, sucesso: fmtTexto(d.custeio.itemAtualizado, { nome: parsed.data.nome }) };
 }
 
-export async function excluirItem(fd: FormData): Promise<void> {
+export async function excluirItem(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const schemas = criarSchemas(d);
   const id = schemas.uuid.safeParse(fd.get("id"));
   const projetoId = schemas.uuid.safeParse(fd.get("projeto_id"));
-  if (!id.success || !projetoId.success) return;
+  if (!id.success || !projetoId.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const erroPin = await conferirPin(fd, projetoId.data, d);
-  if (erroPin) throw new Error(erroPin);
+  if (erroPin) return { ok: false, erro: erroPin };
 
   const supabase = createClient();
-  const { error } = await supabase.from("estimativa_itens").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "item", d));
+  const { data: apagados, error } = await supabase.from("estimativa_itens").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "item", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath(`/projetos/${projetoId.data}`, "layout");
+  return { ok: true };
 }

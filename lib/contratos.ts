@@ -58,9 +58,12 @@ export const STATUS_ATIVOS: readonly StatusContrato[] = ["assinado", "em_execuca
 
 export interface ResumoContratos {
   ativos: number;
-  /** Ativos da operação própria: a empresa é dona da carga, por conta dela. */
-  ativosProprios: number;
-  emNegociacao: number;
+  /**
+   * Contagem por direção com o MESMO recorte das listas /vendas e /compras (todo
+   * contrato daquela direção), para o cartão do painel e a lista que ele abre
+   * mostrarem o mesmo número.
+   */
+  porDirecao: Record<"venda" | "compra", { ativos: number; negociacao: number }>;
   /**
    * Posição PRÓPRIA por commodity e unidade — só contratos em que a empresa é
    * dona da carga e por conta dela. Intermediação não é posição; contrato por
@@ -114,8 +117,12 @@ export function resumoContratos(contratos: Campos[]): ResumoContratos {
 
   return {
     ativos: ativos.length,
-    ativosProprios: ativos.filter((c) => c.papel === "principal" && c.conta !== "projeto").length,
-    emNegociacao: contratos.filter((c) => c.status === "rascunho").length,
+    porDirecao: {
+      venda: { ativos: ativos.filter((c) => c.direcao === "venda").length,
+               negociacao: contratos.filter((c) => c.status === "rascunho" && c.direcao === "venda").length },
+      compra: { ativos: ativos.filter((c) => c.direcao === "compra").length,
+                negociacao: contratos.filter((c) => c.status === "rascunho" && c.direcao === "compra").length },
+    },
     volumes: [...volumes.values()],
     valores: [...valores.values()].map((x) => ({
       ...x, venda: arred(x.venda), compra: arred(x.compra), comissao: arred(x.comissao),

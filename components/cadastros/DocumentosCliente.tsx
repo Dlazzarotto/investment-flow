@@ -8,6 +8,7 @@ import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { BUCKET_DOCUMENTOS, TIPOS_ARQUIVO, caminhoDocumento, validarArquivo } from "@/lib/documentos";
 import { TIPOS_DOCUMENTO_CLIENTE, type ActionState, type ClienteDocumento } from "@/lib/types";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 /**
  * Documentos do cliente: CIS, LOI, ICPO, KYC… O arquivo sobe do navegador direto
@@ -79,11 +80,11 @@ export function DocumentosCliente({ organizacaoId, clienteId, docs }:
                   </div>
                   <div className="flex gap-2">
                     <button type="button" className="btn-quieto px-3" onClick={() => abrir(x.caminho)}>{t.abrir}</button>
-                    <form action={excluirDocumento}
+                    <FormAcao action={excluirDocumento}
                           onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirConfirma, { nome: x.nome_arquivo }))) e.preventDefault(); }}>
                       <input type="hidden" name="id" value={x.id} />
                       <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                    </form>
+                    </FormAcao>
                   </div>
                 </li>
               ))}

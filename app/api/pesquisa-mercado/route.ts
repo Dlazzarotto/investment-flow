@@ -4,10 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { minhaOrganizacao } from "@/lib/consultas";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
+import { traduzirErroBanco } from "@/app/actions/erros";
 import { especificacaoDoGrade } from "@/lib/catalogo";
 import { montarPergunta, montarPerguntaBolsas, type IdiomaPesquisa } from "@/lib/pesquisa";
 import { adotarDoMercado, PREFIXO_MERCADO } from "@/lib/adocao";
-import { iniciarPesquisa, pesquisaConfigurada } from "@/lib/ia/pesquisador";
+import { encerrarPesquisa, iniciarPesquisa, pesquisaConfigurada } from "@/lib/ia/pesquisador";
 import type { Commodity, CommodityGrade, CommodityParametro } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -67,16 +68,25 @@ export async function POST(req: NextRequest) {
       commodity: commodity.nome, grade: grade?.nome, especificacao: spec, base,
       referencia: commodity.bolsa, idioma, detalhado: parsed.data.detalhado,
     });
+  // Já há pesquisa desta commodity no mesmo modo em andamento (outra aba, outro ADM,
+  // clique duplo): acompanha essa em vez de abrir e pagar uma segunda sessão.
+  const { data: emCurso } = await supabase.from("pesquisas_mercado").select("id")
+    .eq("organizacao_id", org.organizacao.id).eq("commodity_id", commodity.id).eq("modo", parsed.data.modo)
+    .eq("status", "pesquisando").gte("criado_em", new Date(Date.now() - 20 * 60_000).toISOString()).limit(1).maybeSingle();
+  if (emCurso) return NextResponse.json({ id: emCurso.id, commodity_id: commodity.id });
+
   const { data: linha, error } = await supabase.from("pesquisas_mercado").insert({
     organizacao_id: org.organizacao.id, commodity_id: commodity.id, grade_id: grade?.id ?? null,
     base, pergunta, idioma: locale, modo: parsed.data.modo,
   }).select("id").single();
-  if (error) return NextResponse.json({ erro: fmtTexto(d.banco.falha, { entidade: d.entidades.commodity, msg: error.message }) }, { status: 403 });
+  if (error) return NextResponse.json({ erro: traduzirErroBanco(error, "commodity", d) }, { status: 403 });
 
   try {
     const sessaoId = await iniciarPesquisa(pergunta, `${org.organizacao.nome} · ${commodity.nome}${grade ? ` ${grade.nome}` : ""}`,
       { pesquisa_id: linha.id, organizacao_id: org.organizacao.id });
-    await supabase.from("pesquisas_mercado").update({ sessao_id: sessaoId }).eq("id", linha.id);
+    const { error: e2 } = await supabase.from("pesquisas_mercado").update({ sessao_id: sessaoId }).eq("id", linha.id);
+    // Sem o sessao_id gravado ninguém colhe o resultado: para a sessão em vez de deixá-la gastando.
+    if (e2) { await encerrarPesquisa(sessaoId); throw new Error(e2.message); }
   } catch (e) {
     const msg = e instanceof Error ? e.message.slice(0, 900) : d.pesquisa.falhouGenerico;
     await supabase.from("pesquisas_mercado").update({ status: "falhou", erro: msg, concluida_em: new Date().toISOString() }).eq("id", linha.id);

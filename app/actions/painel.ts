@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
+import { traduzirErroBanco } from "./erros";
 import { adotarDoMercado, PREFIXO_MERCADO } from "@/lib/adocao";
 import type { ActionState } from "@/lib/types";
 
@@ -34,7 +35,7 @@ export async function salvarCommoditiesPainel(_: ActionState, fd: FormData): Pro
   const { error } = await supabase.from("painel_commodities").upsert(
     { usuario_id: user.id, organizacao_id: org.data, commodity_ids: ids, atualizado_em: new Date().toISOString() },
     { onConflict: "usuario_id" });
-  if (error) return { ok: false, erro: fmtTexto(d.banco.falha, { entidade: d.entidades.commodity, msg: error.message }) };
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "commodity", d) };
   revalidatePath("/painel");
   revalidatePath("/commodities");
   return { ok: true, sucesso: d.precosPainel.salva };

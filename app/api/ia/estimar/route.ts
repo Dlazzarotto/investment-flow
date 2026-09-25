@@ -1,3 +1,4 @@
+import { traduzirErroBanco } from "@/app/actions/erros";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { data: projeto, error: erroProj } = await supabase.from("projetos").select("*")
     .eq("id", parsed.data.projeto_id).maybeSingle();
-  if (erroProj) return NextResponse.json({ erro: erroProj.message }, { status: 500 });
+  if (erroProj) return NextResponse.json({ erro: traduzirErroBanco(erroProj, "projeto", d) }, { status: 500 });
   if (!projeto) return NextResponse.json({ erro: d.banco.naoEncontrado }, { status: 404 });
   const p = projeto as Projeto;
 

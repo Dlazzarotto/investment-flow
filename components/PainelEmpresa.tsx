@@ -61,9 +61,15 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto,
       <section className="secao">
         <h2>{t.operacao}</h2>
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <Cartao href="/vendas" rotulo={t.contratosAtivos} valor={String(contratos.ativosProprios)}
-                  nota={t.contratosAtivosNota} destaque />
-          <Cartao href="/vendas?status=rascunho" rotulo={t.emNegociacao} valor={String(contratos.emNegociacao)} />
+          {(["venda", "compra"] as const).map((dir) => {
+            const base = dir === "venda" ? "/vendas" : "/compras";
+            return [
+              <Cartao key={`${dir}-a`} href={`${base}?status=ativos`} rotulo={dir === "venda" ? t.vendasAtivas : t.comprasAtivas}
+                      valor={String(contratos.porDirecao[dir].ativos)} nota={t.contratosAtivosNota} destaque={dir === "venda"} />,
+              <Cartao key={`${dir}-n`} href={`${base}?status=rascunho`} rotulo={dir === "venda" ? t.vendasNegociacao : t.comprasNegociacao}
+                      valor={String(contratos.porDirecao[dir].negociacao)} />,
+            ];
+          })}
         </div>
         {contratos.valores.map((v) => (
           <div key={v.moeda} className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

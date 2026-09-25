@@ -147,29 +147,33 @@ export async function criarFatura(_: ActionState, fd: FormData): Promise<ActionS
 }
 
 /** Liga e desliga a baixa: informar o pagamento e desfazer usam o mesmo caminho. */
-export async function alternarPagamento(fd: FormData): Promise<void> {
+export async function alternarPagamento(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const schemas = criarSchemas(d);
   const id = schemas.uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const pagar = String(fd.get("pago") ?? "") === "1";
 
   const supabase = createClient();
   const { error } = await supabase.from("faturas")
     .update({ pago_em: pagar ? String(fd.get("hoje") ?? "").slice(0, 10) || null : null })
     .eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "fatura", d));
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "fatura", d) };
   revalidatePath("/master");
+  return { ok: true };
 }
 
-export async function excluirFatura(fd: FormData): Promise<void> {
+export async function excluirFatura(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("faturas").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "fatura", d));
+  const { data: apagados, error } = await supabase.from("faturas").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "fatura", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/master");
+  return { ok: true };
 }
 
 /** Emite a mensalidade do mês de quem está em dia. Rodar duas vezes não duplica. */

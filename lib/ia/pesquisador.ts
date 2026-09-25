@@ -74,3 +74,20 @@ export async function consultarPesquisa(sessaoId: string): Promise<Andamento> {
   // "idle" sem parada registrada ainda (o evento chega um instante depois): continua pesquisando.
   return { estado: "pesquisando" };
 }
+
+/**
+ * Para a sessão que não vamos mais esperar (tempo esgotado): arquivar interrompe
+ * o agente, que senão seguiria gastando até o teto. Falha aqui não é fatal.
+ */
+export async function encerrarPesquisa(sessaoId: string): Promise<void> {
+  try { await cliente().beta.sessions.archive(sessaoId); } catch { /* já encerrada ou inexistente */ }
+}
+
+/**
+ * Erro que não passa com o tempo: sessão que não existe (404), chave de outro
+ * workspace (401/403), pedido inválido (400). Esses marcam a pesquisa como falha;
+ * rede, 429 e 5xx são passageiros e a tela tenta de novo.
+ */
+export function erroPermanente(e: unknown): boolean {
+  return e instanceof Anthropic.APIError && typeof e.status === "number" && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429;
+}

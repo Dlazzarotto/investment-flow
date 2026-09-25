@@ -54,14 +54,17 @@ export async function atualizarCliente(_: ActionState, fd: FormData): Promise<Ac
   return { ok: true, sucesso: fmtTexto(d.cadastros.clienteAtualizado, { nome: campos.nome }) };
 }
 
-export async function excluirCliente(fd: FormData): Promise<void> {
+export async function excluirCliente(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("clientes").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "cliente", d));
+  const { data: apagados, error } = await supabase.from("clientes").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "cliente", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/clientes");
+  return { ok: true };
 }
 
 export async function criarFornecedor(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -97,14 +100,17 @@ export async function atualizarFornecedor(_: ActionState, fd: FormData): Promise
   return { ok: true, sucesso: fmtTexto(d.cadastros.fornecedorAtualizado, { nome: campos.nome }) };
 }
 
-export async function excluirFornecedor(fd: FormData): Promise<void> {
+export async function excluirFornecedor(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("fornecedores").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "fornecedor", d));
+  const { data: apagados, error } = await supabase.from("fornecedores").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "fornecedor", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/fornecedores");
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -161,14 +167,17 @@ export async function atualizarCommodity(_: ActionState, fd: FormData): Promise<
   return { ok: true, sucesso: fmtTexto(d.cadastros.commodityAtualizada, { nome: campos.nome }) };
 }
 
-export async function excluirCommodity(fd: FormData): Promise<void> {
+export async function excluirCommodity(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("commodities").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "commodity", d));
+  const { data: apagados, error } = await supabase.from("commodities").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "commodity", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/commodities");
+  return { ok: true };
 }
 
 export async function criarParametro(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -184,14 +193,17 @@ export async function criarParametro(_: ActionState, fd: FormData): Promise<Acti
   return { ok: true, sucesso: fmtTexto(d.cadastros.parametroSalvo, { nome: parsed.data.nome }) };
 }
 
-export async function excluirParametro(fd: FormData): Promise<void> {
+export async function excluirParametro(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("commodity_parametros").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "parametro", d));
+  const { data: apagados, error } = await supabase.from("commodity_parametros").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "parametro", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/commodities");
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -210,14 +222,17 @@ export async function criarGrupo(_: ActionState, fd: FormData): Promise<ActionSt
 }
 
 /** Só grupo da empresa se exclui (o RLS recusa os padrão); as commodities dele ficam sem grupo. */
-export async function excluirGrupo(fd: FormData): Promise<void> {
+export async function excluirGrupo(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("commodity_grupos").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "grupoCommodity", d));
+  const { data: apagados, error } = await supabase.from("commodity_grupos").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "grupoCommodity", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/commodities");
+  return { ok: true };
 }
 
 export async function criarGrade(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -232,14 +247,17 @@ export async function criarGrade(_: ActionState, fd: FormData): Promise<ActionSt
   return { ok: true, sucesso: fmtTexto(d.cadastros.gradeSalvo, { nome: parsed.data.nome }), id: data.id };
 }
 
-export async function excluirGrade(fd: FormData): Promise<void> {
+export async function excluirGrade(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("commodity_grades").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "grade", d));
+  const { data: apagados, error } = await supabase.from("commodity_grades").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "grade", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/commodities");
+  return { ok: true };
 }
 
 export async function criarLocal(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -271,14 +289,17 @@ export async function atualizarLocal(_: ActionState, fd: FormData): Promise<Acti
   return { ok: true, sucesso: fmtTexto(d.cadastros.localAtualizado, { nome: campos.nome }) };
 }
 
-export async function excluirLocal(fd: FormData): Promise<void> {
+export async function excluirLocal(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("locais").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "local", d));
+  const { data: apagados, error } = await supabase.from("locais").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "local", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/locais");
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -301,16 +322,17 @@ export async function registrarDocumento(meta: Record<string, string>): Promise<
   return { ok: true, sucesso: d.documentos.salvo };
 }
 
-export async function excluirDocumento(fd: FormData): Promise<void> {
+export async function excluirDocumento(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
   const { data, error } = await supabase.from("cliente_documentos").delete().eq("id", id.data).select("caminho").maybeSingle();
-  if (error) throw new Error(traduzirErroBanco(error, "documento", d));
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "documento", d) };
   if (data?.caminho) {
     const { error: e2 } = await supabase.storage.from("documentos").remove([data.caminho]);
-    if (e2) throw new Error(fmtTexto(d.banco.falha, { entidade: d.entidades.documento, msg: e2.message }));
+    if (e2) return { ok: false, erro: fmtTexto(d.banco.falha, { entidade: d.entidades.documento, msg: e2.message }) };
   }
   revalidatePath("/clientes");
+  return { ok: true };
 }

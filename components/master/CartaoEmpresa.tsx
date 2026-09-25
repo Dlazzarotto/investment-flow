@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { MOEDAS, PLANOS_EMPRESA, type EmpresaPlataforma, type Fatura } from "@/lib/types";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 /** Uma empresa: contrato, cobrança, uso e quem administra. */
 export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlataforma; faturas: Fatura[] }) {
@@ -136,22 +137,22 @@ function Faturas({ empresa: e, faturas }: { empresa: EmpresaPlataforma; faturas:
                     <td className="num font-semibold">{f.moeda(Number(x.valor), x.moeda)}</td>
                     <td>
                       <div className="flex flex-wrap gap-2">
-                        <form action={alternarPagamento}>
+                        <FormAcao action={alternarPagamento}>
                           <input type="hidden" name="id" value={x.id} />
                           <input type="hidden" name="pago" value={pago ? "0" : "1"} />
                           <input type="hidden" name="hoje" value={hoje} />
                           <button type="submit" className="btn-quieto px-3">
                             {pago ? t.desfazerPago : t.marcarPago}
                           </button>
-                        </form>
-                        <form action={excluirFatura}
+                        </FormAcao>
+                        <FormAcao action={excluirFatura}
                               onSubmit={(ev) => {
                                 const msg = fmtTexto(t.excluirFaturaConfirma, { valor: f.moeda(Number(x.valor), x.moeda) });
                                 if (!window.confirm(msg)) ev.preventDefault();
                               }}>
                           <input type="hidden" name="id" value={x.id} />
                           <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                        </form>
+                        </FormAcao>
                       </div>
                     </td>
                   </tr>

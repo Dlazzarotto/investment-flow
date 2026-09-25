@@ -2,6 +2,7 @@ import type { Dicionario } from "./pt";
 export const es: Dicionario = {
   meta: { titulo: "Investment-Flow System", descricao: "Inversiones, ingresos y alianzas por proyecto" },
   comum: {
+    nadaAlterado: "No se cambió nada: sin permiso para esto (la empresa puede estar suspendida) o el registro ya no existe.",
     acessoSuspenso: "Acceso suspendido", acessoSuspensoTexto: "El contrato de esta empresa está suspendido o con la vigencia vencida. El historial sigue aquí, pero no se puede registrar ni modificar nada hasta regularizar.",
     app: "Aportes", sair: "Salir", idioma: "Idioma", salvando: "Guardando…", excluir: "Eliminar", remover: "Quitar",
     total: "Total", data: "Fecha", categoria: "Categoría", unidade: "Unidad", contato: "Contacto", nome: "Nombre",
@@ -33,6 +34,7 @@ export const es: Dicionario = {
     cadastroDesativado: "El registro de nuevas cuentas está desactivado.",
   },
   projetos: {
+    deOutrasEmpresas: "Proyectos de otras empresas en los que participa",
     status: "Estado",
     participacaoEmpresa: "Participación de la empresa (%)",
     participacaoEmpresaAjuda: "La empresa administra el proyecto. Complete solo si también es socia.",
@@ -209,10 +211,14 @@ export const es: Dicionario = {
     unidadeLonga: "Unidad demasiado larga (máx. 40 caracteres).", valorAlto: "{campo} es demasiado grande.", idInvalido: "Identificador inválido.",
   },
   banco: {
+    numeroDuplicado: "Ya existe un {entidade} con ese número.",
+    emailDuplicado: "Este correo ya está registrado en este proyecto.",
+    referenciaInvalida: "Un elemento elegido ya no existe o es de otra empresa. Recargue la página y elija de nuevo.",
+    contaProjeto: "Un contrato por cuenta de proyecto necesita el proyecto elegido.",
     emUso: "No se puede eliminar: este {entidade} está en uso (por ejemplo, en un contrato).",
     duplicado: "Ya existe un {entidade} con ese nombre.", participacao: "La suma de las participaciones supera el 100 %{total}. Ajuste los porcentajes.",
-    totalSufixo: " (total: {v} %)", travas: "Los datos no pasaron las validaciones de la base de datos (los valores deben ser mayores que cero).",
-    falha: "Error al guardar {entidade}: {msg}", naoEncontrado: "Proyecto no encontrado.",
+    totalSufixo: " (total: {v} %)", travas: "Los datos no cumplieron las reglas de la base de datos. Revise los valores informados.",
+    falha: "Error al guardar {entidade}: {msg}", naoEncontrado: "Registro no encontrado.",
     foraDaFaixa: "Valor fuera del rango aceptado por la base de datos (demasiado grande o con demasiados decimales).",
   },
   entidades: {
@@ -428,8 +434,11 @@ export const es: Dicionario = {
     ativos: "{n} activo(s)",
     operacao: "Operación propia",
     contratosAtivos: "Contratos activos",
+    vendasAtivas: "Ventas activas",
+    comprasAtivas: "Compras activas",
+    vendasNegociacao: "Ventas en negociación",
+    comprasNegociacao: "Compras en negociación",
     contratosAtivosNota: "Firmados y en ejecución",
-    emNegociacao: "En negociación",
     contratadoVenda: "Contratado en venta",
     contratadoCompra: "Contratado en compra",
     semPreco: "Sin precio proyectable",
@@ -542,6 +551,7 @@ export const es: Dicionario = {
     criar: "Crear contrato",
     atualizado: "Contrato actualizado.",
     filtros: "Filtrar por estado",
+    filtroAtivos: "Activos",
     todos: "Todos",
     vendaECompra: "Venta y compra",
     vazioTitulo: "No hay contratos aquí",

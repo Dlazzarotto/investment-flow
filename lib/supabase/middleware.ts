@@ -34,7 +34,9 @@ export async function atualizarSessao(request: NextRequest) {
   if (!user && !rotaAberta) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    // Com a query: sessão que expira em /contratos/novo?estimativa=… não pode perder a proposta.
+    url.search = "";
+    url.searchParams.set("next", pathname + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
   if (user && rotaDeEntrada) {
