@@ -765,7 +765,11 @@ export const en: Dicionario = {
   precosPainel: {
     pesquisandoCurto: "Researching…",
     titulo: "Market prices",
-    subtitulo: "Choose up to 3 commodities. Each one shows the latest settlement on the Shanghai, London and Chicago exchanges, with the exchange and contract it came from; “Refresh” asks the agent for new research.",
+    subtitulo: "Choose up to 3 commodities: latest settlement in Shanghai, London and Chicago, in USD per tonne. Hover over a value to see exchange, contract and date.",
+    cotacaoOriginal: "On the exchange: {valor}",
+    semConversao: "No FX rate or per-tonne factor: shown as the exchange quotes it",
+    cambio: "FX: 1 {moeda} = USD {taxa}",
+    comIvaAjuda: "The price published on this exchange includes local tax (13 % VAT on Chinese exchanges): do not compare it directly with London and Chicago.",
     naoNegociado: "Not traded",
     naoNegociadoAjuda: "No contract for this commodity in this market",
     naoInformado: "Not reported",

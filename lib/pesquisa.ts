@@ -134,9 +134,11 @@ export function montarPerguntaBolsas(p: Omit<PedidoPesquisa, "base" | "detalhado
     "- londres: LME ou ICE Futures Europe.",
     "- chicago: referência americana — CME Group (CBOT, CME, NYMEX, COMEX); se a referência dos EUA for a ICE US (Nova York), use-a e diga qual.",
     "Se o produto não tiver contrato negociado numa praça, marque negociado: false e preco: null — nunca use número de outra praça ou de outro produto.",
-    "No JSON, \"moeda\" é o código ISO (USD, CNY, GBP) e \"unidade\" é só a unidade de quantidade (t, dmt, lb, bu, bbl, oz, MMBtu). Bolsa que cota em centavos (¢/lb, ¢/bu): converta para a moeda cheia (17,85 ¢/lb → 0.1785 USD por lb).",
+    "No JSON, \"preco\" é o número COMO A BOLSA COTA, \"moeda\" é o código ISO (USD, CNY, GBP) e \"unidade\" é só a unidade de quantidade (t, dmt, lb, bu, bbl, oz, MMBtu). Bolsa que cota em centavos (¢/lb, ¢/bu): converta para a moeda cheia (17,85 ¢/lb → 0.1785 USD por lb).",
+    "O sistema mostra tudo por TONELADA MÉTRICA e converte sozinho as unidades de massa (lb, kg, oz, short ton). Para unidade de volume ou energia (bu, bbl, gal, MMBtu), informe em \"fator_t\" quantas dessas unidades há numa tonelada DESTA commodity pelo padrão do mercado (ex.: soja 36.7437 bu/t; milho 39.3679 bu/t; petróleo Brent ≈ 7.5 bbl/t). Unidade de massa: \"fator_t\": null.",
+    "O sistema mostra tudo em DÓLAR: se a moeda não for USD, informe em \"cambio_usd\" quantos USD vale 1 unidade da moeda NA DATA da cotação (ex.: CNY → 0.1405), de fonte pública; USD: \"cambio_usd\": 1. Em \"com_iva\" diga se o preço publicado inclui imposto local (os ajustes de SHFE/DCE/ZCE incluem 13 % de IVA chinês): true/false.",
     "Resposta curta: uma linha por praça. Termine com o bloco JSON em LISTA, exatamente três objetos, neste formato:",
-    '[{"mercado": "xangai|londres|chicago", "negociado": true, "bolsa": "", "contrato": "", "preco": 0, "moeda": "", "unidade": "", "data": "AAAA-MM-DD", "url": "", "aproximacao": false}]',
+    '[{"mercado": "xangai|londres|chicago", "negociado": true, "bolsa": "", "contrato": "", "preco": 0, "moeda": "", "unidade": "", "data": "AAAA-MM-DD", "url": "", "aproximacao": false, "fator_t": null, "cambio_usd": 1, "com_iva": false}]',
   ].filter(Boolean).join("\n").slice(0, 2000);
 }
 
@@ -152,9 +154,20 @@ const cotacaoBolsaSchema = z.object({
   data: cotacaoSchema.shape.data,
   url: cotacaoSchema.shape.url,
   aproximacao: cotacaoSchema.shape.aproximacao,
+  fator_t: numeroOuNulo.transform((x) => (x !== null && x > 0 ? x : null)),
+  cambio_usd: numeroOuNulo.transform((x) => (x !== null && x > 0 ? x : null)),
+  com_iva: z.unknown().optional().transform((x) => (typeof x === "boolean" ? x : null)),
 }).transform((c) => ({ ...c, negociado: c.negociado ?? c.preco !== null }));
 /** negociado: true/false como o agente disse; null = a praça não veio na resposta ("não informado"). */
-export type CotacaoBolsa = Omit<z.infer<typeof cotacaoBolsaSchema>, "negociado"> & { negociado: boolean | null };
+export type CotacaoBolsa = Omit<z.infer<typeof cotacaoBolsaSchema>, "negociado" | "fator_t" | "cambio_usd" | "com_iva"> & {
+  negociado: boolean | null;
+  /** Unidades da cotação por tonelada, informado pelo agente para volume/energia. Pesquisa antiga não tem. */
+  fator_t?: number | null;
+  /** USD por 1 unidade da moeda, na data da cotação (agente). */
+  cambio_usd?: number | null;
+  /** O preço publicado inclui imposto local (ex.: 13 % de IVA nas bolsas chinesas). */
+  com_iva?: boolean | null;
+};
 
 /**
  * As três cotações do último bloco JSON, SEMPRE na ordem Xangai, Londres, Chicago.
@@ -169,6 +182,49 @@ export function extrairCotacoesBolsas(texto: string): CotacaoBolsa[] {
     .filter((r) => r.success).map((r) => r.data as CotacaoBolsa);
   return PRACAS.map((mercado) => lidas.find((c) => c.mercado === mercado) ?? {
     mercado, negociado: null, bolsa: null, contrato: null, preco: null, moeda: null, unidade: null,
-    data: null, url: null, aproximacao: null,
+    data: null, url: null, aproximacao: null, fator_t: null, cambio_usd: null, com_iva: null,
   });
+}
+
+/** Unidades de massa: quantas há numa tonelada métrica. Conversão física, igual para qualquer commodity. */
+const POR_TONELADA: Record<string, number> = {
+  t: 1, mt: 1, tonne: 1, tonnes: 1, ton: 1, tons: 1, tonelada: 1, toneladas: 1, dmt: 1, wmt: 1, dmtu: 1, "吨": 1,
+  kg: 1000, g: 1_000_000, lb: 2204.62262, lbs: 2204.62262, libra: 2204.62262, libras: 2204.62262,
+  oz: 32150.7466, ozt: 32150.7466, "troy oz": 32150.7466, "onça troy": 32150.7466, "onças troy": 32150.7466,
+  st: 1.10231131, "short ton": 1.10231131, lt: 0.984206528, "long ton": 0.984206528,
+};
+
+/**
+ * Preço por tonelada métrica, na moeda da cotação. Massa converte sozinha; volume e
+ * energia (bushel, barril, MMBtu) só com o fator da commodity que o agente informou
+ * — sem ele, null ("sem conversão"), nunca um fator chutado. Aceita a unidade com
+ * centavos ("¢/lb", "USc/bu"): divide por 100. dmt fica como tonelada (base seca),
+ * e a tela mostra a cotação original ao lado para não esconder isso.
+ */
+export function precoPorTonelada(c: { preco: number | null; unidade: string | null; fator_t?: number | null }): number | null {
+  if (c.preco === null || !c.unidade) return null;
+  let u = c.unidade.trim().toLowerCase().replace(/^por\s+/, "");
+  // Centavos: "¢/lb", "USc/bu", "cents/lb", "c/bu" (só antes da barra, para não pegar "ct" de outra coisa).
+  const fatorMoeda = /^(¢|us¢|usc|c|cents?)\s*\//.test(u) || u.startsWith("¢") ? 0.01 : 1;
+  // "USD/t", "¢/lb", "US$/dmt" → só o que vem depois da barra.
+  if (u.includes("/")) u = u.slice(u.lastIndexOf("/") + 1).trim();
+  const massa = POR_TONELADA[u];
+  const fator = massa ?? c.fator_t ?? null;
+  if (!fator) return null;
+  return Math.round(c.preco * fatorMoeda * fator * 100) / 100;
+}
+
+/**
+ * Preço em USD por tonelada métrica — o que o painel mostra. USD dispensa câmbio;
+ * outra moeda só com o câmbio que o agente trouxe da data da cotação. Sem câmbio
+ * ou sem fator de tonelada, null: a tela mostra a cotação original e avisa.
+ */
+export function precoUsdPorTonelada(c: { preco: number | null; moeda: string | null; unidade: string | null;
+  fator_t?: number | null; cambio_usd?: number | null }): number | null {
+  const porT = precoPorTonelada(c);
+  if (porT === null) return null;
+  const moeda = (c.moeda ?? "").toUpperCase();
+  const cambio = moeda === "USD" ? 1 : c.cambio_usd ?? null;
+  if (!cambio) return null;
+  return Math.round(porT * cambio * 100) / 100;
 }
