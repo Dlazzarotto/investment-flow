@@ -296,6 +296,8 @@ export const en: Dicionario = {
     aberto: "Open", proximoVencimento: "Next due date", semCobranca: "No billing",
     titulo: "Platform companies", subtitulo: "Grant a company access and name its administrator. From there, they invite their own team.",
     nova: "Grant access", nomeEmpresa: "Company name", emailAdm: "Administrator email",
+    emailEmOutraEmpresa: "This e-mail already belongs to another company. An account belongs to one company only: use another e-mail.",
+    linkAcessoAjuda: "Send this link to the administrator. They create a password with the same e-mail you registered.",
     emailAdmAjuda: "Access is recognised by this email. Send them the access-creation link.",
     plano: "Plan", assentos: "Seats", assentosAjuda: "Blank: no cap.", vigencia: "Valid until",
     vigenciaAjuda: "Blank: no end date.", ativa: "Access granted", liberar: "Grant access",

@@ -296,6 +296,8 @@ export const pt = {
     aberto: "Em aberto", proximoVencimento: "Próximo vencimento", semCobranca: "Sem cobrança",
     titulo: "Empresas da plataforma", subtitulo: "Libere o acesso de uma empresa e nomeie o administrador dela. Daqui em diante é ele quem convida a própria equipe.",
     nova: "Liberar empresa", nomeEmpresa: "Nome da empresa", emailAdm: "E-mail do administrador",
+    emailEmOutraEmpresa: "Este e-mail já é de outra empresa. Uma conta pertence a uma empresa só: use outro e-mail.",
+    linkAcessoAjuda: "Envie este link ao administrador. Ele cria a senha com o mesmo e-mail que você cadastrou.",
     emailAdmAjuda: "É por este e-mail que o acesso é reconhecido. Mande a ele o link de criação de acesso.",
     plano: "Plano", assentos: "Assentos", assentosAjuda: "Em branco: sem teto.", vigencia: "Vigência até",
     vigenciaAjuda: "Em branco: sem prazo.", ativa: "Acesso liberado", liberar: "Liberar empresa",

@@ -296,6 +296,8 @@ export const zh: Dicionario = {
     aberto: "未付", proximoVencimento: "下次到期", semCobranca: "未设计费",
     titulo: "平台公司", subtitulo: "开通一家公司的访问权并指定其管理员。此后由他邀请自己的团队。",
     nova: "开通公司", nomeEmpresa: "公司名称", emailAdm: "管理员邮箱",
+    emailEmOutraEmpresa: "该邮箱已属于另一家公司。一个账户只能属于一家公司：请使用其他邮箱。",
+    linkAcessoAjuda: "请将此链接发送给管理员。管理员使用您登记的同一邮箱设置密码。",
     emailAdmAjuda: "系统按此邮箱识别权限。请将开通链接发送给他。",
     plano: "套餐", assentos: "席位", assentosAjuda: "留空：不限。", vigencia: "有效期至",
     vigenciaAjuda: "留空：无期限。", ativa: "已开通", liberar: "开通公司",

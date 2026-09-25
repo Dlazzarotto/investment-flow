@@ -6,6 +6,8 @@ type Entidade = keyof Dicionario["entidades"];
 /** Converte erros do Postgres/Supabase em mensagens no idioma do usuário. */
 export function traduzirErroBanco(err: PostgrestError, entidade: Entidade, d: Dicionario): string {
   const nome = d.entidades[entidade];
+  // 0027: um e-mail, uma empresa. Sem isto viraria "já existe" — motivo certo, explicação nenhuma.
+  if (err.code === "23505" && err.message.includes("organizacao_membros_email_uq")) return d.master.emailEmOutraEmpresa;
   if (err.code === "23505") return fmtTexto(d.banco.duplicado, { entidade: nome });
   if (err.code === "23514" || err.code === "P0001") {
     if (err.message.includes("ultrapassa 100")) {

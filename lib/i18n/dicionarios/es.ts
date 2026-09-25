@@ -296,6 +296,8 @@ export const es: Dicionario = {
     aberto: "Pendiente", proximoVencimento: "Próximo vencimiento", semCobranca: "Sin cobro",
     titulo: "Empresas de la plataforma", subtitulo: "Habilite el acceso de una empresa y nombre a su administrador. De ahí en adelante es él quien invita a su propio equipo.",
     nova: "Habilitar empresa", nomeEmpresa: "Nombre de la empresa", emailAdm: "Correo del administrador",
+    emailEmOutraEmpresa: "Este correo ya pertenece a otra empresa. Una cuenta pertenece a una sola empresa: use otro correo.",
+    linkAcessoAjuda: "Envíe este enlace al administrador. Crea la contraseña con el mismo correo que usted registró.",
     emailAdmAjuda: "El acceso se reconoce por este correo. Envíele el enlace de creación de acceso.",
     plano: "Plan", assentos: "Asientos", assentosAjuda: "En blanco: sin tope.", vigencia: "Vigencia hasta",
     vigenciaAjuda: "En blanco: sin plazo.", ativa: "Acceso habilitado", liberar: "Habilitar empresa",
