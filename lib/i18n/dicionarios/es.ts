@@ -765,7 +765,11 @@ export const es: Dicionario = {
   precosPainel: {
     pesquisandoCurto: "Investigando…",
     titulo: "Precios de mercado",
-    subtitulo: "Elija hasta 3 commodities. Cada una muestra el último ajuste en las bolsas de Shanghái, Londres y Chicago, con la bolsa y el contrato de origen; “Actualizar” pide una nueva investigación al agente.",
+    subtitulo: "Elija hasta 3 commodities: último ajuste en Shanghái, Londres y Chicago, en USD por tonelada. Pase el mouse sobre el valor para ver bolsa, contrato y fecha.",
+    cotacaoOriginal: "En la bolsa: {valor}",
+    semConversao: "Sin tipo de cambio o factor por tonelada: se muestra como cotiza la bolsa",
+    cambio: "Cambio: 1 {moeda} = USD {taxa}",
+    comIvaAjuda: "El precio publicado en esta bolsa incluye impuesto local (en las bolsas chinas, 13 % de IVA): no lo compare directamente con Londres y Chicago.",
     naoNegociado: "No negociado",
     naoNegociadoAjuda: "Sin contrato de esta commodity en esta plaza",
     naoInformado: "No informado",

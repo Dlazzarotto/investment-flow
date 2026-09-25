@@ -765,7 +765,11 @@ export const pt = {
   precosPainel: {
     pesquisandoCurto: "Pesquisando…",
     titulo: "Preços de mercado",
-    subtitulo: "Escolha até 3 commodities. Cada uma mostra o último ajuste nas bolsas de Xangai, Londres e Chicago, com a bolsa e o contrato de onde veio; “Atualizar” pede uma nova pesquisa ao agente.",
+    subtitulo: "Escolha até 3 commodities: último ajuste em Xangai, Londres e Chicago, em USD por tonelada. Passe o mouse no valor para ver bolsa, contrato e data.",
+    cotacaoOriginal: "Na bolsa: {valor}",
+    semConversao: "Sem câmbio ou fator de tonelada: mostrada como a bolsa cota",
+    cambio: "Câmbio: 1 {moeda} = USD {taxa}",
+    comIvaAjuda: "O preço publicado nesta bolsa inclui imposto local (nas bolsas chinesas, 13 % de IVA): não compare direto com Londres e Chicago.",
     naoNegociado: "Não negociado",
     naoNegociadoAjuda: "Sem contrato desta commodity nesta praça",
     naoInformado: "Não informado",

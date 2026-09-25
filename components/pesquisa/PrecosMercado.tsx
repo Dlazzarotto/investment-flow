@@ -8,7 +8,7 @@ import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
-import { PRACAS, variacao, type CotacaoBolsa } from "@/lib/pesquisa";
+import { PRACAS, precoUsdPorTonelada, variacao, type CotacaoBolsa } from "@/lib/pesquisa";
 import { pedirPesquisa, useAcompanharPesquisas } from "./acompanhar";
 import { OpcoesCommodity } from "./OpcoesCommodity";
 import type { Commodity, CommodityPadrao, PesquisaMercado } from "@/lib/types";
@@ -73,34 +73,45 @@ export function PrecosMercado({ organizacaoId, commodities, catalogo, escolhidas
   );
 
   /** Conteúdo de uma célula de praça, igual no cartão e na tabela. */
-  /** "USD 104,20 / dmt"; preço miúdo (USD por libra) leva 4 casas; unidade que já traz a moeda ("¢/lb") vai inteira. */
-  const valor = (c: CotacaoBolsa) => {
+  /** Cotação como a bolsa publica: "USD 0,1785 / lb"; preço miúdo leva 4 casas; unidade que já traz a moeda ("¢/lb") vai inteira. */
+  const original = (c: CotacaoBolsa) => {
     const n = f.numero(c.preco ?? 0, Math.abs(c.preco ?? 0) < 10 ? 4 : 2);
     return c.unidade?.includes("/") ? `${n} ${c.unidade}` : `${c.moeda ?? ""} ${n}${c.unidade ? ` / ${c.unidade}` : ""}`.trim();
   };
+  /** Sempre por tonelada (pedido do usuário); a cotação original fica embaixo para conferência. */
+  const valor = (c: CotacaoBolsa) => {
+    const usd = precoUsdPorTonelada(c);
+    return usd === null ? null : `USD ${f.numero(usd, 2)} / t`;
+  };
+  /**
+   * Célula: SÓ o valor em USD por tonelada (pedido do usuário). O resto — bolsa,
+   * contrato, data, cotação original, câmbio, IVA, variação — fica na dica, para
+   * conferência sem poluir a tabela.
+   */
   const celulaPraca = (cel: Celula) => {
     const { c, v } = cel;
     if (c.preco === null) {
       return c.negociado === false
-        ? <span className="text-stone" title={t.naoNegociadoAjuda}>{t.naoNegociado}{c.bolsa ? ` · ${c.bolsa}` : ""}</span>
-        : <span className="text-stone">{t.naoInformado}</span>;
+        ? <span className="inline-flex min-h-touch items-center text-stone" title={[t.naoNegociadoAjuda, c.bolsa].filter(Boolean).join(" · ")}>{t.naoNegociado}</span>
+        : <span className="inline-flex min-h-touch items-center text-stone" title={t.naoInformado}>—</span>;
     }
-    const origem = [c.bolsa, c.contrato].filter(Boolean).join(" · ");
-    return (
-      <span className="block">
-        <span className="num block whitespace-nowrap font-semibold text-navy">
-          {valor(c)}
-        </span>
-        {v !== null && <span className={`num block text-sm ${v >= 0 ? "text-gain" : "text-loss"}`} title={t.variacaoAjuda}>
-          {v > 0 ? "+" : ""}{f.numero(v, 2)} %</span>}
-        {origem && <span className="block text-sm text-stone">
-          {c.url ? <a href={c.url} target="_blank" rel="noopener noreferrer" className="underline">{origem}</a> : origem}
-        </span>}
-        {c.data && <span className="block text-sm text-stone">{f.data(c.data)}</span>}
-        {c.aproximacao && <span className="mt-1 inline-block rounded bg-orange-soft px-2 py-0.5 text-sm text-orange-deep">{d.pesquisa.aproximacao}</span>}
-      </span>
-    );
+    const usd = valor(c);
+    const dica = [
+      [c.bolsa, c.contrato].filter(Boolean).join(" · "),
+      c.data && f.data(c.data),
+      fmtTexto(t.cotacaoOriginal, { valor: original(c) }),
+      c.moeda && c.moeda.toUpperCase() !== "USD" && c.cambio_usd ? fmtTexto(t.cambio, { moeda: c.moeda, taxa: f.numero(c.cambio_usd, 4) }) : null,
+      v !== null ? `${t.variacaoAjuda}: ${v > 0 ? "+" : ""}${f.numero(v, 2)} %` : null,
+      c.com_iva ? t.comIvaAjuda : null,
+      c.aproximacao ? d.pesquisa.aproximacao : null,
+      usd === null ? t.semConversao : null,
+    ].filter(Boolean).join("\n");
+    const conteudo = <span className="num whitespace-nowrap font-semibold text-navy">{usd ?? "—"}</span>;
+    return c.url
+      ? <a href={c.url} target="_blank" rel="noopener noreferrer" title={dica} className="inline-flex min-h-touch items-center">{conteudo}</a>
+      : <span title={dica} className="inline-flex min-h-touch items-center">{conteudo}</span>;
   };
+
 
   return (
     <div>

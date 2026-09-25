@@ -765,7 +765,11 @@ export const zh: Dicionario = {
   precosPainel: {
     pesquisandoCurto: "调研中……",
     titulo: "市场价格",
-    subtitulo: "选择最多 3 种商品。每种商品显示上海、伦敦和芝加哥交易所的最新结算价，并注明交易所和合约；“更新”会让代理重新调研。",
+    subtitulo: "选择最多 3 种商品：上海、伦敦和芝加哥的最新结算价，单位为美元/吨。将鼠标悬停在数值上可查看交易所、合约和日期。",
+    cotacaoOriginal: "交易所报价：{valor}",
+    semConversao: "无汇率或吨换算系数：按交易所原始报价显示",
+    cambio: "汇率：1 {moeda} = USD {taxa}",
+    comIvaAjuda: "该交易所公布的价格含当地税（中国交易所含 13% 增值税）：请勿与伦敦和芝加哥直接比较。",
     naoNegociado: "无交易",
     naoNegociadoAjuda: "该市场没有此商品的合约",
     naoInformado: "未提供",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blocosResposta, extrairCotacao, extrairCotacoesBolsas, montarPergunta, montarPerguntaBolsas, variacao } from "@/lib/pesquisa";
+import { blocosResposta, extrairCotacao, extrairCotacoesBolsas, montarPergunta, montarPerguntaBolsas, variacao, precoPorTonelada, precoUsdPorTonelada } from "@/lib/pesquisa";
 
 const resposta = `Minério de ferro 62 % Fe CFR China: US$ 104,50/dmt.
 
@@ -83,5 +83,46 @@ describe("pesquisa de mercado", () => {
     expect(p).toContain("idioma: zh");
     expect(p).toMatch(/xangai[\s\S]*londres[\s\S]*chicago/);
     expect(p).toContain("negociado: false");
+  });
+});
+
+describe("precoPorTonelada", () => {
+  it("massa converte sozinha; tonelada e dmt ficam como estão", () => {
+    expect(precoPorTonelada({ preco: 104.2, unidade: "dmt" })).toBe(104.2);
+    expect(precoPorTonelada({ preco: 782.5, unidade: "t" })).toBe(782.5);
+    expect(precoPorTonelada({ preco: 0.1785, unidade: "lb" })).toBe(393.53); // 0,1785 × 2204,62262 = 393,525
+    expect(precoPorTonelada({ preco: 2650, unidade: "oz" })).toBe(85199478.49);
+  });
+  it("centavos na unidade viram moeda cheia", () => {
+    expect(precoPorTonelada({ preco: 17.85, unidade: "¢/lb" })).toBe(393.53);
+    expect(precoPorTonelada({ preco: 17.85, unidade: "USc/lb" })).toBe(393.53);
+  });
+  it("volume/energia só com o fator da commodity; sem fator, null — nunca chute", () => {
+    expect(precoPorTonelada({ preco: 10.5, unidade: "bu", fator_t: 36.7437 })).toBe(385.81);
+    expect(precoPorTonelada({ preco: 10.5, unidade: "bu" })).toBeNull();
+    expect(precoPorTonelada({ preco: 80, unidade: "USD/bbl", fator_t: 7.5 })).toBe(600);
+    expect(precoPorTonelada({ preco: null, unidade: "t" })).toBeNull();
+  });
+  it("o fator informado vem do JSON do agente", () => {
+    const [, , chicago] = extrairCotacoesBolsas('```json\n[{"mercado":"chicago","bolsa":"CBOT","preco":10.5,"moeda":"USD","unidade":"bu","fator_t":36.7437}]\n```');
+    expect(chicago.fator_t).toBe(36.7437);
+    expect(precoPorTonelada(chicago)).toBe(385.81);
+  });
+});
+
+describe("precoUsdPorTonelada", () => {
+  it("USD dispensa câmbio; outra moeda usa o câmbio da data", () => {
+    expect(precoUsdPorTonelada({ preco: 104.2, moeda: "USD", unidade: "dmt" })).toBe(104.2);
+    expect(precoUsdPorTonelada({ preco: 782.5, moeda: "CNY", unidade: "t", cambio_usd: 0.1405 })).toBe(109.94);
+    expect(precoUsdPorTonelada({ preco: 17.85, moeda: "USD", unidade: "¢/lb" })).toBe(393.53);
+  });
+  it("sem câmbio ou sem fator, null — nunca 'CNY como se fosse USD'", () => {
+    expect(precoUsdPorTonelada({ preco: 782.5, moeda: "CNY", unidade: "t" })).toBeNull();
+    expect(precoUsdPorTonelada({ preco: 10.5, moeda: "USD", unidade: "bu" })).toBeNull();
+  });
+  it("câmbio e IVA vêm do JSON do agente", () => {
+    const [xangai] = extrairCotacoesBolsas('```json\n[{"mercado":"xangai","bolsa":"DCE","preco":782.5,"moeda":"CNY","unidade":"t","cambio_usd":0.1405,"com_iva":true}]\n```');
+    expect(xangai.com_iva).toBe(true);
+    expect(precoUsdPorTonelada(xangai)).toBe(109.94);
   });
 });
