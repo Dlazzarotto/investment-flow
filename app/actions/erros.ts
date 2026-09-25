@@ -9,6 +9,9 @@ export function traduzirErroBanco(err: PostgrestError, entidade: Entidade, d: Di
   // 0027: um e-mail, uma empresa. Sem isto viraria "já existe" — motivo certo, explicação nenhuma.
   if (err.code === "23505" && err.message.includes("organizacao_membros_email_uq")) return d.master.emailEmOutraEmpresa;
   if (err.code === "23505") return fmtTexto(d.banco.duplicado, { entidade: nome });
+  // 0007/0028: a empresa não fica sem administrador; o master não administra empresa.
+  if (err.code === "23514" && err.message.includes("precisa ter ao menos um sócio")) return d.master.ultimoAdmin;
+  if (err.code === "23514" && err.message.includes("organizacao_membros_nao_master_ck")) return d.master.masterNaoAdmin;
   if (err.code === "23514" || err.code === "P0001") {
     if (err.message.includes("ultrapassa 100")) {
       const m = err.message.match(/total: ([\d.,]+)/);

@@ -241,6 +241,7 @@ export function criarSchemas(d: Dicionario) {
     }),
     contrato: z.object({
       id: uuid,
+      nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),
       plano: z.enum(PLANOS_EMPRESA, enumMsg(v.planoInvalido)),
       mensalidade: custoOpcional(v.mensalidade),
       setup: custoOpcional(v.setup),

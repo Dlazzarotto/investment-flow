@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { criarEmpresa } from "@/app/actions/master";
+import { ConviteAcesso } from "./ConviteAcesso";
 import { Mensagem } from "@/components/ui/Mensagem";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useAcaoFormulario, type EstadoFormulario } from "@/components/ui/useAcaoFormulario";
@@ -8,39 +9,19 @@ import { useI18n } from "@/lib/i18n/client";
 import { PLANOS_EMPRESA } from "@/lib/types";
 
 export function FormEmpresa() {
+  const [ultima, setUltima] = useState({ nome: "", email: "" });
   const [estado, formAction] = useAcaoFormulario(criarEmpresa);
-  // A key limpa os campos depois de cada empresa liberada.
+  // Guarda nome e e-mail antes de enviar: a key limpa os campos depois de cada
+  // empresa liberada, e o convite precisa deles.
+  const enviar = (fd: FormData) => {
+    setUltima({ nome: String(fd.get("nome") ?? "").trim(), email: String(fd.get("email_adm") ?? "").trim() });
+    formAction(fd);
+  };
   return (
     <>
-      <Campos key={estado.versao} estado={estado} formAction={formAction} />
-      {estado.ok && estado.versao > 0 && <LinkAcesso />}
+      <Campos key={estado.versao} estado={estado} formAction={enviar} />
+      {estado.ok && estado.versao > 0 && <ConviteAcesso empresa={ultima.nome} emails={[ultima.email]} />}
     </>
-  );
-}
-
-/**
- * O link que o master manda ao ADM da empresa liberada. A conta só nasce por
- * convite (0025): é por /criar-conta que ele cria a senha, com o e-mail que o
- * master cadastrou. A origem só existe no navegador.
- */
-function LinkAcesso() {
-  const { d } = useI18n();
-  const [link, setLink] = useState("");
-  const [copiado, setCopiado] = useState(false);
-  useEffect(() => { setLink(`${window.location.origin}/criar-conta`); }, []);
-  async function copiar() {
-    try { await navigator.clipboard.writeText(link); setCopiado(true); }
-    catch { /* sem permissão de área de transferência: o campo abaixo permite copiar à mão */ }
-  }
-  if (!link) return null;
-  return (
-    <div className="mt-4 rounded-md border-l-4 border-gain bg-green-50 px-4 py-4">
-      <p className="font-semibold text-gain">{d.master.linkAcesso}</p>
-      <p className="mt-1">{d.master.linkAcessoAjuda}</p>
-      <input readOnly value={link} onFocus={(e) => e.currentTarget.select()}
-             aria-label={d.acesso.copiar} className="campo mt-3 bg-white" />
-      <button type="button" onClick={copiar} className="btn-navy mt-3">{copiado ? d.acesso.copiado : d.acesso.copiar}</button>
-    </div>
   );
 }
 
