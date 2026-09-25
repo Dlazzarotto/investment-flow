@@ -70,7 +70,11 @@ export interface Aporte {
   criado_em: string;
 }
 
-export interface Organizacao { id: string; nome: string; criado_por: string; criado_em: string }
+export interface Organizacao {
+  id: string; nome: string; criado_por: string; criado_em: string;
+  /** Teto de assentos do plano (0009); null = sem teto. Só o master altera. */
+  assentos: number | null;
+}
 export interface OrganizacaoMembro { id: string; organizacao_id: string; email: string; email_normalizado: string; criado_em: string }
 
 /** Totais do projeto para qualquer membro (public.resumo_projeto). */

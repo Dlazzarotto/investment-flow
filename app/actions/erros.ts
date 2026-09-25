@@ -12,6 +12,7 @@ export function traduzirErroBanco(err: PostgrestError, entidade: Entidade, d: Di
   // 0007/0028: a empresa não fica sem administrador; o master não administra empresa.
   if (err.code === "23514" && err.message.includes("precisa ter ao menos um sócio")) return d.master.ultimoAdmin;
   if (err.code === "23514" && err.message.includes("organizacao_membros_nao_master_ck")) return d.master.masterNaoAdmin;
+  if (err.message.includes("assentos e todos estão ocupados")) return d.organizacao.semAssento;
   if (err.code === "23514" || err.code === "P0001") {
     if (err.message.includes("ultrapassa 100")) {
       const m = err.message.match(/total: ([\d.,]+)/);

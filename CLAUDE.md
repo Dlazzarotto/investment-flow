@@ -170,6 +170,10 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   e-mail de quem usa, sem depender do SMTP do Supabase) e excluir empresa VAZIA. Empresa com dados se suspende.
   Ação de formulário do master devolve mensagem, nunca lança: lançar derruba a página em "Algo deu errado".
 - **Confirmar exclusão digitando o nome** usa `mesmoNome()` (lib/texto.ts): ignora maiúsculas, acentos e espaços.
+- **Equipe da empresa mora em "Conta e empresa" (/conta), não em Projetos.** Quem está em `organizacao_membros` é
+  ADMINISTRADOR da empresa (vê tudo, ocupa assento) — não "sócio" (vocabulário da 1ª versão). A tela mostra
+  assentos em uso (`assentos_ocupados`) e traduz a trava do plano. "Vincular/desvincular projeto da organização"
+  saiu: desde 0022/0025 projeto é sempre da empresa, e desvincular o tirava do painel (ou quebrava com contrato).
 - **Master libera empresas e NÃO lê os dados delas.** Nenhuma policy de projeto,
   custo, cliente ou documento menciona `eh_master()` — é isso que torna o sistema vendável a tradings
   concorrentes entre si. Ele vê `organizacoes` e `organizacao_membros`, e mais nada.

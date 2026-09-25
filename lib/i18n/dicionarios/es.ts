@@ -11,7 +11,7 @@ export const es: Dicionario = {
     editar: "Editar", cancelar: "Cancelar", salvar: "Guardar", acoes: "Acciones", alteracaoSalva: "Cambio guardado.",
   },
   nav: {
-    locais: "Ubicaciones", painel: "Panel", vendasMenu: "Ventas", compras: "Compras", propostas: "Propuestas", resumo: "Resumen", socios: "Socios e inversores", custos: "Costos del proyecto", commodities: "Commodities", clientes: "Clientes", fornecedores: "Proveedores", geral: "General", abrirMenu: "Abrir menú", conta: "Mi cuenta", plataforma: "Plataforma", aportes: "Aportes", carteira: "Mi cartera", investimentos: "Inversiones", despesas: "Gastos",
+    locais: "Ubicaciones", painel: "Panel", vendasMenu: "Ventas", compras: "Compras", propostas: "Propuestas", resumo: "Resumen", socios: "Socios e inversores", custos: "Costos del proyecto", commodities: "Commodities", clientes: "Clientes", fornecedores: "Proveedores", geral: "General", abrirMenu: "Abrir menú", conta: "Cuenta y empresa", plataforma: "Plataforma", aportes: "Aportes", carteira: "Mi cartera", investimentos: "Inversiones", despesas: "Gastos",
     projetoAtivo: "Proyecto activo", escolha: "Elija un proyecto…", secoes: "Secciones del proyecto" },
   login: {
     esqueciSenha: "Olvidé mi contraseña",
@@ -230,11 +230,20 @@ export const es: Dicionario = {
     totalAportado: "Total aportado",
   },
   organizacao: {
-    titulo: "Organización de los socios", subtitulo: "Los socios de la organización son administradores de todos los proyectos vinculados a ella, sin invitación proyecto por proyecto.",
+    titulo: "Equipo de la empresa",
+    subtitulo: "Quién administra {empresa}: ve todo de la empresa — clientes, contratos, proyectos y documentos — y ocupa un asiento del plan. El inversor no está aquí: se le invita al proyecto y no ocupa asiento.",
     semOrganizacao: "Esta cuenta aún no está vinculada a ninguna empresa. El acceso lo libera la administración de la plataforma o una invitación de una empresa ya registrada.",
-    socios: "Socios", emailSocio: "Correo del socio", adicionar: "Agregar socio", socioAdicionado: "Socio {email} agregado.", removerConfirma: "¿Quitar a {email} de la organización?",
-    avisoEmail: "El vínculo es por el correo confirmado de la cuenta del socio.", vinculado: "Proyecto vinculado a la organización {nome}", naoVinculado: "Proyecto no vinculado a una organización",
-    vincular: "Vincular a la organización", desvincular: "Desvincular", vinculoAjuda: "Vinculado, todos los socios de la organización administran este proyecto.",
+    socios: "Administradores",
+    emailSocio: "Correo del administrador",
+    adicionar: "Agregar administrador",
+    socioAdicionado: "{email} ahora administra la empresa.",
+    removerConfirma: "¿Sacar a {email} de la empresa? Pierde el acceso a todo de la empresa.",
+    avisoEmail: "El acceso es por el correo confirmado de la cuenta: la persona entra con ese mismo correo. Un correo pertenece a una sola empresa.",
+    semAssento: "Todos los asientos del plan están ocupados. Para incluir a alguien más, hable con la administración de la plataforma.",
+    removido: "Administrador eliminado.",
+    voce: "usted",
+    assentosUso: "{usados} de {total} asiento(s) en uso",
+    assentosSemTeto: "{usados} asiento(s) en uso",
   },
   carteira: {
     titulo: "Mi cartera", subtitulo: "Su posición en cada proyecto en el que participa.", vazioTitulo: "Aún no participa en ningún proyecto",
@@ -335,7 +344,7 @@ export const es: Dicionario = {
     naoSouMaster: "Esta área es de la administración de la plataforma.",
   },
   conta: {
-    titulo: "Mi cuenta", subtitulo: "Su acceso al sistema.",
+    titulo: "Cuenta y empresa", subtitulo: "Su acceso al sistema y el equipo de la empresa.",
     alterarSenha: "Cambiar contraseña", senhaAtual: "Contraseña actual",
     senhaAtualErrada: "Contraseña actual incorrecta.", senhaIgual: "La contraseña nueva debe ser distinta de la actual.",
     senhaAlterada: "Contraseña cambiada. Vale desde el próximo acceso.",

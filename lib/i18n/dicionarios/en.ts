@@ -11,7 +11,7 @@ export const en: Dicionario = {
     editar: "Edit", cancelar: "Cancel", salvar: "Save", acoes: "Actions", alteracaoSalva: "Change saved.",
   },
   nav: {
-    locais: "Locations", painel: "Overview", vendasMenu: "Sales", compras: "Purchases", propostas: "Proposals", resumo: "Summary", socios: "Partners and investors", custos: "Project costs", commodities: "Commodities", clientes: "Clients", fornecedores: "Suppliers", geral: "General", abrirMenu: "Open menu", conta: "My account", plataforma: "Platform", aportes: "Contributions", carteira: "My portfolio", investimentos: "Investments", despesas: "Expenses",
+    locais: "Locations", painel: "Overview", vendasMenu: "Sales", compras: "Purchases", propostas: "Proposals", resumo: "Summary", socios: "Partners and investors", custos: "Project costs", commodities: "Commodities", clientes: "Clients", fornecedores: "Suppliers", geral: "General", abrirMenu: "Open menu", conta: "Account & company", plataforma: "Platform", aportes: "Contributions", carteira: "My portfolio", investimentos: "Investments", despesas: "Expenses",
     projetoAtivo: "Active project", escolha: "Choose a project…", secoes: "Project sections" },
   login: {
     esqueciSenha: "I forgot my password",
@@ -230,11 +230,20 @@ export const en: Dicionario = {
     totalAportado: "Total contributed",
   },
   organizacao: {
-    titulo: "Partners' organization", subtitulo: "Partners of the organization are administrators of every project linked to it, without per-project invitations.",
+    titulo: "Company team",
+    subtitulo: "Who manages {empresa}: they see everything in the company — clients, contracts, projects and documents — and take a seat of the plan. Investors are not listed here: they are invited to a project and take no seat.",
     semOrganizacao: "This account is not linked to any company yet. Access is granted by the platform administration or by an invitation from a registered company.",
-    socios: "Partners", emailSocio: "Partner email", adicionar: "Add partner", socioAdicionado: "Partner {email} added.", removerConfirma: "Remove {email} from the organization?",
-    avisoEmail: "The link is by the partner's confirmed account email.", vinculado: "Project linked to organization {nome}", naoVinculado: "Project not linked to an organization",
-    vincular: "Link to organization", desvincular: "Unlink", vinculoAjuda: "When linked, every partner of the organization administers this project.",
+    socios: "Administrators",
+    emailSocio: "Administrator e-mail",
+    adicionar: "Add administrator",
+    socioAdicionado: "{email} now manages the company.",
+    removerConfirma: "Remove {email} from the company? They lose access to everything in the company.",
+    avisoEmail: "Access is by the account’s confirmed e-mail: the person signs in with that same e-mail. An e-mail belongs to one company only.",
+    semAssento: "All seats of the plan are taken. To add someone else, contact the platform administration.",
+    removido: "Administrator removed.",
+    voce: "you",
+    assentosUso: "{usados} of {total} seat(s) in use",
+    assentosSemTeto: "{usados} seat(s) in use",
   },
   carteira: {
     titulo: "My portfolio", subtitulo: "Your position in each project you take part in.", vazioTitulo: "You are not part of any project yet",
@@ -335,7 +344,7 @@ export const en: Dicionario = {
     naoSouMaster: "This area belongs to the platform administration.",
   },
   conta: {
-    titulo: "My account", subtitulo: "Your access to the system.",
+    titulo: "Account & company", subtitulo: "Your access to the system and the company team.",
     alterarSenha: "Change password", senhaAtual: "Current password",
     senhaAtualErrada: "Current password is incorrect.", senhaIgual: "The new password must differ from the current one.",
     senhaAlterada: "Password changed. It applies from your next sign-in.",

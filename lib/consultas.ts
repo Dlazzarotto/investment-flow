@@ -188,6 +188,13 @@ export const minhaOrganizacao = cache(async (): Promise<{ organizacao: Organizac
   return { organizacao, membros: (membros ?? []) as OrganizacaoMembro[] };
 });
 
+/** Assentos do plano em uso (0009: investidor não conta). Null se o banco não responder — a tela omite. */
+export const assentosOcupados = cache(async (organizacaoId: string): Promise<number | null> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("assentos_ocupados", { p_organizacao_id: organizacaoId });
+  return error ? null : Number(data ?? 0);
+});
+
 /** Projetos em que o usuário logado é participante (investidor), com posição consolidada. */
 export const listarCarteira = cache(async (): Promise<CarteiraItem[]> => {
   const supabase = createClient();

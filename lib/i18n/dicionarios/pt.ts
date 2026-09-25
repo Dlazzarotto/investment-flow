@@ -11,7 +11,7 @@ export const pt = {
     editar: "Editar", cancelar: "Cancelar", salvar: "Salvar", acoes: "Ações", alteracaoSalva: "Alteração salva.",
   },
   nav: {
-    locais: "Locais", painel: "Painel", vendasMenu: "Vendas", compras: "Compras", propostas: "Propostas", resumo: "Resumo", socios: "Sócios e investidores", custos: "Custos do projeto", commodities: "Commodities", clientes: "Clientes", fornecedores: "Fornecedores", geral: "Geral", abrirMenu: "Abrir menu", conta: "Minha conta", plataforma: "Plataforma", aportes: "Aportes", carteira: "Minha carteira", investimentos: "Investimentos", despesas: "Despesas",
+    locais: "Locais", painel: "Painel", vendasMenu: "Vendas", compras: "Compras", propostas: "Propostas", resumo: "Resumo", socios: "Sócios e investidores", custos: "Custos do projeto", commodities: "Commodities", clientes: "Clientes", fornecedores: "Fornecedores", geral: "Geral", abrirMenu: "Abrir menu", conta: "Conta e empresa", plataforma: "Plataforma", aportes: "Aportes", carteira: "Minha carteira", investimentos: "Investimentos", despesas: "Despesas",
     projetoAtivo: "Projeto ativo", escolha: "Escolha um projeto…", secoes: "Seções do projeto" },
   login: {
     esqueciSenha: "Esqueci minha senha",
@@ -230,11 +230,20 @@ export const pt = {
     totalAportado: "Total aportado",
   },
   organizacao: {
-    titulo: "Organização dos sócios", subtitulo: "Os sócios da organização são administradores de todos os projetos vinculados a ela, sem convite projeto a projeto.",
+    titulo: "Equipe da empresa",
+    subtitulo: "Quem administra {empresa}: enxerga tudo da empresa — clientes, contratos, projetos e documentos — e ocupa um assento do plano. Investidor não entra aqui: ele é convidado no projeto e não ocupa assento.",
     semOrganizacao: "Esta conta ainda não está ligada a nenhuma empresa. O acesso é liberado pela administração da plataforma ou por convite de uma empresa já cadastrada.",
-    socios: "Sócios", emailSocio: "E-mail do sócio", adicionar: "Adicionar sócio", socioAdicionado: "Sócio {email} adicionado.", removerConfirma: "Remover {email} da organização?",
-    avisoEmail: "O vínculo é pelo e-mail confirmado da conta do sócio.", vinculado: "Projeto vinculado à organização {nome}", naoVinculado: "Projeto não vinculado a uma organização",
-    vincular: "Vincular à organização", desvincular: "Desvincular", vinculoAjuda: "Vinculado, todos os sócios da organização administram este projeto.",
+    socios: "Administradores",
+    emailSocio: "E-mail do administrador",
+    adicionar: "Adicionar administrador",
+    socioAdicionado: "{email} agora administra a empresa.",
+    removerConfirma: "Tirar {email} da empresa? A pessoa perde o acesso a tudo da empresa.",
+    avisoEmail: "O acesso é pelo e-mail confirmado da conta: a pessoa entra com esse mesmo e-mail. Um e-mail pertence a uma empresa só.",
+    semAssento: "Todos os assentos do plano estão ocupados. Para incluir mais alguém, fale com a administração da plataforma.",
+    removido: "Administrador removido.",
+    voce: "você",
+    assentosUso: "{usados} de {total} assento(s) em uso",
+    assentosSemTeto: "{usados} assento(s) em uso",
   },
   carteira: {
     titulo: "Minha carteira", subtitulo: "Sua posição em cada projeto de que você participa.", vazioTitulo: "Você ainda não participa de nenhum projeto",
@@ -335,7 +344,7 @@ export const pt = {
     naoSouMaster: "Esta área é da administração da plataforma.",
   },
   conta: {
-    titulo: "Minha conta", subtitulo: "Seu acesso ao sistema.",
+    titulo: "Conta e empresa", subtitulo: "Seu acesso ao sistema e a equipe da empresa.",
     alterarSenha: "Alterar senha", senhaAtual: "Senha atual",
     senhaAtualErrada: "Senha atual incorreta.", senhaIgual: "A senha nova precisa ser diferente da atual.",
     senhaAlterada: "Senha alterada. Ela já vale para os próximos acessos.",

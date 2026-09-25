@@ -11,7 +11,7 @@ export const zh: Dicionario = {
     editar: "编辑", cancelar: "取消", salvar: "保存", acoes: "操作", alteracaoSalva: "修改已保存。",
   },
   nav: {
-    locais: "地点", painel: "总览", vendasMenu: "销售", compras: "采购", propostas: "报价", resumo: "概览", socios: "合伙人与投资者", custos: "项目成本", commodities: "大宗商品", clientes: "客户", fornecedores: "供应商", geral: "通用", abrirMenu: "打开菜单", conta: "我的账户", plataforma: "平台", aportes: "出资", carteira: "我的投资组合", investimentos: "投资", despesas: "费用",
+    locais: "地点", painel: "总览", vendasMenu: "销售", compras: "采购", propostas: "报价", resumo: "概览", socios: "合伙人与投资者", custos: "项目成本", commodities: "大宗商品", clientes: "客户", fornecedores: "供应商", geral: "通用", abrirMenu: "打开菜单", conta: "账户与公司", plataforma: "平台", aportes: "出资", carteira: "我的投资组合", investimentos: "投资", despesas: "费用",
     projetoAtivo: "当前项目", escolha: "选择项目…", secoes: "项目板块" },
   login: {
     esqueciSenha: "忘记密码",
@@ -230,11 +230,20 @@ export const zh: Dicionario = {
     totalAportado: "出资总额",
   },
   organizacao: {
-    titulo: "合伙人组织", subtitulo: "组织中的合伙人自动成为所有关联项目的管理员，无需逐个项目邀请。",
+    titulo: "公司团队",
+    subtitulo: "管理 {empresa} 的人员：可查看公司的全部内容——客户、合同、项目和文件——并占用套餐的一个席位。投资人不在此列：他们被邀请加入项目，不占席位。",
     semOrganizacao: "此账户尚未关联任何公司。访问权限由平台管理方开通，或由已注册公司发出邀请。",
-    socios: "合伙人", emailSocio: "合伙人邮箱", adicionar: "添加合伙人", socioAdicionado: "已添加合伙人 {email}。", removerConfirma: "将 {email} 从组织中移除？",
-    avisoEmail: "通过合伙人账户已确认的邮箱进行关联。", vinculado: "项目已关联至组织 {nome}", naoVinculado: "项目未关联组织",
-    vincular: "关联至组织", desvincular: "取消关联", vinculoAjuda: "关联后，组织中的所有合伙人均可管理此项目。",
+    socios: "管理员",
+    emailSocio: "管理员邮箱",
+    adicionar: "添加管理员",
+    socioAdicionado: "{email} 现在管理该公司。",
+    removerConfirma: "将 {email} 移出公司？此人将失去公司全部内容的访问权限。",
+    avisoEmail: "访问以账户已确认的邮箱为准：此人需用同一邮箱登录。一个邮箱只能属于一家公司。",
+    semAssento: "套餐的所有席位均已占用。如需添加他人，请联系平台管理方。",
+    removido: "已移除管理员。",
+    voce: "您",
+    assentosUso: "已使用 {usados}/{total} 个席位",
+    assentosSemTeto: "已使用 {usados} 个席位",
   },
   carteira: {
     titulo: "我的投资组合", subtitulo: "您在每个参与项目中的持仓。", vazioTitulo: "您尚未参与任何项目",
@@ -335,7 +344,7 @@ export const zh: Dicionario = {
     naoSouMaster: "本区域仅限平台管理方访问。",
   },
   conta: {
-    titulo: "我的账户", subtitulo: "您的系统访问权限。",
+    titulo: "账户与公司", subtitulo: "您的系统访问权限及公司团队。",
     alterarSenha: "修改密码", senhaAtual: "当前密码",
     senhaAtualErrada: "当前密码不正确。", senhaIgual: "新密码必须与当前密码不同。",
     senhaAlterada: "密码已修改，下次登录即生效。",
