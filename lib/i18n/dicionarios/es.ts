@@ -2,7 +2,7 @@ import type { Dicionario } from "./pt";
 export const es: Dicionario = {
   meta: { titulo: "Investment-Flow System", descricao: "Inversiones, ingresos y alianzas por proyecto" },
   comum: {
-    acessoSuspenso: "Acceso suspendido", acessoSuspensoTexto: "El contrato de esta empresa está suspendido o con la vigencia vencida. El historial sigue aquí, pero no se puede registrar ni modificar nada hasta regularizar.", 
+    acessoSuspenso: "Acceso suspendido", acessoSuspensoTexto: "El contrato de esta empresa está suspendido o con la vigencia vencida. El historial sigue aquí, pero no se puede registrar ni modificar nada hasta regularizar.",
     app: "Aportes", sair: "Salir", idioma: "Idioma", salvando: "Guardando…", excluir: "Eliminar", remover: "Quitar",
     total: "Total", data: "Fecha", categoria: "Categoría", unidade: "Unidad", contato: "Contacto", nome: "Nombre",
     verProjetos: "Ver mis proyectos", tentarDeNovo: "Intentar de nuevo", erroTitulo: "Algo salió mal",
@@ -54,7 +54,7 @@ export const es: Dicionario = {
     nomeParticipante: "Nombre (empresa o persona)", nomePlaceholder: "Ej.: Minera Río Verde S.A.",
     contatoOpcional: "Contacto (opcional)", contatoPlaceholder: "Correo o teléfono", adicionado: "Participante {nome} agregado.",
     removerConfirma: "¿Quitar a {nome} del proyecto?",
-    excluirProjeto: "Eliminar proyecto", excluirTexto: "Elimina el proyecto y todas sus inversiones, ventas y participantes. No se puede deshacer.",
+    excluirProjeto: "Eliminar proyecto", excluirTexto: "Elimina el proyecto y todo lo que le pertenece: aportes, costos, socios e inversores, y los contratos, garantías y monetizaciones por cuenta de él. Los contratos de la propia empresa que solo citaban el proyecto se mantienen. No se puede deshacer. Para solo retirar el proyecto, cambie el estado a Cerrado.",
     excluirDigite: "Escriba el nombre del proyecto para habilitar la eliminación", excluirBotao: "Eliminar proyecto definitivamente",
     excluirConfirma: "¿Eliminar definitivamente \"{nome}\"?",
   },
@@ -149,7 +149,7 @@ export const es: Dicionario = {
     porCategoria: "Gastos por categoría",
   },
   acesso: {
-    conviteRecebido: "Usted fue invitado", 
+    conviteRecebido: "Usted fue invitado",
     pin: "PIN de autorización", pinAtual: "PIN configurado", pinSemCadastro: "Sin PIN configurado",
     pinTexto: "La Oficina solo modifica o elimina un registro escribiendo este PIN. Es del proyecto, se guarda con hash y no es la contraseña de acceso de nadie.",
     pinNovo: "Nuevo PIN (mínimo {min} caracteres)", pinSalvar: "Guardar PIN", pinSalvo: "PIN guardado.",
@@ -178,7 +178,7 @@ export const es: Dicionario = {
     mediaIA: "Promedio de mercado (IA)", desvio: "Desvío vs promedio (%)", volume: "Volumen", unidade: "Unidad", precoUnitario: "Precio unitario", receita: "Ingreso total",
     mes: "Mes", investimento: "Inversión", receitaMes: "Ingreso", recAcum: "Ing. acumulado", saldoAcum: "Saldo acumulado",
     unidadeRef: "Unidad ref.", minimo: "Mínimo", medio: "Promedio", maximo: "Máximo", confianca: "Confianza", contexto: "Contexto", premissas: "Supuestos", fontes: "Fuentes", modelo: "Modelo",
-    tipoDespesa: "GASTO", 
+    tipoDespesa: "GASTO",
     tipoInvestimento: "INVERSIÓN", tipoReceita: "INGRESO", venda: "Venta",
     tipo: "Tipo", id: "ID", descricao: "Descripción",
     custoVendas: "Costo de ventas", saida: "Salida", saidaAcum: "Salida acum.", saidaTotal: "Salida total",
@@ -347,10 +347,8 @@ export const es: Dicionario = {
   },
   painel: {
     titulo: "Panel de la empresa", subtitulo: "Toda la operación de {nome}: cartera, resultado y lo que sigue abierto.",
-    carteira: "Cartera", resultado: "Resultado consolidado",
-    ativos: "{n} activo(s)", vendasQtd: "{n} venta(s)",
-    receita: "Ingresos", receitaMes: "Ingresos del mes", saida: "Salida",
-    saidaNota: "Inversión + costo de ventas + gastos", saldo: "Saldo",
+    carteira: "Cartera",
+    ativos: "{n} activo(s)",
     operacao: "Operación propia",
     contratosAtivos: "Contratos activos",
     contratosAtivosNota: "Firmados y en ejecución",

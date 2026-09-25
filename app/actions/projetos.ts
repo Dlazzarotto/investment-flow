@@ -44,9 +44,14 @@ export async function excluirProjeto(fd: FormData): Promise<void> {
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
   if (!id.success) return;
   const supabase = createClient();
-  const { error } = await supabase.from("projetos").delete().eq("id", id.data);
+  // Pela função (0026), não por delete direto: o projeto leva junto, numa
+  // instrução só, os contratos e monetizações que são dele. O delete direto
+  // esbarrava na trava dos contratos convertidos na 0022 e não excluía nada.
+  const { data, error } = await supabase.rpc("excluir_projeto", { p_projeto_id: id.data });
   if (error) throw new Error(traduzirErroBanco(error, "projeto", d));
-  revalidatePath("/projetos");
+  // false: não é o dono (ou o projeto já não existe) — nada foi apagado.
+  if (!data) throw new Error(d.membros.somenteDono);
+  revalidatePath("/", "layout");
   redirect("/projetos");
 }
 

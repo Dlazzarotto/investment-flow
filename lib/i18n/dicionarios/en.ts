@@ -2,7 +2,7 @@ import type { Dicionario } from "./pt";
 export const en: Dicionario = {
   meta: { titulo: "Investment-Flow System", descricao: "Investments, revenue and partnerships per project" },
   comum: {
-    acessoSuspenso: "Access suspended", acessoSuspensoTexto: "This company's contract is suspended or past its term. The history is still here, but nothing can be entered or changed until it is settled.", 
+    acessoSuspenso: "Access suspended", acessoSuspensoTexto: "This company's contract is suspended or past its term. The history is still here, but nothing can be entered or changed until it is settled.",
     app: "Capital", sair: "Sign out", idioma: "Language", salvando: "Saving…", excluir: "Delete", remover: "Remove",
     total: "Total", data: "Date", categoria: "Category", unidade: "Unit", contato: "Contact", nome: "Name",
     verProjetos: "View my projects", tentarDeNovo: "Try again", erroTitulo: "Something went wrong",
@@ -54,7 +54,7 @@ export const en: Dicionario = {
     nomeParticipante: "Name (company or person)", nomePlaceholder: "E.g. Rio Verde Mining Ltd.",
     contatoOpcional: "Contact (optional)", contatoPlaceholder: "Email or phone", adicionado: "Participant {nome} added.",
     removerConfirma: "Remove {nome} from the project?",
-    excluirProjeto: "Delete project", excluirTexto: "Removes the project and all its investments, sales and participants. This cannot be undone.",
+    excluirProjeto: "Delete project", excluirTexto: "Removes the project and everything that belongs to it: contributions, costs, partners and investors, and the contracts, guarantees and monetizations on its account. The company’s own contracts that only referenced the project remain. This cannot be undone. To simply retire the project, change its status to Closed.",
     excluirDigite: "Type the project name to enable deletion", excluirBotao: "Delete project permanently",
     excluirConfirma: "Permanently delete \"{nome}\"?",
   },
@@ -149,7 +149,7 @@ export const en: Dicionario = {
     porCategoria: "Expenses by category",
   },
   acesso: {
-    conviteRecebido: "You have been invited", 
+    conviteRecebido: "You have been invited",
     pin: "Authorization PIN", pinAtual: "PIN is set", pinSemCadastro: "No PIN set",
     pinTexto: "The Office role can only change or delete an entry by typing this PIN. It belongs to the project, is stored hashed, and is nobody's login password.",
     pinNovo: "New PIN (at least {min} characters)", pinSalvar: "Save PIN", pinSalvo: "PIN saved.",
@@ -178,7 +178,7 @@ export const en: Dicionario = {
     mediaIA: "Market average (AI)", desvio: "Deviation vs average (%)", volume: "Volume", unidade: "Unit", precoUnitario: "Unit price", receita: "Total revenue",
     mes: "Month", investimento: "Investment", receitaMes: "Revenue", recAcum: "Cum. revenue", saldoAcum: "Cum. balance",
     unidadeRef: "Ref. unit", minimo: "Minimum", medio: "Average", maximo: "Maximum", confianca: "Confidence", contexto: "Context", premissas: "Assumptions", fontes: "Sources", modelo: "Model",
-    tipoDespesa: "EXPENSE", 
+    tipoDespesa: "EXPENSE",
     tipoInvestimento: "INVESTMENT", tipoReceita: "REVENUE", venda: "Sale",
     tipo: "Type", id: "ID", descricao: "Description",
     custoVendas: "Cost of sales", saida: "Outflow", saidaAcum: "Cum. outflow", saidaTotal: "Total outflow",
@@ -347,10 +347,8 @@ export const en: Dicionario = {
   },
   painel: {
     titulo: "Company overview", subtitulo: "The whole operation of {nome}: portfolio, result and what is still open.",
-    carteira: "Portfolio", resultado: "Consolidated result",
-    ativos: "{n} active", vendasQtd: "{n} sale(s)",
-    receita: "Revenue", receitaMes: "Revenue this month", saida: "Outflow",
-    saidaNota: "Investment + cost of sales + expenses", saldo: "Balance",
+    carteira: "Portfolio",
+    ativos: "{n} active",
     operacao: "Own operations",
     contratosAtivos: "Active contracts",
     contratosAtivosNota: "Signed and in execution",

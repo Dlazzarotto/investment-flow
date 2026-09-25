@@ -2,7 +2,7 @@
 export const pt = {
   meta: { titulo: "Investment-Flow System", descricao: "Investimentos, receitas e parcerias por projeto" },
   comum: {
-    acessoSuspenso: "Acesso suspenso", acessoSuspensoTexto: "O contrato desta empresa está suspenso ou com a vigência vencida. O histórico continua aqui, mas não é possível lançar nem alterar nada até a regularização.", 
+    acessoSuspenso: "Acesso suspenso", acessoSuspensoTexto: "O contrato desta empresa está suspenso ou com a vigência vencida. O histórico continua aqui, mas não é possível lançar nem alterar nada até a regularização.",
     app: "Aportes", sair: "Sair", idioma: "Idioma", salvando: "Salvando…", excluir: "Excluir", remover: "Remover",
     total: "Total", data: "Data", categoria: "Categoria", unidade: "Unidade", contato: "Contato", nome: "Nome",
     verProjetos: "Ver meus projetos", tentarDeNovo: "Tentar de novo", erroTitulo: "Algo deu errado",
@@ -54,7 +54,7 @@ export const pt = {
     nomeParticipante: "Nome (empresa ou pessoa)", nomePlaceholder: "Ex.: Mineradora Rio Verde Ltda.",
     contatoOpcional: "Contato (opcional)", contatoPlaceholder: "E-mail ou telefone", adicionado: "Participante {nome} adicionado.",
     removerConfirma: "Remover {nome} do projeto?",
-    excluirProjeto: "Excluir projeto", excluirTexto: "Remove o projeto, todos os investimentos, vendas e participantes. Não há como desfazer.",
+    excluirProjeto: "Excluir projeto", excluirTexto: "Remove o projeto e tudo que é dele: aportes, custos, sócios e investidores, e os contratos, garantias e monetizações por conta dele. Contratos da própria empresa que só citavam o projeto continuam. Não há como desfazer. Para só tirar o projeto de circulação, mude o status para Encerrado.",
     excluirDigite: "Digite o nome do projeto para liberar a exclusão", excluirBotao: "Excluir projeto definitivamente",
     excluirConfirma: "Excluir definitivamente \"{nome}\"?",
   },
@@ -149,7 +149,7 @@ export const pt = {
     porCategoria: "Despesas por categoria",
   },
   acesso: {
-    conviteRecebido: "Você foi convidado", 
+    conviteRecebido: "Você foi convidado",
     pin: "PIN de autorização", pinAtual: "PIN cadastrado", pinSemCadastro: "Nenhum PIN cadastrado",
     pinTexto: "O Escritório só altera ou exclui um lançamento digitando este PIN. Ele é do projeto, fica guardado com hash e não é a senha de login de ninguém.",
     pinNovo: "Novo PIN (mínimo de {min} caracteres)", pinSalvar: "Salvar PIN", pinSalvo: "PIN salvo.",
@@ -178,7 +178,7 @@ export const pt = {
     mediaIA: "Média de mercado (IA)", desvio: "Desvio vs média (%)", volume: "Volume", unidade: "Unidade", precoUnitario: "Preço unitário", receita: "Receita total",
     mes: "Mês", investimento: "Investimento", receitaMes: "Receita", recAcum: "Rec. acumulada", saldoAcum: "Saldo acumulado",
     unidadeRef: "Unidade ref.", minimo: "Mínimo", medio: "Médio", maximo: "Máximo", confianca: "Confiança", contexto: "Contexto", premissas: "Premissas", fontes: "Fontes", modelo: "Modelo",
-    tipoDespesa: "DESPESA", 
+    tipoDespesa: "DESPESA",
     tipoInvestimento: "INVESTIMENTO", tipoReceita: "RECEITA", venda: "Venda",
     tipo: "Tipo", id: "ID", descricao: "Descrição",
     custoVendas: "Custo das vendas", saida: "Saída", saidaAcum: "Saída acumulada", saidaTotal: "Saída total",
@@ -347,10 +347,8 @@ export const pt = {
   },
   painel: {
     titulo: "Painel da empresa", subtitulo: "A operação inteira de {nome}: carteira, resultado e o que está em aberto.",
-    carteira: "Carteira", resultado: "Resultado consolidado",
-    ativos: "{n} ativo(s)", vendasQtd: "{n} venda(s)",
-    receita: "Receita", receitaMes: "Receita no mês", saida: "Saída",
-    saidaNota: "Investimento + custo das vendas + despesas", saldo: "Saldo",
+    carteira: "Carteira",
+    ativos: "{n} ativo(s)",
     operacao: "Operação própria",
     contratosAtivos: "Contratos ativos",
     contratosAtivosNota: "Assinados e em execução",

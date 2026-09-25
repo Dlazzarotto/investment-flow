@@ -2,7 +2,7 @@ import type { Dicionario } from "./pt";
 export const zh: Dicionario = {
   meta: { titulo: "Investment-Flow System", descricao: "按项目管理投资、收入与合作" },
   comum: {
-    acessoSuspenso: "访问已暂停", acessoSuspensoTexto: "该公司的套餐已暂停或已过期。历史数据仍在，但在结清前无法录入或修改任何内容。", 
+    acessoSuspenso: "访问已暂停", acessoSuspensoTexto: "该公司的套餐已暂停或已过期。历史数据仍在，但在结清前无法录入或修改任何内容。",
     app: "投资", sair: "退出", idioma: "语言", salvando: "保存中…", excluir: "删除", remover: "移除",
     total: "合计", data: "日期", categoria: "类别", unidade: "单位", contato: "联系方式", nome: "名称",
     verProjetos: "查看我的项目", tentarDeNovo: "重试", erroTitulo: "出了点问题",
@@ -54,7 +54,7 @@ export const zh: Dicionario = {
     nomeParticipante: "名称（公司或个人）", nomePlaceholder: "例如：绿河矿业有限公司",
     contatoOpcional: "联系方式（可选）", contatoPlaceholder: "邮箱或电话", adicionado: "已添加参与方 {nome}。",
     removerConfirma: "将 {nome} 从项目中移除？",
-    excluirProjeto: "删除项目", excluirTexto: "将删除该项目及其全部投资、销售和参与方记录，且无法撤销。",
+    excluirProjeto: "删除项目", excluirTexto: "删除该项目及其全部内容：出资、成本、合伙人和投资人，以及以该项目名义签订的合同、担保和变现。公司自身仅引用该项目的合同将保留。此操作无法撤销。如只需停用项目，请将状态改为“已结束”。",
     excluirDigite: "输入项目名称以启用删除", excluirBotao: "永久删除项目",
     excluirConfirma: "永久删除“{nome}”？",
   },
@@ -149,7 +149,7 @@ export const zh: Dicionario = {
     porCategoria: "按类别的费用",
   },
   acesso: {
-    conviteRecebido: "您收到了邀请", 
+    conviteRecebido: "您收到了邀请",
     pin: "授权 PIN", pinAtual: "已设置 PIN", pinSemCadastro: "未设置 PIN",
     pinTexto: "办公室角色只有输入此 PIN 才能修改或删除记录。它属于项目，以哈希方式保存，并非任何人的登录密码。",
     pinNovo: "新 PIN（至少 {min} 个字符）", pinSalvar: "保存 PIN", pinSalvo: "PIN 已保存。",
@@ -178,7 +178,7 @@ export const zh: Dicionario = {
     mediaIA: "市场均价（AI）", desvio: "相对均价偏差 (%)", volume: "销量", unidade: "单位", precoUnitario: "单价", receita: "总收入",
     mes: "月份", investimento: "投资", receitaMes: "收入", recAcum: "累计收入", saldoAcum: "累计余额",
     unidadeRef: "参考单位", minimo: "最低", medio: "均价", maximo: "最高", confianca: "置信度", contexto: "背景", premissas: "假设条件", fontes: "来源", modelo: "模型",
-    tipoDespesa: "费用", 
+    tipoDespesa: "费用",
     tipoInvestimento: "投资", tipoReceita: "收入", venda: "销售",
     tipo: "类型", id: "ID", descricao: "描述",
     custoVendas: "销售成本", saida: "支出", saidaAcum: "累计支出", saidaTotal: "支出合计",
@@ -347,10 +347,8 @@ export const zh: Dicionario = {
   },
   painel: {
     titulo: "公司总览", subtitulo: "{nome} 的全部经营：客户组合、经营结果与未了事项。",
-    carteira: "客户与资源", resultado: "合并结果",
-    ativos: "其中 {n} 个启用", vendasQtd: "{n} 笔销售",
-    receita: "收入", receitaMes: "本月收入", saida: "支出",
-    saidaNota: "投资 + 销售成本 + 费用", saldo: "结余",
+    carteira: "客户与资源",
+    ativos: "其中 {n} 个启用",
     operacao: "自营业务",
     contratosAtivos: "有效合同",
     contratosAtivosNota: "已签署和执行中",

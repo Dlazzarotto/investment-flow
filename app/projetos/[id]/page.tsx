@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { mudarStatusProjeto } from "@/app/actions/projetos";
+import { excluirProjeto, mudarStatusProjeto } from "@/app/actions/projetos";
+import { ConfirmarExclusaoProjeto } from "@/components/ConfirmarExclusaoProjeto";
 import { SelectAutoSubmit } from "@/components/ui/SelectAutoSubmit";
 import { SeloStatus } from "@/components/contratos/SeloStatus";
 import {
@@ -139,6 +140,15 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
             </ul>
           )}
           <p className="mt-2 text-sm text-stone">{t.contratosNota}</p>
+        </section>
+      )}
+
+      {/* Aqui, junto do status: encerrar e excluir são decisões sobre o projeto inteiro. */}
+      {pode.ehDono && (
+        <section className="secao max-w-3xl border-t border-stone-light pt-8">
+          <h2 className="text-loss">{d.parceria.excluirProjeto}</h2>
+          <p className="mb-4 text-stone">{d.parceria.excluirTexto}</p>
+          <ConfirmarExclusaoProjeto action={excluirProjeto} projetoId={projeto.id} nome={projeto.nome} />
         </section>
       )}
     </>
