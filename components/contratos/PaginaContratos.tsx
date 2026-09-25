@@ -44,7 +44,8 @@ export async function PaginaContratos({ direcao, statusParam }: { direcao: Direc
   const lista = contratos.filter((c) => (!status || c.status === status) && c.direcao === direcao);
   const base = direcao === "venda" ? "/vendas" : "/compras";
   const filtro = (s: StatusContrato | null) => (s ? `${base}?status=${s}` : base);
-  const faltaCadastro = clientes.length === 0 || commodities.length === 0;
+  // Commodity pode nascer no próprio contrato (0029); o cliente precisa existir antes.
+  const faltaCadastro = clientes.length === 0;
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>

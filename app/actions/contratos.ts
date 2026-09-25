@@ -13,9 +13,14 @@ import { traduzirErroBanco } from "./erros";
  * contraparte, commodity ou projeto de outra empresa.
  */
 
+/** `documentos_exigidos` vem de checkboxes: chega como lista, não como campo único. */
+function dadosContrato(fd: FormData) {
+  return { ...formParaObjeto(fd), documentos_exigidos: fd.getAll("documentos_exigidos").map(String) };
+}
+
 export async function criarContrato(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
-  const parsed = criarSchemas(d).contratoComercial.safeParse(formParaObjeto(fd));
+  const parsed = criarSchemas(d).contratoComercial.safeParse(dadosContrato(fd));
   if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
 
   const { comprador_id, vendedor_id, financial_partner_id, ...contrato } = parsed.data;
@@ -38,7 +43,7 @@ export async function atualizarContrato(_: ActionState, fd: FormData): Promise<A
   const schemas = criarSchemas(d);
   const id = schemas.uuid.safeParse(fd.get("id"));
   if (!id.success) return { ok: false, erro: d.validacao.idInvalido };
-  const parsed = schemas.contratoComercial.safeParse(formParaObjeto(fd));
+  const parsed = schemas.contratoComercial.safeParse(dadosContrato(fd));
   if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
   const { organizacao_id, comprador_id, vendedor_id, financial_partner_id, ...campos } = parsed.data;
 

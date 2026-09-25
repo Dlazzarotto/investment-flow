@@ -14,6 +14,12 @@ const base: Contrato = {
   pct_provisoria: null, comissao_base: null, comissao_valor: null, data_loi: null, data_icpo: null,
   data_sco: null, data_assinatura: null, inicio_entregas: null, fim_entregas: null, observacoes: null,
   criado_em: "", atualizado_em: "",
+  grade_id: null, especificacao: null, embalagem: null, base_preco: null, origem_id: null, ponto_carga_id: null,
+  destino: null, ponto_descarga_id: null, destino_final_id: null, transbordo_id: null, rota_fluvial: null,
+  barcacas_qtd: null, barcaca_obs: null, porte_navio: null, navio_nome: null, navio_imo: null, calado_max_m: null,
+  frete_valor: null, taxa_carga_dia: null, taxa_descarga_dia: null, demurrage_dia: null, despatch_dia: null,
+  entrega_interior: null, entrega_interior_obs: null, inspetora: null, inspecao_local: null, inspecao_custo: null,
+  documentos_exigidos: [],
 };
 const c = (x: Partial<Contrato>): Contrato => ({ ...base, ...x });
 

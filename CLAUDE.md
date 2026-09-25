@@ -56,6 +56,9 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      administra uma empresa nunca entra em outra — nem pelo master, nem como sócio)
                        0028_excluir_empresa.sql (excluir_empresa(): master exclui empresa VAZIA; a trava do último ADM impedia
                                                      excluir qualquer empresa; check NOT VALID: e-mail do master não administra empresa)
+                       0029_catalogo_locais_termos.sql (Grupo → Commodity → Grade → Especificação; grupos padrão + da empresa;
+                                                     cadastro de Locais com calado; contrato com grade, packing, base de preço, rota, navio,
+                                                     barcaça, transbordo, frete, demurrage, inspeção e documentos exigidos)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -69,7 +72,7 @@ app/vendas, /compras   lista de contratos com a direção fixa (components/contr
 app/contratos/         novo/ (?estimativa= preenche pela proposta; ?direcao=) e [id]/ (resumo + garantias + edição); contas
                        puras em lib/contratos.ts (preço, valor, faixa, comissão, resumoContratos)
 app/propostas/         todas as propostas (custeio) da empresa; ainda nascem dentro de um projeto (cadeia é do projeto, 0008)
-app/clientes, /fornecedores, /commodities  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
+app/clientes, /fornecedores, /commodities, /locais  cadastros comerciais da EMPRESA (não do projeto); fornecedor usa o vocabulário do
                        custeio (grupo_custo, modal_etapa) para o lançamento herdar sem tradução no meio
 app/master/            painel da plataforma: panorama (ativos, inativos, em débito, contrato, a receber — widget
                        clicável filtra a lista), liberar empresa, contrato, faturas e administradores
@@ -87,8 +90,8 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
 components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
-tests/                 calculos.test.ts, custeio.test.ts, texto.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13–18 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+tests/                 calculos.test.ts, custeio.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
+                       schema*.test.sql (psql; schema13–19 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
                        DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
@@ -97,7 +100,7 @@ tests/                 calculos.test.ts, custeio.test.ts, texto.test.ts, contrat
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 135 testes, todos devem passar
+npm test          # vitest — 142 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -257,6 +260,27 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   de que o usuário é DONO; projeto compartilhado não muda de empresa por decisão de quem só participa.
 - Painel: "Operação" vem primeiro — contratos ativos, em negociação, contratado por moeda e posição por
   commodity (comprado − vendido; toneladas não se somam com barris).
+
+### Catálogo, locais e termos do contrato (0029, decisões do usuário)
+
+- **Grupo → Commodity → Grade → Especificação.** A especificação é POR GRADE (Iron Ore Fines 62 % ≠ Lump 65 %);
+  parâmetro sem `grade_id` é o padrão da commodity, que o grade HERDA (`especificacaoDoGrade`, lib/catalogo.ts).
+- **Grupos: lista pronta + da empresa.** Os 12 padrão têm `organizacao_id` vazio e `codigo` (rótulo em
+  `d.enums.grupoCommodity`); os da empresa têm `nome`. Commodity só entra em grupo padrão ou da própria empresa
+  (política RESTRITIVA `commodities_grupo_valido`). `commodities.categoria` (texto livre) ficou só para leitura.
+- **Locais** (mina, porto, terminal fluvial, armazém, ferrovia, cidade) com país, UN/LOCODE e calado máximo. O
+  contrato escolhe origem, ponto de carga, transbordo, ponto de descarga e destino final dessa lista (FK composta:
+  mesma empresa). `porto_embarque`/`porto_destino` (texto) ficaram como legado, preservados e exibidos.
+- **Contrato em seções:** Partes · Produto (cascata grupo → commodity → grade, "+ nova commodity/grade" ali mesmo)
+  · Preço (base de preço, Incoterm) · Pagamento · Rota e logística · Embarque e inspeção (janela, inspetora,
+  documentos exigidos) · Marcos. Criar dentro do contrato NÃO é <form> (form aninhado): chama a server action
+  com FormData montado e a action devolve `id` em `ActionState` para a tela selecionar o item novo.
+- **Calado do navio** (`caladoLimite`) = menor calado dos portos em que o NAVIO opera: com transbordo, transbordo +
+  descarga; sem, carga + descarga. Terminal fluvial antes do transbordo é da barcaça e não limita o navio.
+  Laytime = volume ÷ taxa diária; frete principal pelo Incoterm 2020 (C e D: vendedor; E e F: comprador).
+- O NAVIO REAL de cada carga fica para os embarques; o contrato guarda os termos e o navio nomeado, se houver.
+- Tabelas e painéis dentro de cartões: `min-w-0 flex-1 basis-64` no resumo (components/cadastros/Cadastro.tsx) e
+  `grid-cols-1` nas grades internas — sem isso a tabela aberta empurra a página para fora no celular.
 
 ### Custeio — cálculo reverso (0008, etapa 1 fechada)
 

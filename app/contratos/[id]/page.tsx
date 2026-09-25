@@ -8,7 +8,7 @@ import { Instrumentos } from "@/components/contratos/Instrumentos";
 import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { atualizarContrato, excluirContrato } from "@/app/actions/contratos";
 import {
-  ehMaster, listarCarteira, listarClientes, listarCommodities, listarInstrumentos, listarMonetizacoes, listarPartes, listarProjetos,
+  ehMaster, listarCarteira, listarClientes, listarCommodities, listarGrades, listarGrupos, listarLocais, listarParametros, listarInstrumentos, listarMonetizacoes, listarPartes, listarProjetos,
   minhaOrganizacao, obterContrato, obterUsuario,
 } from "@/lib/consultas";
 import { alertasInstrumentos, comissaoAgente, cronogramaPagamento, faixaVolume, precoUnitario, valorContrato } from "@/lib/contratos";
@@ -16,6 +16,7 @@ import { hojeISO } from "@/lib/format";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
+import { caladoLimite, laytimeDias, rotuloGrupo } from "@/lib/catalogo";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,11 @@ export default async function ContratoPage({ params, searchParams }: { params: {
   const orgId = org.organizacao.id;
   const contrato = await obterContrato(params.id);
   if (contrato.organizacao_id !== orgId) notFound();
-  const [clientes, commodities, todasPartes, todosInstrumentos, todasMonetizacoes] = await Promise.all([
+  const [clientes, commodities, todasPartes, todosInstrumentos, todasMonetizacoes, grupos, grades, locais] = await Promise.all([
     listarClientes(orgId), listarCommodities(orgId), listarPartes(orgId), listarInstrumentos(orgId), listarMonetizacoes(orgId),
+    listarGrupos(orgId), listarGrades(orgId), listarLocais(orgId),
   ]);
+  const parametros = await listarParametros(commodities.map((c) => c.id));
   const partes = todasPartes.filter((p) => p.contrato_id === contrato.id);
   const parte = (papel: "comprador" | "vendedor" | "financial_partner") => partes.find((p) => p.papel === papel)?.cliente_id ?? null;
   const nome = (id: string | null) => (id ? clientes.find((c) => c.id === id)?.nome : undefined);
@@ -57,6 +60,56 @@ export default async function ContratoPage({ params, searchParams }: { params: {
     pctAnt > 0 ? trecho(pctAnt, t.antecipado, crono?.antecipado) : null,
     pctAnt < 100 ? trecho(100 - pctAnt, evento, crono?.saldo) : null,
   ].filter(Boolean).join(" · ");
+
+  // Termos do contrato (0029): só o que foi preenchido, na ordem em que a carga anda.
+  const local = (id: string | null) => {
+    const l = id ? locais.find((x) => x.id === id) : undefined;
+    return l ? [l.nome, l.pais].filter(Boolean).join(" — ") : null;
+  };
+  const e = d.enums;
+  const grade = grades.find((g) => g.id === contrato.grade_id);
+  const grupo = grupos.find((g) => g.id === commodity?.grupo_id);
+  const dinheiro = (x: number | null) => (x === null ? null : f.moeda(Number(x), contrato.moeda));
+  const ltC = laytimeDias(Number(contrato.volume), contrato.taxa_carga_dia === null ? null : Number(contrato.taxa_carga_dia));
+  const ltD = laytimeDias(Number(contrato.volume), contrato.taxa_descarga_dia === null ? null : Number(contrato.taxa_descarga_dia));
+  const achar = (id: string | null) => (id ? locais.find((l) => l.id === id) : undefined);
+  const limite = caladoLimite({
+    carga: achar(contrato.ponto_carga_id), transbordo: achar(contrato.transbordo_id), descarga: achar(contrato.ponto_descarga_id),
+  });
+  const rota = [local(contrato.origem_id), local(contrato.ponto_carga_id) ?? contrato.porto_embarque,
+    local(contrato.transbordo_id), local(contrato.ponto_descarga_id) ?? contrato.porto_destino, local(contrato.destino_final_id)]
+    .filter(Boolean).join(" → ");
+  const termos: [string, string | null][] = [
+    [t.blocoProduto, [grupo ? rotuloGrupo(grupo, d) : null, commodity?.nome, grade?.nome].filter(Boolean).join(" › ") || null],
+    [t.especificacaoContrato, contrato.especificacao],
+    [t.embalagem, contrato.embalagem ? e.embalagem[contrato.embalagem] : null],
+    [t.basePreco, contrato.base_preco ? `${e.basePreco[contrato.base_preco]} · ${contrato.incoterm}` : null],
+    [t.blocoRota, rota || null],
+    [t.destino, contrato.destino],
+    [t.entregaInterior, contrato.entrega_interior
+      ? [e.modalInterior[contrato.entrega_interior], contrato.entrega_interior_obs].filter(Boolean).join(" — ") : null],
+    [t.rotaFluvial, [contrato.rota_fluvial,
+      contrato.barcacas_qtd !== null ? `${contrato.barcacas_qtd} × ${t.barcacasQtd.toLowerCase()}` : null, contrato.barcaca_obs]
+      .filter(Boolean).join(" · ") || null],
+    [t.porteNavio, [contrato.porte_navio ? e.porteNavio[contrato.porte_navio] : null, contrato.navio_nome,
+      contrato.navio_imo ? `IMO ${contrato.navio_imo}` : null].filter(Boolean).join(" · ") || null],
+    [t.caladoMax, [contrato.calado_max_m !== null ? `${f.numero(Number(contrato.calado_max_m), 2)} m` : null,
+      limite !== null ? fmtTexto(t.caladoLimite, { m: f.numero(limite, 2) }) : null].filter(Boolean).join(" · ") || null],
+    [t.frete, dinheiro(contrato.frete_valor)],
+    [t.demurrage, [dinheiro(contrato.demurrage_dia), contrato.despatch_dia !== null ? `${t.despatch}: ${dinheiro(contrato.despatch_dia)}` : null]
+      .filter(Boolean).join(" · ") || null],
+    [t.laytime, ltC !== null || ltD !== null
+      ? fmtTexto(t.laytimeDias, { c: ltC === null ? "—" : f.numero(ltC, 2), d: ltD === null ? "—" : f.numero(ltD, 2) }) : null],
+    [t.janelaEmbarque, contrato.inicio_entregas || contrato.fim_entregas
+      ? [contrato.inicio_entregas && f.data(contrato.inicio_entregas), contrato.fim_entregas && f.data(contrato.fim_entregas)]
+        .filter(Boolean).join(" – ") : null],
+    [t.inspetora, [contrato.inspetora, contrato.inspecao_local ? e.localInspecao[contrato.inspecao_local] : null,
+      contrato.inspecao_custo ? `${t.inspecaoCusto}: ${e.parteResponsavel[contrato.inspecao_custo]}` : null]
+      .filter(Boolean).join(" · ") || null],
+    [t.documentosExigidos, contrato.documentos_exigidos.length
+      ? contrato.documentos_exigidos.map((x) => e.documentoExigido[x]).join(" · ") : null],
+  ];
+  const preenchidos = termos.filter(([, v]) => v);
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
@@ -100,6 +153,20 @@ export default async function ContratoPage({ params, searchParams }: { params: {
         <p className="mt-3 text-sm text-stone">{t.projecaoAviso}</p>
       </section>
 
+      {preenchidos.length > 0 && (
+        <section className="secao">
+          <h2>{t.termos}</h2>
+          <dl className="grid gap-x-6 gap-y-3 rounded-md border border-stone-light bg-white p-4 sm:grid-cols-2">
+            {preenchidos.map(([rotulo, valor]) => (
+              <div key={rotulo} className="min-w-0">
+                <dt className="text-sm text-stone">{rotulo}</dt>
+                <dd className="break-words font-semibold text-navy">{valor}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
       <section className="secao max-w-4xl">
         <h2>{d.instrumentos.titulo}</h2>
         <p className="mb-4 text-stone">{d.instrumentos.subtitulo}</p>
@@ -114,6 +181,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
         <ProjetosForaDaEmpresa organizacaoId={orgId}
                                projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
         <FormContrato acao={atualizarContrato} organizacaoId={orgId} clientes={clientes} commodities={commodities}
+                      grupos={grupos} grades={grades} parametros={parametros} locais={locais}
                       projetos={projetosDaEmpresa}
                       valores={{ ...contrato, comprador_id: parte("comprador"), vendedor_id: parte("vendedor"),
                                  financial_partner_id: parte("financial_partner") }}

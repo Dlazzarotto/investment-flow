@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import {
-  atualizarCommodity, criarCommodity, criarParametro, excluirCommodity, excluirParametro,
+  atualizarCommodity, criarCommodity, criarGrade, criarGrupo, criarParametro, excluirCommodity, excluirGrade, excluirGrupo,
+  excluirParametro,
 } from "@/app/actions/cadastros";
 import { Cadastro } from "./Cadastro";
 import { Mensagem } from "@/components/ui/Mensagem";
@@ -10,180 +11,330 @@ import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
-import type { Commodity, CommodityParametro } from "@/lib/types";
+import { especificacaoDoGrade, rotuloGrupo } from "@/lib/catalogo";
+import type { Commodity, CommodityGrade, CommodityGrupo, CommodityParametro } from "@/lib/types";
 
 interface Props {
+  grupos: CommodityGrupo[];
   commodities: Commodity[];
+  grades: CommodityGrade[];
   parametros: CommodityParametro[];
   organizacaoId: string;
 }
 
-export function ListaCommodities({ commodities, parametros, organizacaoId }: Props) {
+const SEM_GRUPO = "__sem_grupo__";
+
+/**
+ * O catálogo em árvore (0029): Grupo → Commodity → Grade → Especificação.
+ * Escolher o grupo abre as commodities dele; cada commodity abre os grades, e
+ * cada grade a sua especificação (ou herda a padrão da commodity).
+ */
+export function ListaCommodities({ grupos, commodities, grades, parametros, organizacaoId }: Props) {
   const { d } = useI18n();
   const t = d.cadastros;
+  const contagem = (id: string) => commodities.filter((c) => (c.grupo_id ?? SEM_GRUPO) === id).length;
+  const temSemGrupo = contagem(SEM_GRUPO) > 0;
+  // Abre no primeiro grupo que tem commodity; empresa nova abre no primeiro da lista.
+  const inicial = grupos.find((g) => contagem(g.id) > 0)?.id ?? (temSemGrupo ? SEM_GRUPO : grupos[0]?.id ?? SEM_GRUPO);
+  const [grupo, setGrupo] = useState(inicial);
+  const [novoGrupo, setNovoGrupo] = useState(false);
 
-  const porCommodity = new Map<string, CommodityParametro[]>();
-  for (const p of parametros) {
-    const lista = porCommodity.get(p.commodity_id) ?? [];
-    lista.push(p);
-    porCommodity.set(p.commodity_id, lista);
-  }
+  const atual = grupos.find((g) => g.id === grupo);
+  const itens = commodities.filter((c) => (c.grupo_id ?? SEM_GRUPO) === grupo);
 
   return (
-    <Cadastro<Commodity>
-      itens={commodities} organizacaoId={organizacaoId}
-      criar={criarCommodity} atualizar={atualizarCommodity} excluir={excluirCommodity}
-      rotuloNovo={t.novaCommodity} vazioTitulo={t.semCommodities} vazioTexto={t.semCommoditiesTexto}
-      chave={(c) => c.id} nome={(c) => c.nome}
-      confirmacao={(c) => fmtTexto(t.excluirCommodity, { nome: c.nome })}
-      resumo={(c) => (
-        <>
-          <p className="font-semibold text-navy">
-            {c.nome}
-            {!c.ativo && <span className="ml-2 rounded bg-stone-light px-2 py-0.5 text-sm text-stone">{t.inativo}</span>}
-          </p>
-          <p className="mt-1 text-stone">
-            {[c.categoria, rotuloUnidade(c.unidade_padrao, d), c.bolsa].filter(Boolean).join(" · ")}
-          </p>
-          <Parametros commodityId={c.id} itens={porCommodity.get(c.id) ?? []} />
-        </>
-      )}
-      campos={(c) => {
-        const id = c?.id ?? "novo";
-        return (
-          <>
-            <div className="sm:col-span-4">
-              <label className="rotulo" htmlFor={`cnome-${id}`}>{t.nome}</label>
-              <input id={`cnome-${id}`} name="nome" required maxLength={160} className="campo" defaultValue={c?.nome} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="rotulo" htmlFor={`ccat-${id}`}>{t.categoria}</label>
-              <input id={`ccat-${id}`} name="categoria" maxLength={80} className="campo"
-                     placeholder={t.categoriaPlaceholder} defaultValue={c?.categoria ?? ""} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="rotulo" htmlFor={`cuni-${id}`}>{t.unidadePadrao}</label>
-              <input id={`cuni-${id}`} name="unidade_padrao" required maxLength={40} className="campo"
-                     defaultValue={c?.unidade_padrao ?? "Toneladas"} />
-            </div>
-            <div className="sm:col-span-4">
-              <label className="rotulo" htmlFor={`cbol-${id}`}>{t.bolsa}</label>
-              <input id={`cbol-${id}`} name="bolsa" maxLength={160} className="campo"
-                     placeholder={t.bolsaPlaceholder} defaultValue={c?.bolsa ?? ""} />
-            </div>
-            <div className="sm:col-span-6">
-              <label className="rotulo" htmlFor={`cobs-${id}`}>{t.observacoes}</label>
-              <input id={`cobs-${id}`} name="observacoes" maxLength={2000} className="campo" defaultValue={c?.observacoes ?? ""} />
-            </div>
-            <label className="flex min-h-touch items-center gap-3 sm:col-span-6">
-              <input type="checkbox" name="ativo" defaultChecked={c?.ativo ?? true} className="h-6 w-6 accent-navy" />
-              <span>{t.ativo}</span>
-            </label>
-          </>
-        );
-      }}
-    />
+    <>
+      <nav aria-label={t.grupos}>
+        <p className="rotulo">{t.grupos}</p>
+        <ul className="flex flex-wrap gap-2">
+          {grupos.map((g) => (
+            <li key={g.id}>
+              <Chip ativo={grupo === g.id} onClick={() => setGrupo(g.id)} rotulo={rotuloGrupo(g, d)} n={contagem(g.id)} />
+            </li>
+          ))}
+          {temSemGrupo && (
+            <li><Chip ativo={grupo === SEM_GRUPO} onClick={() => setGrupo(SEM_GRUPO)} rotulo={t.semGrupo} n={contagem(SEM_GRUPO)} /></li>
+          )}
+          <li>
+            <button type="button" className="btn-quieto min-h-touch px-3" aria-expanded={novoGrupo}
+                    onClick={() => setNovoGrupo(!novoGrupo)}>+ {t.novoGrupo}</button>
+          </li>
+        </ul>
+        {novoGrupo && <FormGrupo organizacaoId={organizacaoId} aoCriar={(id) => { setNovoGrupo(false); if (id) setGrupo(id); }} />}
+      </nav>
+
+      <section className="mt-6" aria-live="polite">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="mb-0">{atual ? rotuloGrupo(atual, d) : t.semGrupo}</h2>
+          {atual && (atual.organizacao_id === null ? (
+            <span className="rounded bg-navy-soft px-2 py-0.5 text-sm text-navy">{t.grupoPadrao}</span>
+          ) : (
+            <form action={excluirGrupo}
+                  onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirGrupo, { nome: rotuloGrupo(atual, d) }))) e.preventDefault(); }}>
+              <input type="hidden" name="id" value={atual.id} />
+              <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
+            </form>
+          ))}
+        </div>
+
+        <Cadastro<Commodity>
+          key={grupo}
+          itens={itens} organizacaoId={organizacaoId}
+          criar={criarCommodity} atualizar={atualizarCommodity} excluir={excluirCommodity}
+          rotuloNovo={t.novaCommodity} vazioTitulo={t.semCommodities} vazioTexto={t.semCommoditiesTexto}
+          chave={(c) => c.id} nome={(c) => c.nome}
+          confirmacao={(c) => fmtTexto(t.excluirCommodity, { nome: c.nome })}
+          resumo={(c) => (
+            <>
+              <p className="font-semibold text-navy">
+                {c.nome}
+                {!c.ativo && <span className="ml-2 rounded bg-stone-light px-2 py-0.5 text-sm text-stone">{t.inativo}</span>}
+              </p>
+              <p className="mt-1 text-stone">{[rotuloUnidade(c.unidade_padrao, d), c.bolsa].filter(Boolean).join(" · ")}</p>
+              {!c.grupo_id && c.categoria && <p className="text-sm text-stone">{fmtTexto(t.categoriaAntiga, { x: c.categoria })}</p>}
+              <Grades commodity={c} grades={grades.filter((g) => g.commodity_id === c.id)} parametros={parametros}
+                      organizacaoId={organizacaoId} />
+            </>
+          )}
+          campos={(c) => {
+            const id = c?.id ?? "novo";
+            return (
+              <>
+                <div className="sm:col-span-3">
+                  <label className="rotulo" htmlFor={`cnome-${id}`}>{t.nome}</label>
+                  <input id={`cnome-${id}`} name="nome" required maxLength={160} className="campo" defaultValue={c?.nome} />
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="rotulo" htmlFor={`cgrupo-${id}`}>{t.grupo}</label>
+                  <select id={`cgrupo-${id}`} name="grupo_id" className="campo"
+                          defaultValue={c ? c.grupo_id ?? "" : grupo === SEM_GRUPO ? "" : grupo}>
+                    <option value="">{t.semGrupo}</option>
+                    {grupos.map((g) => <option key={g.id} value={g.id}>{rotuloGrupo(g, d)}</option>)}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="rotulo" htmlFor={`cuni-${id}`}>{t.unidadePadrao}</label>
+                  <input id={`cuni-${id}`} name="unidade_padrao" required maxLength={40} className="campo"
+                         defaultValue={c?.unidade_padrao ?? "Toneladas"} />
+                </div>
+                <div className="sm:col-span-4">
+                  <label className="rotulo" htmlFor={`cbol-${id}`}>{t.bolsa}</label>
+                  <input id={`cbol-${id}`} name="bolsa" maxLength={160} className="campo"
+                         placeholder={t.bolsaPlaceholder} defaultValue={c?.bolsa ?? ""} />
+                </div>
+                <div className="sm:col-span-6">
+                  <label className="rotulo" htmlFor={`cobs-${id}`}>{t.observacoes}</label>
+                  <input id={`cobs-${id}`} name="observacoes" maxLength={2000} className="campo" defaultValue={c?.observacoes ?? ""} />
+                </div>
+                <label className="flex min-h-touch items-center gap-3 sm:col-span-6">
+                  <input type="checkbox" name="ativo" defaultChecked={c?.ativo ?? true} className="h-6 w-6 accent-navy" />
+                  <span>{t.ativo}</span>
+                </label>
+              </>
+            );
+          }}
+        />
+      </section>
+    </>
   );
 }
 
-/**
- * Os parâmetros de qualidade de uma commodity. Ficam dentro da ficha porque
- * "Fe 62 %" sozinho não quer dizer nada — é qualidade DAQUELE minério.
- */
-function Parametros({ commodityId, itens }: { commodityId: string; itens: CommodityParametro[] }) {
-  const { d, locale } = useI18n();
-  const f = formatadores(locale);
+function Chip({ ativo, onClick, rotulo, n }: { ativo: boolean; onClick: () => void; rotulo: string; n: number }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={ativo}
+            className={`min-h-touch rounded-md border px-3 text-left ${ativo ? "border-navy bg-navy text-white" : "border-stone-light bg-white text-navy hover:border-navy"}`}>
+      {rotulo} <span className={`num ${ativo ? "text-white/80" : "text-stone"}`}>({n})</span>
+    </button>
+  );
+}
+
+function FormGrupo({ organizacaoId, aoCriar }: { organizacaoId: string; aoCriar: (id?: string) => void }) {
+  const { d } = useI18n();
+  const t = d.cadastros;
+  const [estado, formAction] = useAcaoFormulario(async (s, fd) => {
+    const r = await criarGrupo(s, fd);
+    if (r.ok) aoCriar(r.id);
+    return r;
+  });
+  return (
+    <form action={formAction} className="mt-3 flex flex-wrap items-end gap-2">
+      <input type="hidden" name="organizacao_id" value={organizacaoId} />
+      <div className="min-w-[14rem] flex-1">
+        <label className="rotulo" htmlFor="novo-grupo">{t.nomeGrupo}</label>
+        <input id="novo-grupo" name="nome" required maxLength={80} className="campo" autoFocus />
+      </div>
+      <SubmitButton className="btn-quieto">{d.comum.salvar}</SubmitButton>
+      <div className="w-full"><Mensagem estado={estado} /></div>
+    </form>
+  );
+}
+
+/** Grades da commodity, cada um com a sua especificação; no topo, a padrão que eles herdam. */
+function Grades({ commodity: c, grades, parametros, organizacaoId }:
+  { commodity: Commodity; grades: CommodityGrade[]; parametros: CommodityParametro[]; organizacaoId: string }) {
+  const { d } = useI18n();
   const t = d.cadastros;
   const [aberto, setAberto] = useState(false);
+  const padrao = parametros.filter((p) => p.commodity_id === c.id && p.grade_id === null);
 
   return (
     <div className="mt-3">
-      <button type="button" className="btn-quieto px-3 text-sm" onClick={() => setAberto(!aberto)}>
-        {t.parametros} ({itens.length})
+      <button type="button" className="btn-quieto px-3 text-sm" aria-expanded={aberto} onClick={() => setAberto(!aberto)}>
+        {t.grades} ({grades.length}) · {t.especificacao}
       </button>
-
       {aberto && (
-        <div className="mt-3 rounded-md border border-stone-light bg-stone-paper p-3">
-          {itens.length === 0 ? (
-            <p className="text-stone">{t.semParametros}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="tabela">
-                <thead>
-                  <tr>
-                    <th>{t.parametroNome}</th><th className="num">{t.referencia}</th>
-                    <th className="num">{t.minimo}</th><th className="num">{t.maximo}</th>
-                    <th className="num">{t.ajustePorPonto}</th><th>{d.comum.acoes}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {itens.map((p) => (
-                    <tr key={p.id}>
-                      <td className="font-medium">{p.nome} <span className="text-stone">({p.unidade})</span></td>
-                      <td className="num">{p.referencia === null ? "—" : f.numero(Number(p.referencia), 2)}</td>
-                      <td className="num">{p.minimo === null ? "—" : f.numero(Number(p.minimo), 2)}</td>
-                      <td className="num">{p.maximo === null ? "—" : f.numero(Number(p.maximo), 2)}</td>
-                      <td className={`num font-semibold ${Number(p.ajuste_por_ponto) < 0 ? "text-loss" : "text-navy"}`}>
-                        {f.numero(Number(p.ajuste_por_ponto), 2)}
-                      </td>
-                      <td>
-                        <form action={excluirParametro}
-                              onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirParametro, { nome: p.nome }))) e.preventDefault(); }}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                        </form>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <FormParametro commodityId={commodityId} />
-          <p className="mt-2 text-sm text-stone">{t.ajusteAjuda}</p>
+        <div className="mt-3 grid grid-cols-1 gap-4 rounded-md border border-stone-light bg-stone-paper p-3">
+          <div>
+            <p className="font-semibold text-navy">{t.especificacaoPadrao}</p>
+            <p className="text-sm text-stone">{t.especificacaoPadraoAjuda}</p>
+            <TabelaSpec itens={padrao} />
+            <FormParametro commodityId={c.id} gradeId={null} />
+          </div>
+          <div>
+            <p className="font-semibold text-navy">{t.grades}</p>
+            {grades.length === 0 && <p className="text-stone">{t.semGrades}</p>}
+            <ul className="mt-2 grid grid-cols-1 gap-2">
+              {grades.map((g) => <LinhaGrade key={g.id} grade={g} parametros={parametros} />)}
+            </ul>
+            <FormGrade commodityId={c.id} organizacaoId={organizacaoId} />
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function FormParametro({ commodityId }: { commodityId: string }) {
+function LinhaGrade({ grade: g, parametros }: { grade: CommodityGrade; parametros: CommodityParametro[] }) {
+  const { d } = useI18n();
+  const t = d.cadastros;
+  const [aberto, setAberto] = useState(false);
+  const spec = especificacaoDoGrade(parametros, g.commodity_id, g.id);
+  const proprios = spec.herdada ? 0 : spec.itens.length;
+  return (
+    <li className="rounded-md border border-stone-light bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-semibold text-navy">{g.nome}</span>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-quieto px-3" aria-expanded={aberto} onClick={() => setAberto(!aberto)}>
+            {t.especificacao} ({proprios})
+          </button>
+          <form action={excluirGrade}
+                onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirGrade, { nome: g.nome }))) e.preventDefault(); }}>
+            <input type="hidden" name="id" value={g.id} />
+            <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
+          </form>
+        </div>
+      </div>
+      {aberto && (
+        <div className="mt-3">
+          {spec.herdada && <p className="text-sm text-stone">{t.herdaPadrao}</p>}
+          <TabelaSpec itens={spec.herdada ? [] : spec.itens} />
+          <FormParametro commodityId={g.commodity_id} gradeId={g.id} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function FormGrade({ commodityId, organizacaoId }: { commodityId: string; organizacaoId: string }) {
+  const { d } = useI18n();
+  const t = d.cadastros;
+  const [estado, formAction] = useAcaoFormulario(criarGrade);
+  return (
+    <form key={estado.versao} action={formAction} className="mt-3 flex flex-wrap items-end gap-2">
+      <input type="hidden" name="organizacao_id" value={organizacaoId} />
+      <input type="hidden" name="commodity_id" value={commodityId} />
+      <div className="min-w-[14rem] flex-1">
+        <label className="rotulo" htmlFor={`grade-${commodityId}`}>{t.gradeNome}</label>
+        <input id={`grade-${commodityId}`} name="nome" required maxLength={120} className="campo"
+               placeholder={t.gradeNomePlaceholder} />
+      </div>
+      <SubmitButton className="btn-quieto">{t.novoGrade}</SubmitButton>
+      <div className="w-full"><Mensagem estado={estado} /></div>
+    </form>
+  );
+}
+
+function TabelaSpec({ itens }: { itens: CommodityParametro[] }) {
+  const { d, locale } = useI18n();
+  const f = formatadores(locale);
+  const t = d.cadastros;
+  if (itens.length === 0) return <p className="mt-2 text-stone">{t.semParametros}</p>;
+  const n = (x: number | null) => (x === null ? "—" : f.numero(Number(x), 2));
+  return (
+    <div className="mt-2 overflow-x-auto">
+      <table className="tabela">
+        <thead>
+          <tr>
+            <th>{t.parametroNome}</th><th className="num">{t.referencia}</th>
+            <th className="num">{t.minimo}</th><th className="num">{t.maximo}</th>
+            <th className="num">{t.ajustePorPonto}</th><th>{d.comum.acoes}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {itens.map((p) => (
+            <tr key={p.id}>
+              <td className="font-medium">{p.nome} <span className="text-stone">({p.unidade})</span></td>
+              <td className="num">{n(p.referencia)}</td>
+              <td className="num">{n(p.minimo)}</td>
+              <td className="num">{n(p.maximo)}</td>
+              <td className={`num font-semibold ${Number(p.ajuste_por_ponto) < 0 ? "text-loss" : "text-navy"}`}>
+                {f.numero(Number(p.ajuste_por_ponto), 2)}
+              </td>
+              <td>
+                <form action={excluirParametro}
+                      onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirParametro, { nome: p.nome }))) e.preventDefault(); }}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FormParametro({ commodityId, gradeId }: { commodityId: string; gradeId: string | null }) {
   const { d } = useI18n();
   const t = d.cadastros;
   const [estado, formAction] = useAcaoFormulario(criarParametro);
+  const id = `${commodityId}-${gradeId ?? "padrao"}`;
   return (
     <form key={estado.versao} action={formAction} className="mt-3 grid gap-3 sm:grid-cols-6">
       <input type="hidden" name="commodity_id" value={commodityId} />
+      <input type="hidden" name="grade_id" value={gradeId ?? ""} />
       <div className="sm:col-span-2">
-        <label className="rotulo" htmlFor={`pnome-${commodityId}`}>{t.parametroNome}</label>
-        <input id={`pnome-${commodityId}`} name="nome" required maxLength={80} className="campo"
-               placeholder={t.parametroNomePlaceholder} />
+        <label className="rotulo" htmlFor={`pnome-${id}`}>{t.parametroNome}</label>
+        <input id={`pnome-${id}`} name="nome" required maxLength={80} className="campo" placeholder={t.parametroNomePlaceholder} />
       </div>
       <div className="sm:col-span-1">
-        <label className="rotulo" htmlFor={`puni-${commodityId}`}>{d.comum.unidade}</label>
-        <input id={`puni-${commodityId}`} name="unidade" required maxLength={20} className="campo" defaultValue="%" />
+        <label className="rotulo" htmlFor={`puni-${id}`}>{d.comum.unidade}</label>
+        <input id={`puni-${id}`} name="unidade" required maxLength={20} className="campo" defaultValue="%" />
       </div>
       <div className="sm:col-span-1">
-        <label className="rotulo" htmlFor={`pref-${commodityId}`}>{t.referencia}</label>
-        <input id={`pref-${commodityId}`} name="referencia" type="number" inputMode="decimal" step="any" className="campo num" />
+        <label className="rotulo" htmlFor={`pref-${id}`}>{t.referencia}</label>
+        <input id={`pref-${id}`} name="referencia" type="number" inputMode="decimal" step="any" className="campo num" />
       </div>
       <div className="sm:col-span-1">
-        <label className="rotulo" htmlFor={`pmin-${commodityId}`}>{t.minimo}</label>
-        <input id={`pmin-${commodityId}`} name="minimo" type="number" inputMode="decimal" step="any" className="campo num" />
+        <label className="rotulo" htmlFor={`pmin-${id}`}>{t.minimo}</label>
+        <input id={`pmin-${id}`} name="minimo" type="number" inputMode="decimal" step="any" className="campo num" />
       </div>
       <div className="sm:col-span-1">
-        <label className="rotulo" htmlFor={`pmax-${commodityId}`}>{t.maximo}</label>
-        <input id={`pmax-${commodityId}`} name="maximo" type="number" inputMode="decimal" step="any" className="campo num" />
+        <label className="rotulo" htmlFor={`pmax-${id}`}>{t.maximo}</label>
+        <input id={`pmax-${id}`} name="maximo" type="number" inputMode="decimal" step="any" className="campo num" />
       </div>
       <div className="sm:col-span-2">
-        <label className="rotulo" htmlFor={`paj-${commodityId}`}>{t.ajustePorPonto}</label>
+        <label className="rotulo" htmlFor={`paj-${id}`}>{t.ajustePorPonto}</label>
         {/* Sem min: sílica e umidade derrubam o preço, então negativo é válido. */}
-        <input id={`paj-${commodityId}`} name="ajuste_por_ponto" type="number" inputMode="decimal" step="any"
+        <input id={`paj-${id}`} name="ajuste_por_ponto" type="number" inputMode="decimal" step="any"
                className="campo num" defaultValue={0} />
       </div>
-      <div className="sm:col-span-4 flex items-end">
+      <div className="flex items-end sm:col-span-4">
         <SubmitButton className="btn-quieto">{t.novoParametro}</SubmitButton>
       </div>
+      <p className="text-sm text-stone sm:col-span-6">{t.ajusteAjuda}</p>
       <div className="sm:col-span-6"><Mensagem estado={estado} /></div>
     </form>
   );
