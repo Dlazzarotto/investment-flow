@@ -140,29 +140,9 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto,
         </div>
       </section>
 
-      {painel.map((p) => (
-        <section key={p.moeda} className="secao">
-          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="mb-0">{t.resultado}</h2>
-            {painel.length > 1 && <span className="text-stone">{p.moeda}</span>}
-          </div>
-          {/* Uma coluna no celular: em duas, "US$ 2.980.000,00" nao cabe em
-              tamanho legivel num telefone de 391px. */}
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Cartao rotulo={t.receita} valor={f.moeda(Number(p.receita), p.moeda)}
-                    nota={fmtTexto(t.vendasQtd, { n: p.vendas_qtd })} bom />
-            <Cartao rotulo={t.receitaMes} valor={f.moeda(Number(p.receita_mes), p.moeda)} />
-            <Cartao rotulo={t.saida} valor={f.moeda(Number(p.saida), p.moeda)} nota={t.saidaNota} />
-            <Cartao rotulo={t.saldo} valor={f.moeda(Number(p.saldo), p.moeda)}
-                    bom={Number(p.saldo) >= 0} alerta={Number(p.saldo) < 0} destaque />
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <Cartao rotulo={d.nav.investimentos} valor={f.moeda(Number(p.investimento), p.moeda)} />
-            <Cartao rotulo={d.dashboard.custoVendas} valor={f.moeda(Number(p.custo_vendas), p.moeda)} />
-            <Cartao rotulo={d.nav.despesas} valor={f.moeda(Number(p.despesas), p.moeda)} />
-          </div>
-        </section>
-      ))}
+      {/* Sem "resultado consolidado" de projetos aqui (0022): projeto sob gestão
+          tem resultado próprio, no bloco Projetos e na página dele — somar
+          investimentos e vendas de projetos na empresa dava um saldo que não é dela. */}
 
       {/* O que o usuário pediu e o sistema ainda não sabe responder. Dizer isso
           na tela é melhor do que mostrar um zero que parece um número real. */}

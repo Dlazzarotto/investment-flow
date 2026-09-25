@@ -14,24 +14,6 @@ async function minhaOrganizacaoId(): Promise<string | null> {
   return (data as string | null) ?? null;
 }
 
-/** Cria a organização dos sócios; quem cria já entra como sócio (função criar_organizacao). */
-export async function criarOrganizacao(_: ActionState, fd: FormData): Promise<ActionState> {
-  const { d } = obterD();
-  const parsed = criarSchemas(d).organizacao.safeParse(formParaObjeto(fd));
-  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
-
-  // criar_organizacao recusa quem já é sócio com errcode unique_violation, que o
-  // tradutor leria como "já existe uma com esse nome" — motivo errado. Conferimos antes.
-  if (await minhaOrganizacaoId()) return { ok: false, erro: d.organizacao.jaTemUma };
-
-  const supabase = createClient();
-  const { error } = await supabase.rpc("criar_organizacao", { p_nome: parsed.data.nome });
-  if (error) return { ok: false, erro: traduzirErroBanco(error, "organizacao", d) };
-
-  revalidatePath("/", "layout");
-  return { ok: true, sucesso: fmtTexto(d.organizacao.criada, { nome: parsed.data.nome }) };
-}
-
 /** Adiciona um sócio (admin em todos os projetos da organização) pelo e-mail confirmado da conta dele. */
 export async function adicionarSocio(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();

@@ -48,6 +48,12 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      viram contratos concluídos com venda_origem_id; resumo_projeto sem dupla contagem)
                        0023_master_plataforma.sql + 0024_master_sai_da_dsd.sql (master da plataforma em conta própria;
                                                      o gmail fica só ADM da DSD — a 0024 só age com a conta nova confirmada)
+                       0025_cadastro_so_por_convite.sql (conta avulsa não cria empresa — criar_organizacao revogada — nem projeto
+                                                     fora de empresa; admin do projeto volta a editar o projeto, só não o muda de empresa)
+                       0026_excluir_projeto.sql (excluir_projeto(): projeto + contratos/garantias/monetizações dele numa instrução;
+                                                     o delete direto esbarrava em contratos_conta_ck desde a 0022)
+                       0027_uma_empresa_por_email.sql (índice único global em organizacao_membros.email_normalizado: quem
+                                                     administra uma empresa nunca entra em outra — nem pelo master, nem como sócio)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -80,7 +86,8 @@ components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenario
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13/14 rodam da raiz)
+                       schema*.test.sql (psql; schema13–17 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+                       DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
 ## Comandos
@@ -144,7 +151,15 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
 - **A Investment Flow é a plataforma; a DSD é uma empresa CLIENTE dela, como qualquer outra.** Master e ADM de
   empresa são contas diferentes: master = `david@peaceontax.com` (0023); `david.lazzarotto@gmail.com` é só ADM da
   DSD (a 0024 o tira do master, e só depois de a conta nova existir com e-mail confirmado). Master sem empresa entra
-  em `/master`, nunca na tela que oferece "criar organização".
+  em `/master`.
+- **Conta só nasce por convite, e conta sem convite é vazia (0025).** A tela de login não tem "criar conta";
+  `/criar-conta` existe porque o convidado e o ADM liberado pelo master entram por ela. A trava não é a tela (a chave
+  pública do Supabase está no navegador): é o banco. `criar_organizacao()` está revogada — empresa só nasce por
+  `criar_empresa()` do master — e projeto só nasce dentro da empresa de quem grava.
+- **Empresas nunca se misturam (0027, exigência do usuário).** Um e-mail pertence a UMA empresa: o índice único é
+  global, não por empresa. O master não libera empresa com e-mail de ADM de outra, e o ADM não traz como sócio quem
+  já é de outra. Acesso a um PROJETO de outra empresa (projeto_membros/investidor) é outra coisa e continua possível.
+  Empresa nova nasce zerada; o master copia o link de /criar-conta na própria tela depois de liberar.
 - **Master libera empresas e NÃO lê os dados delas.** Nenhuma policy de projeto,
   custo, cliente ou documento menciona `eh_master()` — é isso que torna o sistema vendável a tradings
   concorrentes entre si. Ele vê `organizacoes` e `organizacao_membros`, e mais nada.
@@ -206,7 +221,12 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   Painel, Vendas, Compras, Propostas, Projetos, Clientes, Fornecedores, Commodities. Dentro do projeto só: Resumo,
   Sócios e investidores, Aportes, Custos do projeto. Sem seletor de projeto na lateral; sem "tipo de parceria / sua
   participação" (a empresa nasce 0 % — se também for sócia, informa a %). Painel geral tem o bloco "Projetos" com
-  Em andamento / Encerrado / Em análise, e abaixo só os resultados sob gestão (não somam na empresa).
+  Em andamento / Encerrado / Em análise, e abaixo só os resultados sob gestão (não somam na empresa). O bloco
+  "Resultado consolidado" (investimentos + vendas + despesas de TODOS os projetos, da 1ª versão) saiu do painel:
+  somava na empresa um saldo que não é dela. `painel_empresa()` ainda calcula essas somas; o painel só usa as contagens.
+- **Excluir projeto é pela função `excluir_projeto()` (0026), nunca delete direto.** Fica no Resumo do projeto, junto
+  do status; só o dono. Leva os contratos por conta do projeto (e garantias/monetizações deles); contrato da própria
+  empresa que só citava o projeto continua, sem ele.
 - **Vendas da 1ª versão viraram contratos concluídos** (`contratos.venda_origem_id`). A linha antiga NÃO foi apagada:
   `resumo_projeto()` soma a venda antiga OU o contrato, nunca os dois — o investidor vê os mesmos números de antes.
   Contrato novo só entra no resultado do projeto quando CONCLUÍDO (preço fixo); fórmula entra com os embarques.

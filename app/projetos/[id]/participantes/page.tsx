@@ -5,8 +5,7 @@ import { FormPin } from "@/components/forms/FormPin";
 import { FormConvite } from "@/components/forms/FormConvite";
 import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { Vazio } from "@/components/ui/Vazio";
-import { ConfirmarExclusaoProjeto } from "@/components/ConfirmarExclusaoProjeto";
-import { atualizarProjeto, excluirProjeto } from "@/app/actions/projetos";
+import { atualizarProjeto } from "@/app/actions/projetos";
 import { excluirParticipante } from "@/app/actions/participantes";
 import { removerMembro } from "@/app/actions/membros";
 import { revogarConvite } from "@/app/actions/acesso";
@@ -216,13 +215,6 @@ export default async function ParticipantesPage({ params }: { params: { id: stri
         </section>
       )}
 
-      {ehDono && (
-        <section className="secao max-w-3xl border-t border-stone-light pt-8">
-          <h2 className="text-loss">{t.excluirProjeto}</h2>
-          <p className="mb-4 text-stone">{t.excluirTexto}</p>
-          <ConfirmarExclusaoProjeto action={excluirProjeto} projetoId={projeto.id} nome={projeto.nome} />
-        </section>
-      )}
     </>
   );
 }
