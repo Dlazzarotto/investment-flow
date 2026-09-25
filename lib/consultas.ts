@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, ClienteDocumento, Commodity, CommodityGrade, CommodityGrupo, CommodityPadrao, CommodityParametro, Local, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
+  Cliente, ClienteDocumento, Commodity, CommodityGrade, CommodityGrupo, CommodityPadrao, CommodityParametro, Local, PesquisaMercado, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
   PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
@@ -467,4 +467,26 @@ export const listarPropostasEmpresa = cache(async (organizacaoId?: string):
   if (error) throw new Error(error.message);
   return ((data ?? []) as (EstimativaCusto & { projetos: { nome: string } })[])
     .map(({ projetos, ...e }) => ({ ...e, projeto_nome: projetos.nome }));
+});
+
+/** Pesquisas de mercado da empresa, mais recentes primeiro (0031). */
+export const listarPesquisas = cache(async (organizacaoId?: string, limite = 200): Promise<PesquisaMercado[]> => {
+  if (!organizacaoId) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.from("pesquisas_mercado").select("*")
+    .eq("organizacao_id", organizacaoId).order("criado_em", { ascending: false }).limit(limite);
+  // Sem a 0031 rodada, a tela abre sem histórico em vez de cair.
+  if (error) {
+    if (error.code === "42P01" || error.code === "PGRST205") return [];
+    throw new Error(error.message);
+  }
+  return (data ?? []) as PesquisaMercado[];
+});
+
+/** As até 3 commodities que o usuário escolheu para o painel (0031); vazio se nunca escolheu. */
+export const obterCommoditiesPainel = cache(async (): Promise<string[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("painel_commodities").select("commodity_ids").maybeSingle();
+  if (error) return [];
+  return ((data?.commodity_ids ?? []) as string[]).slice(0, 3);
 });

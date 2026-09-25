@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { PainelEmpresa } from "@/components/PainelEmpresa";
+import { PrecosMercado } from "@/components/pesquisa/PrecosMercado";
+import { pesquisaConfigurada } from "@/lib/ia/pesquisador";
 import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpresa";
 import {
   acessoSuspenso, capitalPorProjeto, ehMaster, listarCarteira, listarCommodities, listarContratos, listarInstrumentos,
-  listarMonetizacoes, listarProjetos, listarRemuneracoes, minhaOrganizacao, obterPainelEmpresa, obterUsuario,
+  listarMonetizacoes, listarPesquisas, listarProjetos, listarRemuneracoes, minhaOrganizacao, obterCommoditiesPainel, obterPainelEmpresa, obterUsuario,
 } from "@/lib/consultas";
 import {
   alertasInstrumentos, baseDoProjeto, projetarRemuneracao, receitaDaEmpresa, resumoContratos, resumoMonetizacoes,
@@ -39,6 +41,8 @@ export default async function PainelPage() {
     capitalPorProjeto(projetosDaEmpresa.map((p) => p.id)),
   ]);
   const resumo = resumoContratos(contratos);
+  // Preços de mercado (0031): a escolha é de cada usuário; as pesquisas, da empresa.
+  const [escolhidas, pesquisas] = await Promise.all([obterCommoditiesPainel(), listarPesquisas(orgId, 300)]);
   const gestao = remuneracoes.map((r) => {
     const projeto = projetosDaEmpresa.find((p) => p.id === r.projeto_id);
     return { moeda: projeto?.moeda ?? "USD" as const,
@@ -63,6 +67,13 @@ export default async function PainelPage() {
       <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: org.organizacao.nome })}</p>
       <ProjetosForaDaEmpresa organizacaoId={org.organizacao.id}
                              projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
+      <section className="secao">
+        <h2>{d.precosPainel.titulo}</h2>
+        <p className="mb-4 text-stone">{d.precosPainel.subtitulo}</p>
+        <PrecosMercado organizacaoId={orgId} commodities={commodities} escolhidas={escolhidas}
+                       pesquisas={pesquisas.filter((p) => p.modo === "bolsas" && escolhidas.includes(p.commodity_id))}
+                       posicoes={resumo.volumes} configurada={pesquisaConfigurada()} />
+      </section>
       <PainelEmpresa painel={painel} contratos={resumo} receita={receita} alertas={alertas}
                      projetosStatus={{
                        em_analise: projetosDaEmpresa.filter((p) => p.status === "em_analise").length,
