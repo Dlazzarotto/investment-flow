@@ -9,7 +9,7 @@ import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
   Cliente, ClienteDocumento, Commodity, CommodityGrade, CommodityGrupo, CommodityPadrao, CommodityParametro, Local, PesquisaMercado, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
-  PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
+  PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda, ContratoDoProjeto,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -484,6 +484,20 @@ export const listarPesquisas = cache(async (organizacaoId?: string, limite = 200
 });
 
 /** As até 3 commodities que o usuário escolheu para o painel (0031); vazio se nunca escolheu. */
+/**
+ * Contratos que entram no resultado do projeto, só com números (0033) — o que a
+ * carteira do investidor mostra ao lado das vendas antigas. Sem a 0033 rodada, vazio.
+ */
+export const listarContratosDoProjeto = cache(async (projetoId: string): Promise<ContratoDoProjeto[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("contratos_do_projeto", { p_projeto_id: projetoId });
+  if (error) {
+    if (error.code === "42883" || error.code === "PGRST202") return [];
+    throw new Error(error.message);
+  }
+  return (data ?? []) as ContratoDoProjeto[];
+});
+
 export const obterCommoditiesPainel = cache(async (): Promise<string[]> => {
   const supabase = createClient();
   const { data, error } = await supabase.from("painel_commodities").select("commodity_ids").maybeSingle();

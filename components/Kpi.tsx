@@ -4,7 +4,7 @@ export function Kpi({ rotulo, valor, tom = "neutro", nota }:
   return (
     <div className="border-l-4 border-navy pl-4">
       <p className="text-sm text-stone">{rotulo}</p>
-      <p className={`num text-xl font-semibold leading-tight sm:text-2xl ${cor}`}>{valor}</p>
+      <p className={`num text-lg font-semibold leading-tight sm:text-xl ${cor}`}>{valor}</p>
       {nota && <p className="mt-1 text-sm text-stone">{nota}</p>}
     </div>
   );

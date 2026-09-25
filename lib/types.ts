@@ -88,6 +88,12 @@ export interface ResumoProjeto {
   aportes_total: number;
 }
 
+/** Linha de public.contratos_do_projeto() (0033): só números, sem partes nem número do contrato. */
+export interface ContratoDoProjeto {
+  id: string; data: string; direcao: "venda" | "compra"; volume: number; unidade: string; moeda: Moeda;
+  preco: number; valor: number;
+}
+
 /** Linha de public.minha_carteira(): um projeto em que o usuário é participante. */
 export interface CarteiraItem {
   projeto_id: string;

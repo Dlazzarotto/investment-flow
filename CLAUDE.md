@@ -67,6 +67,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0032_auditoria_travas.sql (auditoria: suspensão trava cadastros/ADM/capex/projeto; gerente sem capital;
                                                      resultado do projeto por moeda + compra concluída; contrato convertido travado;
                                                      histórico com empresa; excluir_empresa conta locais/grupos; escritório no custeio)
+                       0033_contratos_na_carteira.sql (contratos_do_projeto(): só números dos contratos que entram no resultado,
+                                                     para a carteira do investidor — ele não lê `contratos`)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -95,11 +97,11 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
                        format.ts (formatadores(locale) — Intl, datas em UTC), csv.ts (CSV por idioma),
                        consultas.ts (leituras, com cache() por requisição), custeio.ts (motor de cálculo reverso),
                        ia/estimativa.ts (chamarClaude compartilhado) e ia/custo.ts (prompt de cargo/serviço)
-components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
-                       própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
+components/            Shell (menu por papel + aviso de suspensão), Lateral, SeletorIdioma, Cenarios, forms/, tabelas/ (edição na
+                       própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario, FormAcao, BotaoExcluir),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, pesquisa.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13 e schema15–22 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+                       schema*.test.sql (psql; schema13 e schema15–23 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
                        DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
@@ -108,7 +110,7 @@ tests/                 calculos.test.ts, custeio.test.ts, pesquisa.test.ts, text
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 159 testes, todos devem passar
+npm test          # vitest — 161 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -288,6 +290,13 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   Shell (todas as telas) e `meu_acesso_suspenso()` inclui o ADM sem projeto e o investidor.
 - **Menu por papel:** sem empresa, a lateral não mostra Painel/Vendas/Compras/Propostas/cadastros.
 - **Painel ↔ listas:** cartão e lista usam o mesmo recorte (`porDirecao`, filtro `?status=ativos`).
+- **Exportação (CSV/Excel/PDF) sai do Resumo do projeto** (só quem administra) e usa `kpisDoResumo(resumo_projeto)` — os
+  mesmos totais da tela e do investidor. TIR sobre a saída. Fluxo mensal, TIR e cenários só veem lançamentos com data
+  (capex, vendas, despesas): contrato concluído está nos totais, não no fluxo — a planilha diz isso.
+- **Carteira:** a tabela de vendas soma as antigas e os contratos concluídos (`contratos_do_projeto`, 0033), que fecham
+  com a receita do topo. Nunca nomes nem número de contrato.
+- `components/Cenarios.tsx` e `components/charts/Grafico*.tsx` estão órfãos desde a 0022 (o dashboard do projeto saiu):
+  religar no Resumo ou apagar é decisão pendente com o usuário.
 
 ### Pesquisa de mercado e preços no painel (0031, decisões do usuário)
 

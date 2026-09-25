@@ -303,7 +303,7 @@ function ExcluirEmpresa({ id, nome }: { id: string; nome: string }) {
       <h4 className="font-semibold text-loss">{t.excluirEmpresa}</h4>
       <p className="mt-1 text-stone">{t.excluirEmpresaTexto}</p>
       <form action={formAction} className="mt-3 grid gap-3 sm:max-w-md"
-            onSubmit={(ev) => { if (!window.confirm(`${t.excluirEmpresa}: ${nome}?`)) ev.preventDefault(); }}>
+            onSubmit={(ev) => { if (!window.confirm(fmtTexto(t.excluirEmpresaConfirma, { nome }))) ev.preventDefault(); }}>
         <input type="hidden" name="id" value={id} />
         <input type="hidden" name="nome" value={nome} />
         <label className="rotulo" htmlFor={`excl-${id}`}>{t.excluirEmpresaDigite}: <strong className="text-navy">{nome}</strong></label>

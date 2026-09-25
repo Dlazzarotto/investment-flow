@@ -21,8 +21,8 @@ export default async function CarteiraPage() {
               <li key={c.projeto_id}>
                 <Link href={`/carteira/${c.projeto_id}`} className="block rounded-md border border-stone-light bg-white px-5 py-4 hover:border-navy">
                   <p className="text-lg font-semibold text-navy">{c.nome}</p>
-                  <p className="text-stone">{d.enums.tipoParceria[c.tipo_parceria]} · {c.moeda} · {fmtTexto(t.projetoDesde, { data: f.data(c.data_inicio) })}</p>
-                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <p className="text-stone">{c.moeda} · {fmtTexto(t.projetoDesde, { data: f.data(c.data_inicio) })}</p>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div><p className="text-sm text-stone">{t.minhaParticipacao}</p><p className="num font-semibold">{f.numero(c.minha_pct, 2)} %</p></div>
                     <div><p className="text-sm text-stone">{t.meusAportes}</p><p className="num font-semibold">{f.moeda(c.meus_aportes, c.moeda)}</p></div>
                     <div><p className="text-sm text-stone">{t.saldoProjeto}</p><p className={`num font-semibold ${c.saldo < 0 ? "text-loss" : "text-gain"}`}>{f.moeda(c.saldo, c.moeda)}</p></div>

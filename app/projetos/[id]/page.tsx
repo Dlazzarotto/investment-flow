@@ -72,12 +72,20 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
           <Cartao rotulo={t.aportes} valor={f.moeda(Number(resumo.aportes_total), m)} />
         </div>
         <p className="mt-2 text-sm text-stone">{t.resultadoNota}</p>
+        {/* Exportação com os mesmos totais desta tela; só para quem administra (leva capital e sócios). */}
+        {pode.administrar && (
+          <nav aria-label={t.exportar} className="mt-4 flex flex-wrap gap-2">
+            <a href={`/api/export/${projeto.id}?formato=xlsx`} className="btn-quieto px-3">{d.dashboard.baixarExcel}</a>
+            <a href={`/api/export/${projeto.id}?formato=csv`} className="btn-quieto px-3">{d.dashboard.baixarCsv}</a>
+            <a href={`/api/export/${projeto.id}?formato=pdf`} target="_blank" rel="noopener" className="btn-quieto px-3">{d.dashboard.baixarPdf}</a>
+          </nav>
+        )}
       </section>
 
       <section className="secao">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="mb-0">{t.socios}</h2>
-          <Link href={`/projetos/${projeto.id}/participantes`} className="text-navy underline">{t.gerirSocios}</Link>
+          <Link href={`/projetos/${projeto.id}/participantes`} className="inline-flex min-h-touch items-center text-navy underline">{t.gerirSocios}</Link>
         </div>
         {participantes.length === 0 ? <p className="text-stone">{t.semSocios}</p> : (
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -99,7 +107,7 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
         <section className="secao">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="mb-0">{t.ganhoEmpresa}</h2>
-            <Link href={`/projetos/${projeto.id}/participantes#gestao`} className="text-navy underline">{t.definirGanho}</Link>
+            <Link href={`/projetos/${projeto.id}/participantes#gestao`} className="inline-flex min-h-touch items-center text-navy underline">{t.definirGanho}</Link>
           </div>
           {ganhos.length === 0 ? <p className="rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{t.semGanho}</p> : (
             <ul className="grid gap-2">

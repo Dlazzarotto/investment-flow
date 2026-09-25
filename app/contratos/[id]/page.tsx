@@ -89,7 +89,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
     [t.entregaInterior, contrato.entrega_interior
       ? [e.modalInterior[contrato.entrega_interior], contrato.entrega_interior_obs].filter(Boolean).join(" — ") : null],
     [t.rotaFluvial, [contrato.rota_fluvial,
-      contrato.barcacas_qtd !== null ? `${contrato.barcacas_qtd} × ${t.barcacasQtd.toLowerCase()}` : null, contrato.barcaca_obs]
+      contrato.barcacas_qtd !== null ? fmtTexto(t.barcacasN, { n: contrato.barcacas_qtd }) : null, contrato.barcaca_obs]
       .filter(Boolean).join(" · ") || null],
     [t.porteNavio, [contrato.porte_navio ? e.porteNavio[contrato.porte_navio] : null, contrato.navio_nome,
       contrato.navio_imo ? `IMO ${contrato.navio_imo}` : null].filter(Boolean).join(" · ") || null],
@@ -113,7 +113,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
-      <Link href={contrato.direcao === "compra" ? "/compras" : "/vendas"} className="text-navy underline">← {t.voltar}</Link>
+      <Link href={contrato.direcao === "compra" ? "/compras" : "/vendas"} className="inline-flex min-h-touch items-center text-navy underline">← {t.voltar}</Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl">{titulo}</h1>
         <SeloStatus status={contrato.status} rotulo={d.enums.statusContrato[contrato.status]} />

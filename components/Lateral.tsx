@@ -12,8 +12,6 @@ interface Props {
   empresa?: string | null;
   usuario?: string | null;
   grupos: GrupoNav[];
-  /** Seletor de projeto — componente de servidor, entregue como slot. */
-  seletor?: React.ReactNode;
   /** Idioma e sair, no pé da barra. */
   rodape: React.ReactNode;
 }
@@ -25,7 +23,7 @@ interface Props {
  * menu. Sem isso, 256 px de lateral numa tela de 375 px não sobra nada para o
  * conteúdo — e é do celular que este sistema mais é usado.
  */
-export function Lateral({ empresa, usuario, grupos, seletor, rodape }: Props) {
+export function Lateral({ empresa, usuario, grupos, rodape }: Props) {
   const { d } = useI18n();
   const [aberta, setAberta] = useState(false);
   const pathname = usePathname();
@@ -42,8 +40,6 @@ export function Lateral({ empresa, usuario, grupos, seletor, rodape }: Props) {
         {empresa && <p className="mt-2 text-sm text-white/80">{empresa}</p>}
         {usuario && <p className="break-all text-sm text-white/60">{usuario}</p>}
       </div>
-
-      {seletor && <div className="border-b border-white/15 px-5 py-4">{seletor}</div>}
 
       <nav aria-label={d.nav.secoes} className="flex-1 px-2 py-3">
         {grupos.map((g, i) => (

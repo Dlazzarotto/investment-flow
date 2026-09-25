@@ -88,7 +88,7 @@ export function PainelMaster({ painel, empresas, faturas }: Props) {
           {filtro !== "todas" && (
             <p className="text-stone">
               {fmtTexto(t.filtrando, { filtro: rotuloFiltro[filtro] })}{" "}
-              <button type="button" className="underline text-navy" onClick={() => setFiltro("todas")}>
+              <button type="button" className="inline-flex min-h-touch items-center text-navy underline" onClick={() => setFiltro("todas")}>
                 {t.limparFiltro}
               </button>
             </p>
