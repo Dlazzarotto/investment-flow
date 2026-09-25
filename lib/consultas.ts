@@ -331,7 +331,12 @@ export const listarGrupos = cache(async (organizacaoId?: string): Promise<Commod
 export const listarCommoditiesPadrao = cache(async (): Promise<CommodityPadrao[]> => {
   const supabase = createClient();
   const { data, error } = await supabase.from("commodities_padrao").select("*").order("ordem");
-  if (error) throw new Error(error.message);
+  // O catálogo é complemento: sem a 0030 rodada (tabela inexistente), as telas de
+  // Commodities e contrato abrem sem ele em vez de cair em "Algo deu errado".
+  if (error) {
+    if (error.code === "42P01" || error.code === "PGRST205") return [];
+    throw new Error(error.message);
+  }
   return (data ?? []) as CommodityPadrao[];
 });
 
