@@ -125,6 +125,50 @@ export async function criarCommodity(_: ActionState, fd: FormData): Promise<Acti
   return { ok: true, sucesso: fmtTexto(d.cadastros.commoditySalva, { nome: parsed.data.nome }), id: data.id };
 }
 
+/**
+ * Adota uma commodity do catálogo do mercado (0030): cria a da empresa com o nome
+ * no idioma de quem clicou, o grupo, a unidade e a referência de preço do catálogo.
+ * Se a empresa já tem uma com o mesmo nome, liga essa ao catálogo em vez de duplicar.
+ */
+export async function adotarCommodity(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const schemas = criarSchemas(d);
+  const org = schemas.uuid.safeParse(fd.get("organizacao_id"));
+  const codigo = String(fd.get("codigo") ?? "");
+  if (!org.success || !/^[a-z0-9_]{2,40}$/.test(codigo)) return { ok: false, erro: d.validacao.dadosInvalidos };
+
+  const supabase = createClient();
+  const { data: item, error: e1 } = await supabase.from("commodities_padrao").select("*").eq("codigo", codigo).maybeSingle();
+  if (e1 || !item) return { ok: false, erro: d.banco.naoEncontrado };
+  const { data: grupo } = await supabase.from("commodity_grupos").select("id")
+    .eq("codigo", item.grupo_codigo).is("organizacao_id", null).maybeSingle();
+  const nome = d.enums.commodityPadrao[codigo as keyof typeof d.enums.commodityPadrao] ?? codigo;
+
+  const { data, error } = await supabase.from("commodities").insert({
+    organizacao_id: org.data, nome, grupo_id: grupo?.id ?? null, padrao_codigo: codigo,
+    unidade_padrao: item.unidade, bolsa: item.referencia && item.referencia !== "—" ? item.referencia : null, ativo: true,
+  }).select("id").single();
+  if (error?.code === "23505") {
+    // Já adotada, ou já existe com o mesmo nome: devolve a que existe (e liga ao catálogo, se ainda não estava).
+    const porCodigo = await supabase.from("commodities").select("id, padrao_codigo")
+      .eq("organizacao_id", org.data).eq("padrao_codigo", codigo).maybeSingle();
+    // ilike sem curinga = igual, sem diferenciar maiúsculas; escapa % e _ do nome.
+    const porNome = porCodigo.data ? null : await supabase.from("commodities").select("id, padrao_codigo")
+      .eq("organizacao_id", org.data).ilike("nome", nome.replace(/[\\%_]/g, (c) => `\\${c}`)).limit(1).maybeSingle();
+    const existente = porCodigo.data ?? porNome?.data ?? null;
+    if (!existente) return { ok: false, erro: traduzirErroBanco(error, "commodity", d) };
+    if (!existente.padrao_codigo) {
+      await supabase.from("commodities").update({ padrao_codigo: codigo, grupo_id: grupo?.id ?? null }).eq("id", existente.id);
+    }
+    revalidatePath("/commodities");
+    return { ok: true, sucesso: fmtTexto(d.cadastros.commoditySalva, { nome }), id: existente.id };
+  }
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "commodity", d) };
+  revalidatePath("/commodities");
+  revalidatePath("/contratos", "layout");
+  return { ok: true, sucesso: fmtTexto(d.cadastros.commoditySalva, { nome }), id: data.id };
+}
+
 export async function atualizarCommodity(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const schemas = criarSchemas(d);

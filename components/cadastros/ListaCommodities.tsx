@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
-  atualizarCommodity, criarCommodity, criarGrade, criarGrupo, criarParametro, excluirCommodity, excluirGrade, excluirGrupo,
+  adotarCommodity, atualizarCommodity, criarCommodity, criarGrade, criarGrupo, criarParametro, excluirCommodity, excluirGrade, excluirGrupo,
   excluirParametro,
 } from "@/app/actions/cadastros";
 import { Cadastro } from "./Cadastro";
@@ -12,10 +12,11 @@ import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { especificacaoDoGrade, rotuloGrupo } from "@/lib/catalogo";
-import type { Commodity, CommodityGrade, CommodityGrupo, CommodityParametro } from "@/lib/types";
+import type { Commodity, CommodityGrade, CommodityGrupo, CommodityPadrao, CommodityParametro } from "@/lib/types";
 
 interface Props {
   grupos: CommodityGrupo[];
+  catalogo: CommodityPadrao[];
   commodities: Commodity[];
   grades: CommodityGrade[];
   parametros: CommodityParametro[];
@@ -29,13 +30,20 @@ const SEM_GRUPO = "__sem_grupo__";
  * Escolher o grupo abre as commodities dele; cada commodity abre os grades, e
  * cada grade a sua especificação (ou herda a padrão da commodity).
  */
-export function ListaCommodities({ grupos, commodities, grades, parametros, organizacaoId }: Props) {
+export function ListaCommodities({ grupos, catalogo, commodities, grades, parametros, organizacaoId }: Props) {
   const { d } = useI18n();
   const t = d.cadastros;
-  const contagem = (id: string) => commodities.filter((c) => (c.grupo_id ?? SEM_GRUPO) === id).length;
-  const temSemGrupo = contagem(SEM_GRUPO) > 0;
+  const daEmpresa = (id: string) => commodities.filter((c) => (c.grupo_id ?? SEM_GRUPO) === id).length;
+  // O número do botão é o que há para escolher: as da empresa + as do mercado ainda não adicionadas.
+  // Contar só as da empresa mostrava "(0)" em grupo cheio de opções.
+  const adotadas = new Set(commodities.map((c) => c.padrao_codigo).filter(Boolean));
+  const contagem = (id: string) => {
+    const g = grupos.find((x) => x.id === id);
+    return daEmpresa(id) + (g?.codigo ? catalogo.filter((p) => p.grupo_codigo === g.codigo && !adotadas.has(p.codigo)).length : 0);
+  };
+  const temSemGrupo = daEmpresa(SEM_GRUPO) > 0;
   // Abre no primeiro grupo que tem commodity; empresa nova abre no primeiro da lista.
-  const inicial = grupos.find((g) => contagem(g.id) > 0)?.id ?? (temSemGrupo ? SEM_GRUPO : grupos[0]?.id ?? SEM_GRUPO);
+  const inicial = grupos.find((g) => daEmpresa(g.id) > 0)?.id ?? (temSemGrupo ? SEM_GRUPO : grupos[0]?.id ?? SEM_GRUPO);
   const [grupo, setGrupo] = useState(inicial);
   const [novoGrupo, setNovoGrupo] = useState(false);
 
@@ -45,8 +53,16 @@ export function ListaCommodities({ grupos, commodities, grades, parametros, orga
   return (
     <>
       <nav aria-label={t.grupos}>
-        <p className="rotulo">{t.grupos}</p>
-        <ul className="flex flex-wrap gap-2">
+        {/* No celular, 12 botões ocupariam uma tela inteira antes das commodities: vira um seletor. */}
+        <div className="sm:hidden">
+          <label className="rotulo" htmlFor="grupo-celular">{t.grupos}</label>
+          <select id="grupo-celular" className="campo" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
+            {grupos.map((g) => <option key={g.id} value={g.id}>{rotuloGrupo(g, d)} ({contagem(g.id)})</option>)}
+            {temSemGrupo && <option value={SEM_GRUPO}>{t.semGrupo} ({contagem(SEM_GRUPO)})</option>}
+          </select>
+        </div>
+        <p className="rotulo hidden sm:block">{t.grupos}</p>
+        <ul className="hidden flex-wrap gap-2 sm:flex">
           {grupos.map((g) => (
             <li key={g.id}>
               <Chip ativo={grupo === g.id} onClick={() => setGrupo(g.id)} rotulo={rotuloGrupo(g, d)} n={contagem(g.id)} />
@@ -60,6 +76,8 @@ export function ListaCommodities({ grupos, commodities, grades, parametros, orga
                     onClick={() => setNovoGrupo(!novoGrupo)}>+ {t.novoGrupo}</button>
           </li>
         </ul>
+        <button type="button" className="btn-quieto mt-2 min-h-touch px-3 sm:hidden" aria-expanded={novoGrupo}
+                onClick={() => setNovoGrupo(!novoGrupo)}>+ {t.novoGrupo}</button>
         {novoGrupo && <FormGrupo organizacaoId={organizacaoId} aoCriar={(id) => { setNovoGrupo(false); if (id) setGrupo(id); }} />}
       </nav>
 
@@ -77,11 +95,18 @@ export function ListaCommodities({ grupos, commodities, grades, parametros, orga
           ))}
         </div>
 
+        {atual?.codigo && (
+          <CatalogoMercado organizacaoId={organizacaoId}
+                           itens={catalogo.filter((p) => p.grupo_codigo === atual.codigo)}
+                           adotados={new Set(commodities.map((c) => c.padrao_codigo).filter((x): x is NonNullable<typeof x> => !!x))} />
+        )}
+
+        <h3 className="mb-2 mt-6 text-lg text-navy">{t.daEmpresa}</h3>
         <Cadastro<Commodity>
           key={grupo}
           itens={itens} organizacaoId={organizacaoId}
           criar={criarCommodity} atualizar={atualizarCommodity} excluir={excluirCommodity}
-          rotuloNovo={t.novaCommodity} vazioTitulo={t.semCommodities} vazioTexto={t.semCommoditiesTexto}
+          rotuloNovo={t.novaCommodity} vazioTitulo={t.semCommodities} vazioTexto={atual?.codigo ? t.semCommoditiesGrupo : t.semCommoditiesTexto}
           chave={(c) => c.id} nome={(c) => c.nome}
           confirmacao={(c) => fmtTexto(t.excluirCommodity, { nome: c.nome })}
           resumo={(c) => (
@@ -136,6 +161,55 @@ export function ListaCommodities({ grupos, commodities, grades, parametros, orga
         />
       </section>
     </>
+  );
+}
+
+/**
+ * As commodities do mercado deste grupo (0030). Um toque adota: nasce a commodity
+ * da empresa com nome, grupo, unidade e referência de preço — sem digitar nada.
+ */
+function CatalogoMercado({ organizacaoId, itens, adotados }:
+  { organizacaoId: string; itens: CommodityPadrao[]; adotados: Set<string> }) {
+  const { d } = useI18n();
+  const t = d.cadastros;
+  const [pendente, iniciar] = useTransition();
+  const [erro, setErro] = useState<string | null>(null);
+  const [feitos, setFeitos] = useState<string[]>([]);
+  const livres = itens.filter((p) => !adotados.has(p.codigo) && !feitos.includes(p.codigo));
+  const adotar = (codigo: string) => {
+    setErro(null);
+    const fd = new FormData();
+    fd.set("organizacao_id", organizacaoId); fd.set("codigo", codigo);
+    iniciar(async () => {
+      const r = await adotarCommodity({ ok: false }, fd);
+      if (r.ok) setFeitos((l) => [...l, codigo]); else setErro(r.erro ?? null);
+    });
+  };
+  return (
+    <div className="rounded-md border border-stone-light bg-white p-4">
+      <p className="font-semibold text-navy">{t.catalogoMercado}</p>
+      {livres.length === 0 ? <p className="mt-1 text-stone">{t.tudoAdotado}</p> : (
+        <>
+          <p className="mt-1 text-sm text-stone">{t.catalogoMercadoAjuda}</p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {livres.map((p) => (
+              <li key={p.codigo}>
+                <button type="button" disabled={pendente} aria-busy={pendente} onClick={() => adotar(p.codigo)}
+                        className="flex min-h-touch w-full items-center justify-between gap-3 rounded-md border border-stone-light px-3 py-2 text-left hover:border-navy hover:bg-navy-soft">
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-navy">{d.enums.commodityPadrao[p.codigo]}</span>
+                    {p.referencia && p.referencia !== "—" && <span className="block text-sm text-stone">{p.referencia}</span>}
+                  </span>
+                  <span aria-hidden className="text-2xl font-semibold text-orange">+</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {erro && <p role="alert" className="mt-2 text-loss">{erro}</p>}
+      <p className="mt-3 text-sm text-stone">{t.naoEncontrou}</p>
+    </div>
   );
 }
 

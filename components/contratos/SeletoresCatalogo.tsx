@@ -1,12 +1,12 @@
 "use client";
 import { useState, useTransition } from "react";
-import { criarCommodity, criarGrade, criarLocal } from "@/app/actions/cadastros";
+import { adotarCommodity, criarCommodity, criarGrade, criarLocal } from "@/app/actions/cadastros";
 import { useI18n } from "@/lib/i18n/client";
 import { especificacaoDoGrade, rotuloGrupo } from "@/lib/catalogo";
 import { formatadores } from "@/lib/format";
 import {
   TIPOS_LOCAL,
-  type Commodity, type CommodityGrade, type CommodityGrupo, type CommodityParametro, type Local, type TipoLocal,
+  type Commodity, type CommodityGrade, type CommodityGrupo, type CommodityPadrao, type CommodityParametro, type Local, type TipoLocal,
 } from "@/lib/types";
 
 /**
@@ -63,8 +63,8 @@ function CriarRapido({ rotuloBotao, rotuloCampo, id, pendente, erro, aoCriar, ch
  * no contrato: vem da commodity). Commodity e grade novos nascem aqui mesmo e já
  * ficam selecionados. Embaixo, a especificação que vale para o grade escolhido.
  */
-export function SeletorProduto({ organizacaoId, grupos, commodities, grades, parametros, commodityInicial, gradeInicial }: {
-  organizacaoId: string; grupos: CommodityGrupo[]; commodities: Commodity[]; grades: CommodityGrade[];
+export function SeletorProduto({ organizacaoId, grupos, commodities, catalogo, grades, parametros, commodityInicial, gradeInicial }: {
+  organizacaoId: string; grupos: CommodityGrupo[]; commodities: Commodity[]; catalogo: CommodityPadrao[]; grades: CommodityGrade[];
   parametros: CommodityParametro[]; commodityInicial: string | null | undefined; gradeInicial: string | null | undefined;
 }) {
   const { d, locale } = useI18n();
@@ -80,10 +80,32 @@ export function SeletorProduto({ organizacaoId, grupos, commodities, grades, par
   const [grade, setGrade] = useState<string>(gradeInicial ?? "");
   const rc = useCriarRapido();
   const rg = useCriarRapido();
+  const ra = useCriarRapido();
+  const novaDaEmpresa = (id: string, nome: string, grupoId: string | null, padrao: Commodity["padrao_codigo"], unidade: string): Commodity => ({
+    id, organizacao_id: organizacaoId, grupo_id: grupoId, padrao_codigo: padrao, nome, categoria: null,
+    unidade_padrao: unidade, bolsa: null, observacoes: null, ativo: true, criado_em: "", atualizado_em: "",
+  });
+  // Catálogo do mercado (0030): o que o grupo tem e a empresa ainda não adotou. Escolher um adota na hora.
+  const adotados = new Set(todas.map((c) => c.padrao_codigo).filter(Boolean));
+  const grupoAtual = grupos.find((g) => g.id === grupo);
+  const doMercado = grupoAtual?.codigo ? catalogo.filter((p) => p.grupo_codigo === grupoAtual.codigo && !adotados.has(p.codigo)) : [];
+  const escolherCommodity = (valor: string) => {
+    setGrade("");
+    if (!valor.startsWith("mercado:")) { setCommodity(valor); return; }
+    const codigo = valor.slice("mercado:".length) as CommodityPadrao["codigo"];
+    const item = catalogo.find((p) => p.codigo === codigo);
+    ra.criar(adotarCommodity, { organizacao_id: organizacaoId, codigo }, (id) => {
+      setNovasCommodities((l) => [...l, novaDaEmpresa(id, d.enums.commodityPadrao[codigo], grupo || null, codigo, item?.unidade ?? "Toneladas")]);
+      setCommodity(id);
+    });
+  };
 
-  // Todos os grupos (para poder criar a primeira commodity de um deles); os que já
-  // têm commodity vêm primeiro, com a contagem.
-  const qtd = (id: string) => todas.filter((c) => (c.grupo_id ?? "") === id).length;
+  // Todos os grupos; a contagem soma as da empresa e as do catálogo que ela ainda não adotou.
+  const qtd = (id: string) => {
+    const g = grupos.find((x) => x.id === id);
+    const mercado = g?.codigo ? catalogo.filter((p) => p.grupo_codigo === g.codigo && !adotados.has(p.codigo)).length : 0;
+    return todas.filter((c) => (c.grupo_id ?? "") === id).length + mercado;
+  };
   const ordenados = [...grupos].sort((a, b) => Number(qtd(b.id) > 0) - Number(qtd(a.id) > 0));
   const doGrupo = todas.filter((c) => (c.grupo_id ?? "") === grupo && (c.ativo || c.id === commodity));
   const gradesDela = todosGrades.filter((g) => g.commodity_id === commodity && (g.ativo || g.id === grade));
@@ -103,19 +125,26 @@ export function SeletorProduto({ organizacaoId, grupos, commodities, grades, par
       <div className="sm:col-span-2">
         <label className="rotulo" htmlFor="commodity_id">{t.commodity}</label>
         <select id="commodity_id" name="commodity_id" required className="campo" value={commodity}
-                onChange={(e) => { setCommodity(e.target.value); setGrade(""); }}>
+                disabled={ra.pendente} aria-busy={ra.pendente} onChange={(e) => escolherCommodity(e.target.value)}>
           <option value="" disabled>{t.escolha}</option>
-          {doGrupo.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          {doGrupo.length > 0 && (
+            <optgroup label={t.daEmpresa}>
+              {doGrupo.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </optgroup>
+          )}
+          {doMercado.length > 0 && (
+            <optgroup label={t.doMercado}>
+              {doMercado.map((p) => <option key={p.codigo} value={`mercado:${p.codigo}`}>{d.enums.commodityPadrao[p.codigo]}</option>)}
+            </optgroup>
+          )}
         </select>
+        {ra.erro && <p role="alert" className="mt-1 text-loss">{ra.erro}</p>}
         <CriarRapido id="nova_commodity" rotuloBotao={t.novaCommodityRapida} rotuloCampo={t.nomeNovaCommodity}
                      pendente={rc.pendente} erro={rc.erro}
                      aoCriar={(nome) => rc.criar(criarCommodity,
                        { organizacao_id: organizacaoId, nome, grupo_id: grupo, unidade_padrao: "Toneladas", ativo: "on" },
                        (id) => {
-                         setNovasCommodities((l) => [...l, {
-                           id, organizacao_id: organizacaoId, grupo_id: grupo || null, nome, categoria: null,
-                           unidade_padrao: "Toneladas", bolsa: null, observacoes: null, ativo: true, criado_em: "", atualizado_em: "",
-                         }]);
+                         setNovasCommodities((l) => [...l, novaDaEmpresa(id, nome, grupo || null, null, "Toneladas")]);
                          setCommodity(id); setGrade("");
                        })} />
       </div>

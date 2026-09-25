@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
-  Cliente, ClienteDocumento, Commodity, CommodityGrade, CommodityGrupo, CommodityParametro, Local, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
+  Cliente, ClienteDocumento, Commodity, CommodityGrade, CommodityGrupo, CommodityPadrao, CommodityParametro, Local, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
   PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda,
 } from "@/lib/types";
 
@@ -325,6 +325,14 @@ export const listarGrupos = cache(async (organizacaoId?: string): Promise<Commod
     .or(`organizacao_id.is.null,organizacao_id.eq.${organizacaoId}`).order("ordem").order("nome");
   if (error) throw new Error(error.message);
   return (data ?? []) as CommodityGrupo[];
+});
+
+/** Catálogo do mercado (0030): igual para todas as empresas, só leitura. */
+export const listarCommoditiesPadrao = cache(async (): Promise<CommodityPadrao[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("commodities_padrao").select("*").order("ordem");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CommodityPadrao[];
 });
 
 export const listarGrades = cache(async (organizacaoId?: string): Promise<CommodityGrade[]> => {

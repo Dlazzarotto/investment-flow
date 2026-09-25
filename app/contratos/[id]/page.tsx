@@ -8,7 +8,7 @@ import { Instrumentos } from "@/components/contratos/Instrumentos";
 import { BotaoExcluir } from "@/components/ui/BotaoExcluir";
 import { atualizarContrato, excluirContrato } from "@/app/actions/contratos";
 import {
-  ehMaster, listarCarteira, listarClientes, listarCommodities, listarGrades, listarGrupos, listarLocais, listarParametros, listarInstrumentos, listarMonetizacoes, listarPartes, listarProjetos,
+  ehMaster, listarCarteira, listarClientes, listarCommodities, listarCommoditiesPadrao, listarGrades, listarGrupos, listarLocais, listarParametros, listarInstrumentos, listarMonetizacoes, listarPartes, listarProjetos,
   minhaOrganizacao, obterContrato, obterUsuario,
 } from "@/lib/consultas";
 import { alertasInstrumentos, comissaoAgente, cronogramaPagamento, faixaVolume, precoUnitario, valorContrato } from "@/lib/contratos";
@@ -35,7 +35,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
     listarClientes(orgId), listarCommodities(orgId), listarPartes(orgId), listarInstrumentos(orgId), listarMonetizacoes(orgId),
     listarGrupos(orgId), listarGrades(orgId), listarLocais(orgId),
   ]);
-  const parametros = await listarParametros(commodities.map((c) => c.id));
+  const [parametros, catalogo] = await Promise.all([listarParametros(commodities.map((c) => c.id)), listarCommoditiesPadrao()]);
   const partes = todasPartes.filter((p) => p.contrato_id === contrato.id);
   const parte = (papel: "comprador" | "vendedor" | "financial_partner") => partes.find((p) => p.papel === papel)?.cliente_id ?? null;
   const nome = (id: string | null) => (id ? clientes.find((c) => c.id === id)?.nome : undefined);
@@ -181,7 +181,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
         <ProjetosForaDaEmpresa organizacaoId={orgId}
                                projetos={projetos.filter((p) => !p.organizacao_id && p.owner_id === usuario?.id)} />
         <FormContrato acao={atualizarContrato} organizacaoId={orgId} clientes={clientes} commodities={commodities}
-                      grupos={grupos} grades={grades} parametros={parametros} locais={locais}
+                      grupos={grupos} catalogo={catalogo} grades={grades} parametros={parametros} locais={locais}
                       projetos={projetosDaEmpresa}
                       valores={{ ...contrato, comprador_id: parte("comprador"), vendedor_id: parte("vendedor"),
                                  financial_partner_id: parte("financial_partner") }}

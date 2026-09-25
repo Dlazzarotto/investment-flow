@@ -12,7 +12,7 @@ import {
   ASSINANTES_CONTRATO, BASES_COMISSAO, BASES_PRECO, CONTAS_CONTRATO, DIRECOES_CONTRATO, DOCUMENTOS_EXIGIDOS, EMBALAGENS, EVENTOS_SALDO,
   INCOTERMS, LOCAIS_INSPECAO, MODAIS_INTERIOR, MODALIDADES_CONTRATO, MOEDAS, PAPEIS_CONTRATO, PARTES_RESPONSAVEIS, PORTES_NAVIO,
   STATUS_CONTRATO, TIPOS_PRECO, UNIDADES_VOLUME,
-  type ActionState, type Cliente, type Commodity, type CommodityGrade, type CommodityGrupo, type CommodityParametro, type Contrato,
+  type ActionState, type Cliente, type Commodity, type CommodityGrade, type CommodityGrupo, type CommodityPadrao, type CommodityParametro, type Contrato,
   type Local, type Projeto,
 } from "@/lib/types";
 
@@ -27,6 +27,7 @@ interface Props {
   clientes: Cliente[];
   commodities: Commodity[];
   grupos: CommodityGrupo[];
+  catalogo: CommodityPadrao[];
   grades: CommodityGrade[];
   parametros: CommodityParametro[];
   locais: Local[];
@@ -42,7 +43,7 @@ interface Props {
  * vai recusar.
  */
 export function FormContrato({
-  acao, organizacaoId, clientes, commodities, grupos, grades, parametros, locais, projetos, valores: v, rotuloSalvar,
+  acao, organizacaoId, clientes, commodities, grupos, catalogo, grades, parametros, locais, projetos, valores: v, rotuloSalvar,
 }: Props) {
   const { d, locale } = useI18n();
   const fmt = formatadores(locale);
@@ -168,7 +169,7 @@ export function FormContrato({
       </Bloco>
 
       <Bloco titulo={t.blocoProduto}>
-        <SeletorProduto organizacaoId={organizacaoId} grupos={grupos} commodities={commodities} grades={grades}
+        <SeletorProduto organizacaoId={organizacaoId} grupos={grupos} commodities={commodities} catalogo={catalogo} grades={grades}
                         parametros={parametros} commodityInicial={v.commodity_id} gradeInicial={v.grade_id} />
         <Campo col={6} rotulo={t.especificacaoContrato} id="especificacao">
           <textarea id="especificacao" name="especificacao" rows={2} maxLength={2000} className="campo"
