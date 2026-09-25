@@ -585,6 +585,39 @@ export interface CommodityPadrao {
   ordem: number;
 }
 
+/** Pesquisa de mercado feita pelo agente (0031). Preço desconhecido é null, nunca zero. */
+export interface PesquisaMercado {
+  id: string;
+  organizacao_id: string;
+  commodity_id: string;
+  grade_id: string | null;
+  base: string | null;
+  pergunta: string;
+  idioma: "pt" | "en" | "es" | "zh";
+  sessao_id: string | null;
+  status: "pesquisando" | "concluida" | "falhou";
+  resposta: string | null;
+  erro: string | null;
+  preco: number | null;
+  moeda: string | null;
+  unidade: string | null;
+  base_cotacao: string | null;
+  especificacao: string | null;
+  data_cotacao: string | null;
+  tipo: "spot" | "indice" | "futuro" | "oferta" | null;
+  fonte: string | null;
+  url: string | null;
+  aproximacao: boolean | null;
+  /** livre = pergunta da aba Commodities; bolsas = Xangai, Londres e Chicago do painel. */
+  modo: "livre" | "bolsas";
+  /** Só no modo bolsas: sempre três, na ordem Xangai, Londres, Chicago (extrairCotacoesBolsas). */
+  cotacoes: import("./pesquisa").CotacaoBolsa[];
+  custo_usd: number | null;
+  criado_por: string | null;
+  criado_em: string;
+  concluida_em: string | null;
+}
+
 /** Catálogo de commodities da empresa (0015). */
 export interface Commodity {
   id: string;

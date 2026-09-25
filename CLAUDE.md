@@ -62,6 +62,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                        0030_catalogo_commodities_mercado.sql (67 commodities do mercado nos 12 grupos, só leitura; a empresa ADOTA
                                                      com um toque (commodities.padrao_codigo); as antigas encaixadas pelo nome. GERADA junto com
                                                      os dicionários e COMMODITIES_PADRAO — editar a fonte, não o SQL à mão)
+                       0031_pesquisa_mercado.sql (pesquisas_mercado da empresa: modo livre/bolsas, cotação lida do JSON do
+                                                     agente; painel_commodities: até 3 commodities por USUÁRIO para o painel)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -93,7 +95,7 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
 components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
-tests/                 calculos.test.ts, custeio.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
+tests/                 calculos.test.ts, custeio.test.ts, pesquisa.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
                        schema*.test.sql (psql; schema13–20 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
                        DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
@@ -103,7 +105,7 @@ tests/                 calculos.test.ts, custeio.test.ts, texto.test.ts, catalog
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 142 testes, todos devem passar
+npm test          # vitest — 152 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -267,6 +269,18 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   de que o usuário é DONO; projeto compartilhado não muda de empresa por decisão de quem só participa.
 - Painel: "Operação" vem primeiro — contratos ativos, em negociação, contratado por moeda e posição por
   commodity (comprado − vendido; toneladas não se somam com barris).
+
+### Pesquisa de mercado e preços no painel (0031, decisões do usuário)
+
+- **O preço vem de um Managed Agent** ("Pesquisador de Commodities", web search/fetch), não de API de cotação: `lib/ia/pesquisador.ts`
+  abre a sessão com teto de custo (`PESQUISA_ORCAMENTO_USD`, padrão 2) e a tela consulta `GET /api/pesquisa-mercado/[id]` a cada 6 s —
+  nada de função longa na Vercel. Variáveis: `PESQUISA_AGENT_ID`, `PESQUISA_ENVIRONMENT_ID` e `ANTHROPIC_API_KEY` do MESMO workspace do agente.
+- **A resposta é texto; o número é o bloco JSON do fim** (`extrairCotacao`, `extrairCotacoesBolsas`). Campo ilegível vira null, nunca zero.
+- **Aba Commodities → Pesquisa de mercado** (modo `livre`): commodity, grade, base, "detalhado"; a especificação do grade vai na pergunta.
+- **Painel = 3 commodities × Xangai, Londres, Chicago** (modo `bolsas`): último ajuste do contrato mais líquido, com a bolsa e o contrato
+  que o agente usou (minério na China é DCE; açúcar em NY é ICE US). Praça sem contrato = "não negociado", nunca número emprestado.
+  Variação só contra a pesquisa anterior da MESMA bolsa, moeda, unidade e vencimento (rolagem não é variação de preço).
+- A escolha das 3 é de cada usuário (`painel_commodities`); as pesquisas são da empresa e só o ADM as vê (o master não).
 
 ### Catálogo, locais e termos do contrato (0029, decisões do usuário)
 

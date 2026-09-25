@@ -144,14 +144,6 @@ export function PainelEmpresa({ painel, contratos, nomesCommodity, nomesProjeto,
           tem resultado próprio, no bloco Projetos e na página dele — somar
           investimentos e vendas de projetos na empresa dava um saldo que não é dela. */}
 
-      {/* O que o usuário pediu e o sistema ainda não sabe responder. Dizer isso
-          na tela é melhor do que mostrar um zero que parece um número real. */}
-      <section className="secao">
-        <div className="rounded-md border-l-4 border-orange bg-orange/5 px-4 py-3">
-          <p className="font-semibold text-navy">{t.faltaTitulo}</p>
-          <p className="mt-1">{t.faltaTexto}</p>
-        </div>
-      </section>
     </>
   );
 }
