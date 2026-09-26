@@ -14,7 +14,8 @@ insert into organizacoes (id, nome, criado_por) values
   ('51000000-0000-0000-0000-000000000000', 'Suspensa', '50000000-0000-0000-0000-000000000005');
 -- Só o master altera o contrato da empresa (trigger contrato_so_master).
 set local request.jwt.claim.sub = 'e0000000-0000-0000-0000-00000000000e';
-update organizacoes set ativa = false where id = '51000000-0000-0000-0000-000000000000';
+-- Suspensa por contrato (0032). Desde a 0034 isso é a situação "parada", e ativa acompanha.
+update organizacoes set ativa = false, situacao = 'parada' where id = '51000000-0000-0000-0000-000000000000';
 insert into organizacao_membros (organizacao_id, email) values
   ('a1000000-0000-0000-0000-000000000000', 'adm@a.com'), ('51000000-0000-0000-0000-000000000000', 'adm@s.com');
 insert into commodities (id, organizacao_id, nome) values

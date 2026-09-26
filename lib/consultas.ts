@@ -9,7 +9,7 @@ import { permissoes } from "@/lib/permissoes";
 import type {
   Aporte, CarteiraItem, Convite, Despesa, EstimativaCusto, EstimativaIA, EstimativaItem, FluxoMensal, Investimento, Organizacao,
   Cliente, ClienteDocumento, Commodity, CommodityGrade, CommodityGrupo, CommodityPadrao, CommodityParametro, Local, PesquisaMercado, Contrato, ContratoParte, Instrumento, Monetizacao, RemuneracaoGestao, EmpresaPlataforma, Fatura, Fornecedor, OrganizacaoMembro,
-  PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda, ContratoDoProjeto,
+  PainelEmpresa, PainelPlataforma, PapelNoProjeto, Participante, Projeto, ProjetoEtapa, ProjetoMembro, ResumoProjeto, Venda, ContratoDoProjeto, SituacaoEmpresa,
 } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -259,7 +259,8 @@ export const listarEmpresas = cache(async (): Promise<EmpresaPlataforma[]> => {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("empresas_da_plataforma");
   if (error) throw new Error(error.message);
-  return (data ?? []) as EmpresaPlataforma[];
+  // Sem a 0034 a função ainda não traz a situação: deduz do "ativa" em vez de deixar a tela sem rótulo.
+  return ((data ?? []) as EmpresaPlataforma[]).map((e) => ({ ...e, situacao: e.situacao ?? (e.ativa ? "ativa" : "parada") }));
 });
 
 /** Panorama macro da plataforma (uma linha por moeda). */
@@ -267,7 +268,7 @@ export const obterPainelPlataforma = cache(async (): Promise<PainelPlataforma[]>
   const supabase = createClient();
   const { data, error } = await supabase.rpc("painel_plataforma");
   if (error) throw new Error(error.message);
-  return (data ?? []) as PainelPlataforma[];
+  return ((data ?? []) as PainelPlataforma[]).map((p) => ({ ...p, arquivadas: p.arquivadas ?? 0 }));
 });
 
 /** Todas as faturas, para a tela agrupar por empresa sem uma consulta por ficha. */
@@ -496,6 +497,18 @@ export const listarContratosDoProjeto = cache(async (projetoId: string): Promise
     throw new Error(error.message);
   }
   return (data ?? []) as ContratoDoProjeto[];
+});
+
+/**
+ * Empresa do usuário parada ou arquivada (0034): o banco já tira todo o acesso; isto
+ * só dá à tela o nome e a situação para explicar o bloqueio. Sem a 0034, null.
+ */
+export const minhaEmpresaBloqueada = cache(async (): Promise<{ nome: string; situacao: SituacaoEmpresa } | null> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("minha_empresa_bloqueada");
+  if (error) return null;
+  const linha = (data as { nome: string; situacao: SituacaoEmpresa }[] | null)?.[0];
+  return linha ?? null;
 });
 
 export const obterCommoditiesPainel = cache(async (): Promise<string[]> => {

@@ -341,6 +341,10 @@ export type PlanoEmpresa = (typeof PLANOS_EMPRESA)[number];
  * Uma empresa vista pelo master (public.empresas_da_plataforma()).
  * Traz CONTAGEM, nunca conteúdo: quantos projetos existem, não quais.
  */
+/** Situação da empresa cliente (0034). Só "ativa" tem acesso ao sistema; os dados das outras ficam guardados. */
+export const SITUACOES_EMPRESA = ["ativa", "parada", "arquivada"] as const;
+export type SituacaoEmpresa = (typeof SITUACOES_EMPRESA)[number];
+
 export interface EmpresaPlataforma {
   id: string;
   nome: string;
@@ -348,6 +352,8 @@ export interface EmpresaPlataforma {
   /** null = sem teto de assentos. */
   assentos: number | null;
   ativa: boolean;
+  /** 0034: ativa | parada | arquivada. `ativa` é espelho (ativa = situacao === "ativa"). */
+  situacao: SituacaoEmpresa;
   vigencia_ate: string | null;
   /** ativa e dentro da vigência. */
   em_dia: boolean;
@@ -394,7 +400,9 @@ export interface Fatura {
 export interface PainelPlataforma {
   moeda: Moeda;
   ativas: number;
+  /** Paradas ou com a vigência vencida — clientes a recuperar. Arquivadas ficam fora. */
   inativas: number;
+  arquivadas: number;
   em_debito: number;
   contrato_mensal: number;
   a_receber: number;

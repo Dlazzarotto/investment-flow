@@ -33,6 +33,39 @@ export async function criarEmpresa(_: ActionState, fd: FormData): Promise<Action
 }
 
 /** Plano, assentos, vigência e o liga/desliga. O trigger do banco só aceita do master. */
+/**
+ * Ativa / parada / arquivada (0034). Só "ativa" entra no sistema — o banco tira o
+ * acesso de todo mundo da empresa (ADM, equipe, investidor) e guarda os dados.
+ * `ativa` vai junto: o check organizacoes_situacao_ativa_ck não deixa divergir.
+ */
+export async function mudarSituacaoEmpresa(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).situacaoEmpresa.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: d.validacao.dadosInvalidos };
+  const { id, situacao } = parsed.data;
+  const supabase = createClient();
+  const { data, error } = await supabase.from("organizacoes").update({ situacao, ativa: situacao === "ativa" })
+    .eq("id", id).select("nome").maybeSingle();
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
+  if (!data) return { ok: false, erro: d.comum.nadaAlterado };
+  revalidatePath("/master");
+  return { ok: true, sucesso: fmtTexto(d.master.situacaoSalva, { nome: data.nome as string, situacao: d.enums.situacaoEmpresa[situacao] }) };
+}
+
+/** Renomear sem abrir o contrato inteiro. */
+export async function renomearEmpresa(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).nomeEmpresa.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+  const supabase = createClient();
+  const { data, error } = await supabase.from("organizacoes").update({ nome: parsed.data.nome })
+    .eq("id", parsed.data.id).select("nome").maybeSingle();
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
+  if (!data) return { ok: false, erro: d.comum.nadaAlterado };
+  revalidatePath("/master");
+  return { ok: true, sucesso: fmtTexto(d.master.nomeSalvo, { nome: data.nome as string }) };
+}
+
 export async function atualizarContrato(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const parsed = criarSchemas(d).contrato.safeParse(formParaObjeto(fd));

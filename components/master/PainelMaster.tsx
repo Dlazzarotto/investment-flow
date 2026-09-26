@@ -8,7 +8,7 @@ import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import type { EmpresaPlataforma, Fatura, PainelPlataforma } from "@/lib/types";
 
-type Filtro = "todas" | "ativas" | "inativas" | "em_debito" | "a_receber" | "em_atraso";
+type Filtro = "todas" | "ativas" | "inativas" | "arquivadas" | "em_debito" | "a_receber" | "em_atraso";
 
 interface Props { painel: PainelPlataforma[]; empresas: EmpresaPlataforma[]; faturas: Fatura[] }
 
@@ -32,7 +32,10 @@ export function PainelMaster({ painel, empresas, faturas }: Props) {
     porEmpresa.set(x.organizacao_id, lista);
   }
 
+  // Arquivada é cliente encerrado: só aparece quando se pede por ela (0034).
   const filtrada = empresas.filter((e) => {
+    if (filtro === "arquivadas") return e.situacao === "arquivada";
+    if (e.situacao === "arquivada") return false;
     switch (filtro) {
       case "ativas": return e.em_dia;
       case "inativas": return !e.em_dia;
@@ -44,7 +47,7 @@ export function PainelMaster({ painel, empresas, faturas }: Props) {
   });
 
   const rotuloFiltro: Record<Filtro, string> = {
-    todas: t.todas, ativas: t.ativos, inativas: t.inativos,
+    todas: t.todas, ativas: t.ativos, inativas: t.inativos, arquivadas: t.arquivadas,
     em_debito: t.emDebito, a_receber: t.aReceber, em_atraso: t.emAtraso,
   };
 
@@ -52,7 +55,7 @@ export function PainelMaster({ painel, empresas, faturas }: Props) {
     <>
       <section className="secao">
         <h2>{t.panorama}</h2>
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <Widget rotulo={t.ativos} valor={String(contagens?.ativas ?? 0)} ajuda={t.ativosAjuda}
                   ativo={filtro === "ativas"} aoClicar={() => setFiltro("ativas")} />
           <Widget rotulo={t.inativos} valor={String(contagens?.inativas ?? 0)} ajuda={t.inativosAjuda}
@@ -61,6 +64,8 @@ export function PainelMaster({ painel, empresas, faturas }: Props) {
           <Widget rotulo={t.emDebito} valor={String(contagens?.em_debito ?? 0)} ajuda={t.emDebitoAjuda}
                   ativo={filtro === "em_debito"} aoClicar={() => setFiltro("em_debito")}
                   alerta={(contagens?.em_debito ?? 0) > 0} />
+          <Widget rotulo={t.arquivadas} valor={String(contagens?.arquivadas ?? 0)} ajuda={t.arquivadasAjuda}
+                  ativo={filtro === "arquivadas"} aoClicar={() => setFiltro("arquivadas")} />
         </div>
 
         {painel.map((p) => (

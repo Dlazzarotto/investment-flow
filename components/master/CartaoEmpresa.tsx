@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import {
-  adicionarAdmin, alternarPagamento, atualizarContrato, excluirEmpresa, excluirFatura, removerAdmin, trocarAdmin,
+  adicionarAdmin, alternarPagamento, atualizarContrato, excluirEmpresa, excluirFatura, mudarSituacaoEmpresa, removerAdmin,
+  renomearEmpresa, trocarAdmin,
 } from "@/app/actions/master";
 import { ConviteAcesso } from "./ConviteAcesso";
 import { mesmoNome } from "@/lib/texto";
@@ -13,7 +14,7 @@ import { useHoje } from "@/components/ui/useHoje";
 import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
-import { MOEDAS, PLANOS_EMPRESA, type EmpresaPlataforma, type Fatura } from "@/lib/types";
+import { MOEDAS, PLANOS_EMPRESA, SITUACOES_EMPRESA, type EmpresaPlataforma, type Fatura, type SituacaoEmpresa } from "@/lib/types";
 import { FormAcao } from "@/components/ui/FormAcao";
 
 /** Uma empresa: contrato, cobrança, uso e quem administra. */
@@ -21,7 +22,8 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
   const { d, locale } = useI18n();
   const f = formatadores(locale);
   const t = d.master;
-  const [aba, setAba] = useState<"nenhuma" | "contrato" | "faturas" | "convite">("nenhuma");
+  const [aba, setAba] = useState<"nenhuma" | "contrato" | "faturas">("nenhuma");
+  const [renomeando, setRenomeando] = useState(false);
 
   const vencida = !e.em_dia && e.ativa;
   const uso = e.assentos === null ? `${e.assentos_usados} / ${t.semTeto}` : `${e.assentos_usados} / ${e.assentos}`;
@@ -30,8 +32,13 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
   return (
     <article className={`rounded-md border bg-white p-4 ${e.em_debito ? "border-loss" : "border-stone-light"}`}>
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg text-navy">{e.nome}</h3>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg text-navy">{e.nome}</h3>
+            <button type="button" className="btn-quieto px-3" aria-expanded={renomeando}
+                    onClick={() => setRenomeando(!renomeando)}>{renomeando ? d.comum.cancelar : t.editarNome}</button>
+          </div>
+          {renomeando && <FormNome id={e.id} nome={e.nome} aoSalvar={() => setRenomeando(false)} />}
           <p className="text-stone">
             {d.enums.planoEmpresa[e.plano]}
             {Number(e.mensalidade) > 0
@@ -41,7 +48,7 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {!e.ativa && <Selo texto={t.suspensa} />}
+          {e.situacao !== "ativa" && <Selo texto={d.enums.situacaoEmpresa[e.situacao]} />}
           {vencida && <Selo texto={t.vencida} />}
           {e.em_debito && <Selo texto={t.emDebito} />}
           <p className="text-stone">
@@ -61,11 +68,13 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
         </p>
       )}
 
+      <Situacao id={e.id} nome={e.nome} atual={e.situacao} />
+
       <div className="mt-4 border-t border-stone-light pt-4">
         <p className="text-sm font-semibold text-navy">{t.admins}</p>
         <ul className="mt-2 grid gap-2">
           {e.admins.map((email) => (
-            <LinhaAdmin key={email} organizacaoId={e.id} email={email} unico={e.admins.length === 1} />
+            <LinhaAdmin key={email} organizacaoId={e.id} empresa={e.nome} email={email} unico={e.admins.length === 1} />
           ))}
         </ul>
         <FormAdmin organizacaoId={e.id} />
@@ -78,8 +87,6 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
                 onClick={() => setAba(aba === "faturas" ? "nenhuma" : "faturas")}>
           {t.faturas} ({faturas.length})
         </button>
-        <button type="button" className="btn-quieto"
-                onClick={() => setAba(aba === "convite" ? "nenhuma" : "convite")}>{t.reenviarConvite}</button>
       </div>
 
       {aba === "contrato" && (
@@ -89,8 +96,62 @@ export function CartaoEmpresa({ empresa: e, faturas }: { empresa: EmpresaPlatafo
         </div>
       )}
       {aba === "faturas" && <Faturas empresa={e} faturas={faturas} />}
-      {aba === "convite" && <ConviteAcesso empresa={e.nome} emails={e.admins} />}
     </article>
+  );
+}
+
+/**
+ * Ativa · Parada · Arquivada (0034). Só a ativa entra no sistema; parar e arquivar
+ * pedem confirmação porque tiram o acesso de todo mundo da empresa na hora.
+ */
+function Situacao({ id, nome, atual }: { id: string; nome: string; atual: SituacaoEmpresa }) {
+  const { d } = useI18n();
+  const t = d.master;
+  const rotulo: Record<SituacaoEmpresa, string> = { ativa: t.ativar, parada: t.parar, arquivada: t.arquivar };
+  const confirma: Partial<Record<SituacaoEmpresa, string>> = { parada: t.pararConfirma, arquivada: t.arquivarConfirma };
+  return (
+    <div className="mt-4 border-t border-stone-light pt-4">
+      <p className="text-sm font-semibold text-navy">{t.situacao}: {d.enums.situacaoEmpresa[atual]}</p>
+      <p className="text-sm text-stone">{t.situacaoAjuda}</p>
+      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={t.situacao}>
+        {SITUACOES_EMPRESA.map((s) => s === atual ? (
+          // A situação atual é um selo, não um botão desabilitado (que parecia apagado).
+          <span key={s} aria-current="true"
+                className="inline-flex min-h-touch items-center rounded-md bg-navy px-3 font-semibold text-white">
+            {d.enums.situacaoEmpresa[s]}
+          </span>
+        ) : (
+          <FormAcao key={s} action={mudarSituacaoEmpresa}
+                    onSubmit={(ev) => { const c = confirma[s]; if (c && !window.confirm(fmtTexto(c, { nome }))) ev.preventDefault(); }}>
+            <input type="hidden" name="id" value={id} />
+            <input type="hidden" name="situacao" value={s} />
+            <button type="submit" className={`px-3 ${s === "ativa" ? "btn-quieto" : "btn-perigo border border-loss"}`}>
+              {rotulo[s]}
+            </button>
+          </FormAcao>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FormNome({ id, nome, aoSalvar }: { id: string; nome: string; aoSalvar: () => void }) {
+  const { d } = useI18n();
+  const [estado, formAction] = useAcaoFormulario(async (s, fd) => {
+    const r = await renomearEmpresa(s, fd);
+    if (r.ok) aoSalvar();
+    return r;
+  });
+  return (
+    <form action={formAction} className="mt-2 flex flex-wrap items-end gap-2">
+      <input type="hidden" name="id" value={id} />
+      <div className="min-w-[14rem] flex-1">
+        <label className="rotulo" htmlFor={`renomear-${id}`}>{d.master.nomeEmpresa}</label>
+        <input id={`renomear-${id}`} name="nome" required maxLength={120} className="campo" defaultValue={nome} />
+      </div>
+      <SubmitButton className="btn-quieto">{d.comum.salvar}</SubmitButton>
+      <div className="w-full"><Mensagem estado={estado} /></div>
+    </form>
   );
 }
 
@@ -232,10 +293,6 @@ function FormContrato({ empresa: e, aoFechar }: { empresa: EmpresaPlataforma; ao
         <input id={`dia-${e.id}`} name="dia_vencimento" type="number" inputMode="numeric" min="1" max="28"
                className="campo num" defaultValue={e.dia_vencimento} />
       </div>
-      <label className="flex min-h-touch items-center gap-3 sm:col-span-6">
-        <input type="checkbox" name="ativa" defaultChecked={e.ativa} className="h-6 w-6 accent-navy" />
-        <span>{t.ativa}</span>
-      </label>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-6">
         <SubmitButton>{d.comum.salvar}</SubmitButton>
         <button type="button" className="btn-quieto" onClick={aoFechar}>{d.comum.cancelar}</button>
@@ -250,10 +307,12 @@ function FormContrato({ empresa: e, aoFechar }: { empresa: EmpresaPlataforma; ao
  * até com o único); remover só aparece quando há mais de um, porque o banco
  * recusa deixar a empresa sem ninguém.
  */
-function LinhaAdmin({ organizacaoId, email, unico }: { organizacaoId: string; email: string; unico: boolean }) {
+function LinhaAdmin({ organizacaoId, empresa, email, unico }:
+  { organizacaoId: string; empresa: string; email: string; unico: boolean }) {
   const { d } = useI18n();
   const t = d.master;
   const [editando, setEditando] = useState(false);
+  const [convite, setConvite] = useState(false);
   const [estTroca, acaoTroca] = useAcaoFormulario(trocarAdmin);
   const [estRem, acaoRem] = useAcaoFormulario(removerAdmin);
   return (
@@ -261,6 +320,9 @@ function LinhaAdmin({ organizacaoId, email, unico }: { organizacaoId: string; em
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="break-all">{email}</span>
         <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-quieto px-3" aria-expanded={convite} onClick={() => setConvite(!convite)}>
+            {t.reenviarAcesso}
+          </button>
           <button type="button" className="btn-quieto px-3" onClick={() => setEditando(!editando)}>
             {editando ? d.comum.cancelar : d.comum.editar}
           </button>
@@ -286,6 +348,7 @@ function LinhaAdmin({ organizacaoId, email, unico }: { organizacaoId: string; em
           <SubmitButton className="btn-quieto">{d.comum.salvar}</SubmitButton>
         </form>
       )}
+      {convite && <ConviteAcesso empresa={empresa} emails={[email]} />}
       <Mensagem estado={estTroca} />
       <Mensagem estado={estRem} />
     </li>

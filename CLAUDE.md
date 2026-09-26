@@ -69,6 +69,8 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      histórico com empresa; excluir_empresa conta locais/grupos; escritório no custeio)
                        0033_contratos_na_carteira.sql (contratos_do_projeto(): só números dos contratos que entram no resultado,
                                                      para a carteira do investidor — ele não lê `contratos`)
+                       0034_situacao_empresa.sql (situação ativa/parada/arquivada; só ATIVA entra no sistema — nem o dono, nem o
+                                                     investidor; `ativa` é espelho por check; painel do master conta arquivadas à parte)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -101,7 +103,7 @@ components/            Shell (menu por papel + aviso de suspensão), Lateral, Se
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario, FormAcao, BotaoExcluir),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, pesquisa.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13 e schema15–23 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+                       schema*.test.sql (psql; schema13 e schema15–24 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
                        DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
@@ -179,6 +181,15 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   funciona com o único), remover ADM só quando há mais de um, "Reenviar convite" (link + copiar + mailto: abre o
   e-mail de quem usa, sem depender do SMTP do Supabase) e excluir empresa VAZIA. Empresa com dados se suspende.
   Ação de formulário do master devolve mensagem, nunca lança: lançar derruba a página em "Algo deu errado".
+- **Situação da empresa (0034, pedido do usuário): Ativa · Parada · Arquivada**, botões no cartão do master. Só ATIVA
+  entra no sistema: `eh_admin_organizacao` e `papel_no_projeto` passam por `empresa_acessivel()`, e `projetos` tem
+  restritiva de leitura (o dono lia direto por `owner_id`). Os dados ficam; reativar devolve tudo. Parada = cliente
+  a recuperar (conta em "inativas"); arquivada = encerrado (sai do panorama, filtro próprio). `ativa` virou espelho de
+  `situacao` (check `organizacoes_situacao_ativa_ck`) e o formulário do Contrato não tem mais a caixa "ativa".
+  Vigência vencida continua só leitura — quem bloqueia acesso é o master, não uma data. O Shell mostra "Acesso
+  bloqueado" (`minha_empresa_bloqueada()`) no lugar do conteúdo.
+- **No master, sem abrir abas:** "Editar nome" ao lado do nome (`renomearEmpresa`) e "Reenviar acesso" em cada ADM,
+  com os DOIS links (/criar-conta para primeiro acesso, /login para quem já tem senha — o master não sabe qual é).
 - **Confirmar exclusão digitando o nome** usa `mesmoNome()` (lib/texto.ts): ignora maiúsculas, acentos e espaços.
 - **Equipe da empresa mora em "Conta e empresa" (/conta), não em Projetos.** Quem está em `organizacao_membros` é
   ADMINISTRADOR da empresa (vê tudo, ocupa assento) — não "sócio" (vocabulário da 1ª versão). A tela mostra

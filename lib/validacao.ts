@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
-  CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_CONVIDAVEIS,
+  CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_CONVIDAVEIS, SITUACOES_EMPRESA,
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
   STATUS_PROJETO, TIPOS_DOCUMENTO_CLIENTE, ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
   BASES_COMISSAO, DIRECOES_CONTRATO, EVENTOS_SALDO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
@@ -278,6 +278,8 @@ export function criarSchemas(d: Dicionario) {
       moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
       vencimento: dataISO,
     }),
+    situacaoEmpresa: z.object({ id: uuid, situacao: z.enum(SITUACOES_EMPRESA, enumMsg(v.dadosInvalidos)) }),
+    nomeEmpresa: z.object({ id: uuid, nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo) }),
     contrato: z.object({
       id: uuid,
       nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),
@@ -288,7 +290,7 @@ export function criarSchemas(d: Dicionario) {
       dia_vencimento: z.coerce.number().int().min(1).max(28).catch(10),
       assentos: z.union([z.literal(""), z.coerce.number().int().min(1).max(10_000)])
         .optional().transform((x) => (typeof x === "number" ? x : null)),
-      ativa: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
+      // A situação (ativa/parada/arquivada) tem botões próprios no cartão (0034): não mora mais aqui.
       vigencia_ate: z.union([z.literal(""), z.string().refine(ehDataISO, v.dataInvalida)])
         .optional().transform((x) => x || null),
     }),
