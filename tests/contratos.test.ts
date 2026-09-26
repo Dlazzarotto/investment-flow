@@ -6,7 +6,7 @@ import {
 import type { Contrato } from "@/lib/types";
 
 const base: Contrato = {
-  id: "1", organizacao_id: "o", numero: null, contraparte_id: "c", commodity_id: "ferro", projeto_id: null,
+  id: "1", organizacao_id: "o", venda_origem_id: null, numero: null, contraparte_id: "c", commodity_id: "ferro", projeto_id: null,
   estimativa_id: null, conta: "propria", assinante: "empresa", direcao: "venda", papel: "principal", modalidade: "spot", status: "assinado",
   volume: 50000, tolerancia_pct: 10, unidade: "Toneladas", incoterm: "FOB", porto_embarque: null,
   porto_destino: null, moeda: "USD", tipo_preco: "fixo", preco_fixo: 100, indice: null, premio: 0,
@@ -82,8 +82,8 @@ describe("Resumo dos contratos (painel)", () => {
 
   it("conta ativos (assinado + em execução) e em negociação (rascunho)", () => {
     expect(r.ativos).toBe(6);
-    expect(r.ativosProprios).toBe(5); // o de agente é intermediação, não operação própria
-    expect(r.emNegociacao).toBe(1);
+    // Mesmo recorte das listas /vendas e /compras: cartão e lista mostram o mesmo número.
+    expect(r.porDirecao).toEqual({ venda: { ativos: 5, negociacao: 1 }, compra: { ativos: 1, negociacao: 0 } });
   });
   it("dinheiro por moeda, sem somar BRL com USD; agente entra como comissão", () => {
     const usd = r.valores.find((v) => v.moeda === "USD")!;
@@ -97,7 +97,7 @@ describe("Resumo dos contratos (painel)", () => {
     expect(r.volumes.find((v) => v.unidade === "Barris")!.venda).toBe(10);
   });
   it("lista vazia não quebra", () => {
-    expect(resumoContratos([])).toEqual({ ativos: 0, ativosProprios: 0, emNegociacao: 0, volumes: [], valores: [], sobGestao: [] });
+    expect(resumoContratos([])).toEqual({ ativos: 0, porDirecao: { venda: { ativos: 0, negociacao: 0 }, compra: { ativos: 0, negociacao: 0 } }, volumes: [], valores: [], sobGestao: [] });
   });
   it("contrato por conta de projeto vai para 'sob gestão' e não infla a empresa", () => {
     const g = resumoContratos([
@@ -107,7 +107,8 @@ describe("Resumo dos contratos (painel)", () => {
     ]);
     expect(g.volumes).toEqual([]);
     expect(g.valores).toEqual([{ moeda: "USD", venda: 0, compra: 0, comissao: 100_000, semPreco: 0 }]);
-    expect(g.sobGestao).toEqual([{ projeto_id: "mineradora", moeda: "USD", contratos: 2, venda: 10_000_000, compra: 0, semPreco: 0 }]);
+    // A carga intermediada não é do projeto: sob gestão fica só a venda própria dele (sem dupla contagem).
+    expect(g.sobGestao).toEqual([{ projeto_id: "mineradora", moeda: "USD", contratos: 1, venda: 5_000_000, compra: 0, semPreco: 0 }]);
   });
 });
 

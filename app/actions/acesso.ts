@@ -30,14 +30,15 @@ export async function definirPin(_: ActionState, fd: FormData): Promise<ActionSt
   return { ok: true, sucesso: d.acesso.pinSalvo };
 }
 
-export async function removerPin(fd: FormData): Promise<void> {
+export async function removerPin(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const projetoId = criarSchemas(d).uuid.safeParse(fd.get("projeto_id"));
-  if (!projetoId.success) return;
+  if (!projetoId.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
   const { error } = await supabase.rpc("remover_pin", { p_projeto_id: projetoId.data });
-  if (error) throw new Error(traduzirErroBanco(error, "projeto", d));
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "projeto", d) };
   revalidatePath(`/projetos/${projetoId.data}`, "layout");
+  return { ok: true };
 }
 
 /**
@@ -74,15 +75,16 @@ export async function gerarConvite(_: ActionState, fd: FormData): Promise<Action
   return { ok: true, sucesso: `/convite/${token}` };
 }
 
-export async function revogarConvite(fd: FormData): Promise<void> {
+export async function revogarConvite(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const parsed = criarSchemas(d).id.safeParse(formParaObjeto(fd));
-  if (!parsed.success) return;
+  if (!parsed.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
   const { error } = await supabase.from("convites").update({ revogado: true })
     .eq("id", parsed.data.id).eq("projeto_id", parsed.data.projeto_id);
-  if (error) throw new Error(traduzirErroBanco(error, "membro", d));
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "membro", d) };
   revalidatePath(`/projetos/${parsed.data.projeto_id}`, "layout");
+  return { ok: true };
 }
 
 /** Aceita o convite do link e devolve o projeto, ou null se o convite não serve mais. */

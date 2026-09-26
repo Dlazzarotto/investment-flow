@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { fmtTexto, type Dicionario } from "./i18n";
 import {
-  CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_MEMBRO,
+  CATEGORIAS_DESPESA, CATEGORIAS_INVESTIMENTO, CATEGORIAS_RECEITA, MOEDAS, PAPEIS_CONVIDAVEIS, SITUACOES_EMPRESA,
   DRIVERS_CUSTO, GRUPOS_CUSTO, MODAIS_ETAPA, MODOS_ESTIMATIVA, PLANOS_EMPRESA, TIPOS_APORTE, TIPOS_CLIENTE, TIPOS_FATURA, TIPOS_PARCERIA, TIPOS_PARTICIPANTE,
   STATUS_PROJETO, TIPOS_DOCUMENTO_CLIENTE, ASSINANTES_CONTRATO, CONTAS_CONTRATO, STATUS_INSTRUMENTO, STATUS_MONETIZACAO, TIPOS_INSTRUMENTO, TIPOS_REMUNERACAO,
   BASES_COMISSAO, DIRECOES_CONTRATO, EVENTOS_SALDO, INCOTERMS, MODALIDADES_CONTRATO, PAPEIS_CONTRATO, STATUS_CONTRATO, TIPOS_PRECO,
@@ -48,6 +48,10 @@ export function criarSchemas(d: Dicionario) {
   /** Valor em dinheiro opcional, não negativo: vazio vira null. */
   const valorOpcional = z.union([z.literal(""), z.coerce.number().min(0, v.valorNegativo).lt(MAX_VALOR, v.dadosInvalidos)]).optional()
     .transform((x) => (typeof x === "number" ? x : null));
+  /** Opcional, mas se vier tem que ser > 0 (checks "> 0" do banco): em branco vira null. */
+  const positivoOpcional = (campo: string) =>
+    z.union([z.literal(""), z.coerce.number().gt(0, fmtTexto(v.maiorZero, { campo })).lt(MAX_VALOR, v.dadosInvalidos)]).optional()
+      .transform((x) => (typeof x === "number" ? x : null));
   /** Número opcional: campo em branco vira null, não zero — "não informado" não é "zero". */
   const numeroOpcional = () =>
     z.union([z.literal(""), z.coerce.number().finite()]).optional()
@@ -121,11 +125,11 @@ export function criarSchemas(d: Dicionario) {
     membro: z.object({
       projeto_id: uuid,
       email: z.string().trim().toLowerCase().email(v.emailInvalido).max(320, v.nomeLongo),
-      papel: z.enum(PAPEIS_MEMBRO, enumMsg(v.papelInvalido)),
+      papel: z.enum(PAPEIS_CONVIDAVEIS, enumMsg(v.papelInvalido)),
     }),
     convite: z.object({
       projeto_id: uuid,
-      papel: z.enum(PAPEIS_MEMBRO, enumMsg(v.papelInvalido)),
+      papel: z.enum(PAPEIS_CONVIDAVEIS, enumMsg(v.papelInvalido)),
       dias: z.coerce.number().int().min(1).max(90).catch(7),
       max_usos: z.coerce.number().int().min(1).max(50).catch(1),
     }),
@@ -274,6 +278,8 @@ export function criarSchemas(d: Dicionario) {
       moeda: z.enum(MOEDAS, enumMsg(v.moedaInvalida)),
       vencimento: dataISO,
     }),
+    situacaoEmpresa: z.object({ id: uuid, situacao: z.enum(SITUACOES_EMPRESA, enumMsg(v.dadosInvalidos)) }),
+    nomeEmpresa: z.object({ id: uuid, nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo) }),
     contrato: z.object({
       id: uuid,
       nome: z.string().trim().min(1, v.nomeOrganizacao).max(120, v.nomeLongo),
@@ -284,7 +290,7 @@ export function criarSchemas(d: Dicionario) {
       dia_vencimento: z.coerce.number().int().min(1).max(28).catch(10),
       assentos: z.union([z.literal(""), z.coerce.number().int().min(1).max(10_000)])
         .optional().transform((x) => (typeof x === "number" ? x : null)),
-      ativa: z.union([z.literal("on"), z.literal("")]).optional().transform((x) => x === "on"),
+      // A situação (ativa/parada/arquivada) tem botões próprios no cartão (0034): não mora mais aqui.
       vigencia_ate: z.union([z.literal(""), z.string().refine(ehDataISO, v.dataInvalida)])
         .optional().transform((x) => x || null),
     }),
@@ -355,8 +361,9 @@ export function criarSchemas(d: Dicionario) {
       calado_max_m: z.union([z.literal(""), z.coerce.number().min(0, v.caladoInvalido).max(40, v.caladoInvalido)]).optional()
         .transform((x) => (typeof x === "number" ? x : null)),
       frete_valor: valorOpcional,
-      taxa_carga_dia: valorOpcional,
-      taxa_descarga_dia: valorOpcional,
+      // O banco exige > 0 (0029): taxa zero daria laytime infinito. Em branco continua valendo (null).
+      taxa_carga_dia: positivoOpcional(d.contratos.taxaCarga),
+      taxa_descarga_dia: positivoOpcional(d.contratos.taxaDescarga),
       demurrage_dia: valorOpcional,
       despatch_dia: valorOpcional,
       entrega_interior: enumOpcional(MODAIS_INTERIOR),

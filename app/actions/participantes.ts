@@ -20,12 +20,15 @@ export async function criarParticipante(_: ActionState, fd: FormData): Promise<A
   return { ok: true, sucesso: fmtTexto(d.parceria.adicionado, { nome: parsed.data.nome }) };
 }
 
-export async function excluirParticipante(fd: FormData): Promise<void> {
+export async function excluirParticipante(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const parsed = criarSchemas(d).id.safeParse(formParaObjeto(fd));
-  if (!parsed.success) return;
+  if (!parsed.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("participantes").delete().eq("id", parsed.data.id);
-  if (error) throw new Error(traduzirErroBanco(error, "participante", d));
+  const { data: apagados, error } = await supabase.from("participantes").delete().eq("id", parsed.data.id).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "participante", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath(`/projetos/${parsed.data.projeto_id}`, "layout");
+  return { ok: true };
 }

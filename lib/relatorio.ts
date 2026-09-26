@@ -110,7 +110,7 @@ export function montarRelatorio(e: Entrada): string {
   footer { margin-top: 26px; border-top: 1px solid #D9DBE4; padding-top: 8px;
            color: #6B6F80; font-size: 9pt; }
   .acao { margin: 0 0 18px; }
-  .acao button { min-height: 44px; padding: 0 20px; border: 0; border-radius: 6px;
+  .acao button { min-height: 48px; padding: 0 20px; border: 0; border-radius: 6px;
                  background: #F47B20; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
   @media print { .acao { display: none; } body { padding: 0; } }
 </style>
@@ -121,7 +121,7 @@ export function montarRelatorio(e: Entrada): string {
   <img src="/logo.png" alt="">
   <div>
     <h1>${esc(p.nome)}</h1>
-    <p class="sub">${esc([e.empresa, d.enums.tipoParceria[p.tipo_parceria], p.moeda].filter(Boolean).join(" · "))}</p>
+    <p class="sub">${esc([e.empresa, d.enums.statusProjeto[p.status], p.moeda].filter(Boolean).join(" · "))}</p>
     <p class="sub">${esc(x.dataInicio)}: ${esc(f.data(p.data_inicio))}</p>
   </div>
 </header>

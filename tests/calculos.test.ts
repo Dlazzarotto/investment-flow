@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MESES_MINIMOS_ANUALIZAR, alocacaoPorCategoria, calcularKpis, despesasPorCategoria, detalharCustoVenda, resumoAportes,
   encontrarBreakeven, ratearParticipacoes, roiAnualizado, simularCenarios, tirAnual, tirMensal,
-  totalParticipacao, vpl,
+  totalParticipacao, vpl, kpisDoResumo,
 } from "@/lib/calculos";
 import { caminhoInterno, criarSchemas } from "@/lib/validacao";
 import { permissoes } from "@/lib/permissoes";
@@ -351,5 +351,21 @@ describe("0007 — investidor e aportes", () => {
     expect(r.linhas[1]).toMatchObject({ aportado: 350000, implicita: 53.85, diferenca: 23.85 });
     expect(r.linhas[2]).toMatchObject({ aportado: 0, implicita: 0, diferenca: -10 });
     expect(resumoAportes(participantes, []).linhas[0].implicita).toBeNull();
+  });
+});
+
+describe("kpisDoResumo", () => {
+  it("usa os totais do banco (os da tela), com ROI sobre o capital e margem sobre a receita", () => {
+    const k = kpisDoResumo({ investimento_total: 1000, receita_total: 1500, custo_vendas_total: 200,
+      despesas_total: 0, saida_total: 1200, saldo: 300 });
+    expect(k).toMatchObject({ receitaTotal: 1500, saidaTotal: 1200, saldo: 300, margemBruta: 1300 });
+    expect(k.roi).toBeCloseTo(0.3);
+    expect(k.margemPct).toBeCloseTo(1300 / 1500);
+  });
+  it("sem capital (gerente) não inventa ROI; sem receita não inventa margem", () => {
+    const k = kpisDoResumo({ investimento_total: 0, receita_total: 0, custo_vendas_total: 0,
+      despesas_total: 50, saida_total: 50, saldo: -50 });
+    expect(k.roi).toBeNull();
+    expect(k.margemPct).toBeNull();
   });
 });

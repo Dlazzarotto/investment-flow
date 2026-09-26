@@ -7,6 +7,7 @@ import { useAcaoFormulario } from "@/components/ui/useAcaoFormulario";
 import { useI18n } from "@/lib/i18n/client";
 import { formatadores } from "@/lib/format";
 import { TIPOS_REMUNERACAO, type Moeda, type RemuneracaoGestao as Linha, type TipoRemuneracao } from "@/lib/types";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 /** Linha já projetada no servidor (lib/contratos.ts: projetarRemuneracao). */
 export interface LinhaProjetada extends Linha { porAno: number | null; sobContratos: number | null }
@@ -43,11 +44,11 @@ export function RemuneracaoGestao({ linhas, organizacaoId, projetoId, moeda }:
                   </p>
                   <p className="num text-stone">{projecao}</p>
                 </div>
-                <form action={excluirRemuneracao}
+                <FormAcao action={excluirRemuneracao}
                       onSubmit={(e) => { if (!window.confirm(t.excluirConfirma)) e.preventDefault(); }}>
                   <input type="hidden" name="id" value={l.id} />
                   <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                </form>
+                </FormAcao>
               </li>
             );
           })}

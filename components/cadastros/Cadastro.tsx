@@ -7,6 +7,7 @@ import { useAcaoFormulario, type EstadoFormulario } from "@/components/ui/useAca
 import { useI18n } from "@/lib/i18n/client";
 
 import type { ActionState } from "@/lib/types";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 /**
  * Lista + formulário de um cadastro da empresa. Clientes e fornecedores têm a
@@ -18,7 +19,7 @@ export interface Props<T> {
   organizacaoId: string;
   criar: (s: ActionState, fd: FormData) => Promise<ActionState>;
   atualizar: (s: ActionState, fd: FormData) => Promise<ActionState>;
-  excluir: (fd: FormData) => Promise<void>;
+  excluir: (s: ActionState, fd: FormData) => Promise<ActionState>;
   rotuloNovo: string;
   vazioTitulo: string;
   vazioTexto: string;
@@ -68,11 +69,11 @@ export function Cadastro<T>(p: Props<T>) {
                               onClick={() => { setAviso(null); setIncluindo(false); setEditando(id); }}>
                         {d.comum.editar}
                       </button>
-                      <form action={p.excluir}
+                      <FormAcao action={p.excluir}
                             onSubmit={(e) => { if (!window.confirm(p.confirmacao(item))) e.preventDefault(); }}>
                         <input type="hidden" name="id" value={id} />
                         <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                      </form>
+                      </FormAcao>
                     </div>
                   </div>
                 )}

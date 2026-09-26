@@ -39,31 +39,33 @@ export async function atualizarProjeto(_: ActionState, fd: FormData): Promise<Ac
   return { ok: true, sucesso: d.projetos.atualizado };
 }
 
-export async function excluirProjeto(fd: FormData): Promise<void> {
+export async function excluirProjeto(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
   // Pela função (0026), não por delete direto: o projeto leva junto, numa
   // instrução só, os contratos e monetizações que são dele. O delete direto
   // esbarrava na trava dos contratos convertidos na 0022 e não excluía nada.
   const { data, error } = await supabase.rpc("excluir_projeto", { p_projeto_id: id.data });
-  if (error) throw new Error(traduzirErroBanco(error, "projeto", d));
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "projeto", d) };
   // false: não é o dono (ou o projeto já não existe) — nada foi apagado.
-  if (!data) throw new Error(d.membros.somenteDono);
+  // false: não é o dono, o projeto já não existe ou a empresa está suspensa (0032).
+  if (!data) return { ok: false, erro: d.projetos.naoExcluido };
   revalidatePath("/", "layout");
   redirect("/projetos");
 }
 
 /** Status do projeto (0022): em análise, em andamento, encerrado — é o que o painel conta. */
-export async function mudarStatusProjeto(fd: FormData): Promise<void> {
+export async function mudarStatusProjeto(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const parsed = criarSchemas(d).statusProjeto.safeParse(formParaObjeto(fd));
-  if (!parsed.success) return;
+  if (!parsed.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
   const { error } = await supabase.from("projetos").update({ status: parsed.data.status }).eq("id", parsed.data.id);
-  if (error) throw new Error(traduzirErroBanco(error, "projeto", d));
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "projeto", d) };
   revalidatePath(`/projetos/${parsed.data.id}`, "layout");
   revalidatePath("/projetos");
   revalidatePath("/painel");
+  return { ok: true };
 }

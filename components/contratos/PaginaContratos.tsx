@@ -7,7 +7,7 @@ import {
   ehMaster, listarCarteira, listarClientes, listarCommodities, listarContratos, listarPartes, listarProjetos,
   minhaOrganizacao,
 } from "@/lib/consultas";
-import { valorContrato, comissaoAgente } from "@/lib/contratos";
+import { STATUS_ATIVOS, valorContrato, comissaoAgente } from "@/lib/contratos";
 import { obterD } from "@/lib/i18n/server";
 import { rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
@@ -39,11 +39,13 @@ export async function PaginaContratos({ direcao, statusParam }: { direcao: Direc
   const nomeCliente = new Map(clientes.map((c) => [c.id, c.nome]));
   const nomeCommodity = new Map(commodities.map((c) => [c.id, c.nome]));
 
-  const status = (STATUS_CONTRATO as readonly string[]).includes(statusParam ?? "")
-    ? (statusParam as StatusContrato) : null;
-  const lista = contratos.filter((c) => (!status || c.status === status) && c.direcao === direcao);
+  // "ativos" = assinado + em execução: é o filtro que o cartão do painel abre.
+  const status = statusParam === "ativos" || (STATUS_CONTRATO as readonly string[]).includes(statusParam ?? "")
+    ? (statusParam as StatusContrato | "ativos") : null;
+  const lista = contratos.filter((c) => c.direcao === direcao
+    && (!status || (status === "ativos" ? STATUS_ATIVOS.includes(c.status) : c.status === status)));
   const base = direcao === "venda" ? "/vendas" : "/compras";
-  const filtro = (s: StatusContrato | null) => (s ? `${base}?status=${s}` : base);
+  const filtro = (s: StatusContrato | "ativos" | null) => (s ? `${base}?status=${s}` : base);
   // Commodity pode nascer no próprio contrato (0029); o cliente precisa existir antes.
   const faltaCadastro = clientes.length === 0;
 
@@ -69,6 +71,7 @@ export async function PaginaContratos({ direcao, statusParam }: { direcao: Direc
         <>
           <nav aria-label={t.filtros} className="mt-6 flex flex-wrap gap-2">
             <Link href={filtro(null)} className={`btn-quieto px-3 ${!status ? "border-navy bg-navy-soft" : ""}`}>{t.todos}</Link>
+            <Link href={filtro("ativos")} className={`btn-quieto px-3 ${status === "ativos" ? "border-navy bg-navy-soft" : ""}`}>{t.filtroAtivos}</Link>
             {STATUS_CONTRATO.map((s) => (
               <Link key={s} href={filtro(s)} className={`btn-quieto px-3 ${status === s ? "border-navy bg-navy-soft" : ""}`}>
                 {d.enums.statusContrato[s]}

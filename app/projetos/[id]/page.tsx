@@ -12,6 +12,7 @@ import { obterD } from "@/lib/i18n/server";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { STATUS_PROJETO } from "@/lib/types";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
   ]);
   const m = projeto.moeda;
   const doProjeto = contratos.filter((c) => c.projeto_id === projeto.id && c.conta === "projeto");
-  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0);
+  const base = baseDoProjeto(contratos, projeto.id, capital.get(projeto.id) ?? 0, projeto.moeda);
   const ganhos = remuneracoes.filter((r) => r.projeto_id === projeto.id).map((r) => ({ r, p: projetarRemuneracao(r, base) }));
   const alocado = participantes.reduce((s, p) => s + Number(p.percentual), 0) + Number(projeto.participacao_pct);
 
@@ -51,12 +52,12 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
           </p>
         </div>
         {pode.administrar && (
-          <form action={mudarStatusProjeto}>
+          <FormAcao action={mudarStatusProjeto}>
             <input type="hidden" name="id" value={projeto.id} />
             <SelectAutoSubmit name="status" defaultValue={projeto.status} className="campo w-auto" ariaLabel={t.status}>
               {STATUS_PROJETO.map((s) => <option key={s} value={s}>{d.enums.statusProjeto[s]}</option>)}
             </SelectAutoSubmit>
-          </form>
+          </FormAcao>
         )}
       </div>
       {projeto.descricao && <p className="mt-3">{projeto.descricao}</p>}
@@ -71,12 +72,20 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
           <Cartao rotulo={t.aportes} valor={f.moeda(Number(resumo.aportes_total), m)} />
         </div>
         <p className="mt-2 text-sm text-stone">{t.resultadoNota}</p>
+        {/* Exportação com os mesmos totais desta tela; só para quem administra (leva capital e sócios). */}
+        {pode.administrar && (
+          <nav aria-label={t.exportar} className="mt-4 flex flex-wrap gap-2">
+            <a href={`/api/export/${projeto.id}?formato=xlsx`} className="btn-quieto px-3">{d.dashboard.baixarExcel}</a>
+            <a href={`/api/export/${projeto.id}?formato=csv`} className="btn-quieto px-3">{d.dashboard.baixarCsv}</a>
+            <a href={`/api/export/${projeto.id}?formato=pdf`} target="_blank" rel="noopener" className="btn-quieto px-3">{d.dashboard.baixarPdf}</a>
+          </nav>
+        )}
       </section>
 
       <section className="secao">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="mb-0">{t.socios}</h2>
-          <Link href={`/projetos/${projeto.id}/participantes`} className="text-navy underline">{t.gerirSocios}</Link>
+          <Link href={`/projetos/${projeto.id}/participantes`} className="inline-flex min-h-touch items-center text-navy underline">{t.gerirSocios}</Link>
         </div>
         {participantes.length === 0 ? <p className="text-stone">{t.semSocios}</p> : (
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -98,7 +107,7 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
         <section className="secao">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="mb-0">{t.ganhoEmpresa}</h2>
-            <Link href={`/projetos/${projeto.id}/participantes#gestao`} className="text-navy underline">{t.definirGanho}</Link>
+            <Link href={`/projetos/${projeto.id}/participantes#gestao`} className="inline-flex min-h-touch items-center text-navy underline">{t.definirGanho}</Link>
           </div>
           {ganhos.length === 0 ? <p className="rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{t.semGanho}</p> : (
             <ul className="grid gap-2">
@@ -133,6 +142,9 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
                       <p className="num mt-1 text-stone">
                         {f.numero(Number(c.volume), 0)} {rotuloUnidade(c.unidade, d)} · {v === null ? d.contratos.valorAConfirmar : f.moeda(v, c.moeda)}
                       </p>
+                      {c.moeda !== projeto.moeda && (
+                        <p className="mt-1 text-sm text-orange-deep">{fmtTexto(t.outraMoeda, { moeda: c.moeda, projeto: projeto.moeda })}</p>
+                      )}
                     </Link>
                   </li>
                 );

@@ -360,11 +360,11 @@ export function FormContrato({
           <p className="text-sm text-navy sm:col-span-6">{fmtTexto(t.caladoLimite, { m: fmt.numero(limite, 2) })}</p>
         )}
         <Campo col={3} rotulo={t.taxaCarga} id="taxa_carga_dia">
-          <input id="taxa_carga_dia" name="taxa_carga_dia" type="number" inputMode="decimal" step="any" min="0"
+          <input id="taxa_carga_dia" name="taxa_carga_dia" type="number" inputMode="decimal" step="any" min="0.01"
                  className="campo num" value={taxaCarga} onChange={(x) => setTaxaCarga(x.target.value)} />
         </Campo>
         <Campo col={3} rotulo={t.taxaDescarga} id="taxa_descarga_dia">
-          <input id="taxa_descarga_dia" name="taxa_descarga_dia" type="number" inputMode="decimal" step="any" min="0"
+          <input id="taxa_descarga_dia" name="taxa_descarga_dia" type="number" inputMode="decimal" step="any" min="0.01"
                  className="campo num" value={taxaDescarga} onChange={(x) => setTaxaDescarga(x.target.value)} />
         </Campo>
         <Campo col={3} rotulo={t.demurrage} id="demurrage_dia">

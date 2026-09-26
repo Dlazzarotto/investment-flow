@@ -33,6 +33,39 @@ export async function criarEmpresa(_: ActionState, fd: FormData): Promise<Action
 }
 
 /** Plano, assentos, vigência e o liga/desliga. O trigger do banco só aceita do master. */
+/**
+ * Ativa / parada / arquivada (0034). Só "ativa" entra no sistema — o banco tira o
+ * acesso de todo mundo da empresa (ADM, equipe, investidor) e guarda os dados.
+ * `ativa` vai junto: o check organizacoes_situacao_ativa_ck não deixa divergir.
+ */
+export async function mudarSituacaoEmpresa(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).situacaoEmpresa.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: d.validacao.dadosInvalidos };
+  const { id, situacao } = parsed.data;
+  const supabase = createClient();
+  const { data, error } = await supabase.from("organizacoes").update({ situacao, ativa: situacao === "ativa" })
+    .eq("id", id).select("nome").maybeSingle();
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
+  if (!data) return { ok: false, erro: d.comum.nadaAlterado };
+  revalidatePath("/master");
+  return { ok: true, sucesso: fmtTexto(d.master.situacaoSalva, { nome: data.nome as string, situacao: d.enums.situacaoEmpresa[situacao] }) };
+}
+
+/** Renomear sem abrir o contrato inteiro. */
+export async function renomearEmpresa(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { d } = obterD();
+  const parsed = criarSchemas(d).nomeEmpresa.safeParse(formParaObjeto(fd));
+  if (!parsed.success) return { ok: false, erro: primeiroErro(parsed.error, d.validacao.dadosInvalidos) };
+  const supabase = createClient();
+  const { data, error } = await supabase.from("organizacoes").update({ nome: parsed.data.nome })
+    .eq("id", parsed.data.id).select("nome").maybeSingle();
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
+  if (!data) return { ok: false, erro: d.comum.nadaAlterado };
+  revalidatePath("/master");
+  return { ok: true, sucesso: fmtTexto(d.master.nomeSalvo, { nome: data.nome as string }) };
+}
+
 export async function atualizarContrato(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const parsed = criarSchemas(d).contrato.safeParse(formParaObjeto(fd));
@@ -97,13 +130,13 @@ export async function trocarAdmin(_: ActionState, fd: FormData): Promise<ActionS
   if (!antigo || novo === antigo) return { ok: false, erro: d.validacao.dadosInvalidos };
 
   const supabase = createClient();
-  const { error } = await supabase.from("organizacao_membros")
-    .insert({ organizacao_id: parsed.data.organizacao_id, email: novo });
+  // Troca o e-mail NA MESMA LINHA: inserir o novo antes de apagar o antigo esbarrava
+  // no teto de assentos (plano de 1 assento nunca trocava o ADM). O índice único
+  // global (0027) continua barrando e-mail que já é de outra empresa.
+  const { data, error } = await supabase.from("organizacao_membros").update({ email: novo })
+    .eq("organizacao_id", parsed.data.organizacao_id).eq("email_normalizado", antigo).select("id");
   if (error) return { ok: false, erro: traduzirErroBanco(error, "empresa", d) };
-  const { error: e2 } = await supabase.from("organizacao_membros").delete()
-    .eq("organizacao_id", parsed.data.organizacao_id).eq("email_normalizado", antigo);
-  // O novo já entrou: melhor avisar que o antigo ficou do que desfazer a troca.
-  if (e2) return { ok: false, erro: traduzirErroBanco(e2, "empresa", d) };
+  if (!data?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/master");
   return { ok: true, sucesso: fmtTexto(d.master.adminTrocado, { antigo, novo }) };
 }
@@ -147,29 +180,33 @@ export async function criarFatura(_: ActionState, fd: FormData): Promise<ActionS
 }
 
 /** Liga e desliga a baixa: informar o pagamento e desfazer usam o mesmo caminho. */
-export async function alternarPagamento(fd: FormData): Promise<void> {
+export async function alternarPagamento(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const schemas = criarSchemas(d);
   const id = schemas.uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const pagar = String(fd.get("pago") ?? "") === "1";
 
   const supabase = createClient();
   const { error } = await supabase.from("faturas")
     .update({ pago_em: pagar ? String(fd.get("hoje") ?? "").slice(0, 10) || null : null })
     .eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "fatura", d));
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "fatura", d) };
   revalidatePath("/master");
+  return { ok: true };
 }
 
-export async function excluirFatura(fd: FormData): Promise<void> {
+export async function excluirFatura(_: ActionState, fd: FormData): Promise<ActionState> {
   const { d } = obterD();
   const id = criarSchemas(d).uuid.safeParse(fd.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { ok: false, erro: d.validacao.dadosInvalidos };
   const supabase = createClient();
-  const { error } = await supabase.from("faturas").delete().eq("id", id.data);
-  if (error) throw new Error(traduzirErroBanco(error, "fatura", d));
+  const { data: apagados, error } = await supabase.from("faturas").delete().eq("id", id.data).select("id");
+  if (error) return { ok: false, erro: traduzirErroBanco(error, "fatura", d) };
+  // RLS que recusa um delete não dá erro: devolve zero linhas. Dizer, em vez de fingir que excluiu.
+  if (!apagados?.length) return { ok: false, erro: d.comum.nadaAlterado };
   revalidatePath("/master");
+  return { ok: true };
 }
 
 /** Emite a mensalidade do mês de quem está em dia. Rodar duas vezes não duplica. */

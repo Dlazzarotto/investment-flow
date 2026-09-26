@@ -4,7 +4,7 @@ import { Shell } from "@/components/Shell";
 import { FormProjeto } from "@/components/forms/FormProjeto";
 import { Vazio } from "@/components/ui/Vazio";
 import { criarProjeto } from "@/app/actions/projetos";
-import { acessoSuspenso, ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterResumo, obterUsuario } from "@/lib/consultas";
+import { ehMaster, listarCarteira, listarProjetos, minhaOrganizacao, obterResumo, obterUsuario } from "@/lib/consultas";
 import { STATUS_PROJETO, type StatusProjeto } from "@/lib/types";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto } from "@/lib/i18n";
@@ -18,7 +18,6 @@ export default async function ProjetosPage({ searchParams }: { searchParams: { s
   const [projetos, usuario, org, carteira, master] = await Promise.all([
     listarProjetos(), obterUsuario(), minhaOrganizacao(), listarCarteira(), ehMaster(),
   ]);
-  const suspenso = await acessoSuspenso();
   const emailAtual = (usuario?.email ?? "").trim().toLowerCase();
   // Quem só é investidor (nenhum projeto operacional próprio ou compartilhado) vive na carteira.
   // Projeto que você criou conta sempre: o dono pode estar em participantes para
@@ -31,28 +30,51 @@ export default async function ProjetosPage({ searchParams }: { searchParams: { s
   // Projeto é o que a empresa ADMINISTRA (0022): cartão com status e resultado.
   const status = (STATUS_PROJETO as readonly string[]).includes(searchParams.status ?? "")
     ? (searchParams.status as StatusProjeto) : null;
-  const lista = projetos.filter((p) => !status || p.status === status);
-  const resumos = new Map(await Promise.all(lista.map(async (p) => [p.id, await obterResumo(p.id)] as const)));
+  // Com empresa, a lista e as contagens são as DELA — as mesmas do painel, que abre
+  // esta tela por status. Projeto de outra empresa em que a pessoa participa vai à parte.
+  const daEmpresa = org ? projetos.filter((p) => p.organizacao_id === org.organizacao.id) : projetos;
+  const outros = org ? projetos.filter((p) => p.organizacao_id !== org.organizacao.id) : [];
+  const lista = daEmpresa.filter((p) => !status || p.status === status);
+  const resumos = new Map(await Promise.all([...lista, ...outros].map(async (p) => [p.id, await obterResumo(p.id)] as const)));
   const COR: Record<StatusProjeto, string> = {
     em_analise: "bg-orange-soft text-orange-deep", em_andamento: "bg-navy-soft text-navy", encerrado: "bg-stone-light text-stone",
   };
+  const cartao = (p: (typeof projetos)[number]) => {
+    const r = resumos.get(p.id);
+    return (
+      <li key={p.id}>
+        <Link href={`/projetos/${p.id}`} className="block min-h-touch rounded-md border border-stone-light bg-white px-5 py-4 hover:border-navy">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-lg font-semibold text-navy">{p.nome}</p>
+            <span className={`rounded px-2 py-0.5 text-sm font-semibold ${COR[p.status]}`}>{d.enums.statusProjeto[p.status]}</span>
+          </div>
+          {usuario && p.owner_id !== usuario.id && (
+            <p className="mt-1 inline-block rounded-md bg-navy-soft px-2 py-1 text-navy">{d.membros.compartilhado}</p>
+          )}
+          <p className="mt-1 text-stone">{fmtTexto(d.projetos.cardDesde, { moeda: p.moeda, data: f.data(p.data_inicio) })}</p>
+          {r && (
+            <dl className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div><dt className="text-sm text-stone">{d.resumoProjeto.receita}</dt>
+                <dd className="num font-semibold">{f.moeda(Number(r.receita_total), p.moeda)}</dd></div>
+              <div><dt className="text-sm text-stone">{d.resumoProjeto.saldo}</dt>
+                <dd className={`num font-semibold ${Number(r.saldo) < 0 ? "text-loss" : "text-gain"}`}>{f.moeda(Number(r.saldo), p.moeda)}</dd></div>
+            </dl>
+          )}
+        </Link>
+      </li>
+    );
+  };
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org?.organizacao.nome}>
-      {suspenso && (
-        <p role="alert" className="mb-6 rounded-md border-l-4 border-loss bg-red-50 px-4 py-3">
-          <strong className="text-loss">{d.comum.acessoSuspenso}</strong>
-          <span className="mt-1 block">{d.comum.acessoSuspensoTexto}</span>
-        </p>
-      )}
       <h1 className="text-2xl">{d.projetos.titulo}</h1>
       <p className="mt-1 text-stone">{d.projetos.subtitulo}</p>
       <nav aria-label={d.projetos.status} className="mt-6 flex flex-wrap gap-2">
         <Link href="/projetos" className={`btn-quieto px-3 ${!status ? "border-navy bg-navy-soft" : ""}`}>
-          {d.contratos.todos} ({projetos.length})
+          {d.contratos.todos} ({daEmpresa.length})
         </Link>
         {STATUS_PROJETO.map((x) => (
           <Link key={x} href={`/projetos?status=${x}`} className={`btn-quieto px-3 ${status === x ? "border-navy bg-navy-soft" : ""}`}>
-            {d.enums.statusProjeto[x]} ({projetos.filter((p) => p.status === x).length})
+            {d.enums.statusProjeto[x]} ({daEmpresa.filter((p) => p.status === x).length})
           </Link>
         ))}
       </nav>
@@ -61,34 +83,16 @@ export default async function ProjetosPage({ searchParams }: { searchParams: { s
           <Vazio titulo={d.projetos.vazioTitulo} texto={d.projetos.vazioTexto} />
         ) : (
           <ul className="grid gap-3 lg:grid-cols-2">
-            {lista.map((p) => {
-              const r = resumos.get(p.id);
-              return (
-                <li key={p.id}>
-                  <Link href={`/projetos/${p.id}`} className="block min-h-touch rounded-md border border-stone-light bg-white px-5 py-4 hover:border-navy">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-lg font-semibold text-navy">{p.nome}</p>
-                      <span className={`rounded px-2 py-0.5 text-sm font-semibold ${COR[p.status]}`}>{d.enums.statusProjeto[p.status]}</span>
-                    </div>
-                    {usuario && p.owner_id !== usuario.id && (
-                      <p className="mt-1 inline-block rounded-md bg-navy-soft px-2 py-1 text-navy">{d.membros.compartilhado}</p>
-                    )}
-                    <p className="mt-1 text-stone">{fmtTexto(d.projetos.cardDesde, { moeda: p.moeda, data: f.data(p.data_inicio) })}</p>
-                    {r && (
-                      <dl className="mt-2 grid grid-cols-2 gap-2">
-                        <div><dt className="text-sm text-stone">{d.resumoProjeto.receita}</dt>
-                          <dd className="num font-semibold">{f.moeda(Number(r.receita_total), p.moeda)}</dd></div>
-                        <div><dt className="text-sm text-stone">{d.resumoProjeto.saldo}</dt>
-                          <dd className={`num font-semibold ${Number(r.saldo) < 0 ? "text-loss" : "text-gain"}`}>{f.moeda(Number(r.saldo), p.moeda)}</dd></div>
-                      </dl>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
+            {lista.map(cartao)}
           </ul>
         )}
       </section>
+      {outros.length > 0 && (
+        <section className="secao">
+          <h2>{d.projetos.deOutrasEmpresas}</h2>
+          <ul className="grid gap-3 lg:grid-cols-2">{outros.map(cartao)}</ul>
+        </section>
+      )}
       {/* Projeto é da empresa (0025): sem empresa, o banco recusa — a tela não oferece. */}
       {org && (
         <section className="secao max-w-3xl">

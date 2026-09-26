@@ -84,6 +84,15 @@ describe("Mensagens traduzidas", () => {
     expect(traduzirErroBanco(err("23503", 'update or delete on table "clientes" violates foreign key constraint "contratos_contraparte_fk" on table "contratos"'),
       "cliente", obterDicionario("pt"))).toMatch(/^Não é possível excluir: este cliente está em uso/);
     expect(traduzirErroBanco(err("23503", 'insert or update on table "contratos" violates foreign key constraint "contratos_contraparte_fk"'),
-      "contrato", obterDicionario("pt"))).toBe(obterDicionario("pt").banco.travas);
+      "contrato", obterDicionario("pt"))).toBe(obterDicionario("pt").banco.referenciaInvalida);
+    // Índice único de NÚMERO ou de e-mail não é "já existe com esse nome".
+    expect(traduzirErroBanco(err("23505", 'duplicate key value violates unique constraint "contratos_numero_uq"'), "contrato", obterDicionario("pt")))
+      .toBe("Já existe um contrato com esse número.");
+    expect(traduzirErroBanco(err("23505", 'duplicate key value violates unique constraint "participantes_projeto_email_uq"'), "participante", obterDicionario("pt")))
+      .toBe(obterDicionario("pt").banco.emailDuplicado);
+    expect(traduzirErroBanco(err("23514", 'new row for relation "contratos" violates check constraint "contratos_conta_ck"'), "contrato", obterDicionario("pt")))
+      .toBe(obterDicionario("pt").banco.contaProjeto);
+    // A trava genérica não afirma mais um motivo que pode não ser o verdadeiro.
+    expect(obterDicionario("pt").banco.travas).not.toMatch(/maiores que zero/);
   });
 });

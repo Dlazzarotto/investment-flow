@@ -42,7 +42,7 @@ export function PainelResultado({ resultado: r, estimativa }:
         </div>
       )}
 
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Cartao rotulo={t.custoDireto} valor={f.moeda(r.custoDireto, m)} />
         <Cartao rotulo={t.custoIndireto} valor={f.moeda(r.custoIndireto, m)} />
         <Cartao rotulo={fmtTexto(t.custoUnitario, { unidade: u })} valor={f.moeda(r.custoUnitario, m)} destaque />

@@ -1,18 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import {
-  listarAportes, listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas,
-  obterFluxoMensal, obterProjeto,
+  listarAportes, listarContratos, minhaOrganizacao, listarDespesas, listarInvestimentos, listarParticipantes, listarVendas, mapaUltimasEstimativas,
+  obterFluxoMensal, obterProjeto, obterResumo,
 } from "@/lib/consultas";
+import { valorContrato } from "@/lib/contratos";
 import {
-  calcularKpis, desvioVsMedia, detalharCustoVenda, encontrarBreakeven, normalizarItem, ratearParticipacoes,
+  kpisDoResumo, desvioVsMedia, detalharCustoVenda, encontrarBreakeven, normalizarItem, ratearParticipacoes,
   roiAnualizado, simularCenarios, tirAnual, type Rateio, type TipoRateio,
 } from "@/lib/calculos";
 import { obterD } from "@/lib/i18n/server";
 import { montarCsv } from "@/lib/csv";
 import { montarRelatorio } from "@/lib/relatorio";
 import { formatadores } from "@/lib/format";
-import { minhaOrganizacao } from "@/lib/consultas";
 
 export const dynamic = "force-dynamic";
 
@@ -28,24 +28,33 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const pedido = req.nextUrl.searchParams.get("formato");
   const formato = pedido === "xlsx" || pedido === "pdf" ? pedido : "csv";
   const projeto = await obterProjeto(params.id);
-  const aportes = await listarAportes(projeto.id);
-  const [investimentos, vendas, despesas, participantes, fluxo, estimativas] = await Promise.all([
+  const [investimentos, vendas, despesas, participantes, fluxo, estimativas, aportes, resumoBanco, org] = await Promise.all([
     listarInvestimentos(projeto.id), listarVendas(projeto.id), listarDespesas(projeto.id),
     listarParticipantes(projeto.id), obterFluxoMensal(projeto.id), mapaUltimasEstimativas(projeto.id),
+    listarAportes(projeto.id), obterResumo(projeto.id), minhaOrganizacao(),
   ]);
-  const kpis = calcularKpis(investimentos, vendas, despesas);
+  // Os MESMOS totais da tela e do investidor (resumo_projeto): venda antiga OU contrato
+  // concluído, só na moeda do projeto, capital zerado para quem não o vê.
+  const kpis = kpisDoResumo(resumoBanco);
+  // Contratos por conta do projeto (o que está no resultado dele); vazio para quem o RLS não deixa ler.
+  const contratos = (await listarContratos(projeto.organizacao_id ?? undefined))
+    .filter((c) => c.projeto_id === projeto.id && c.conta === "projeto");
+  const noResultado = (c: (typeof contratos)[number]) => c.status === "concluido" && c.papel === "principal"
+    && c.tipo_preco === "fixo" && c.moeda === projeto.moeda && !c.venda_origem_id;
   const slug = projeto.nome.normalize("NFD").replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "").toLowerCase() || "projeto";
-  const papel = (tipo: TipoRateio) => tipo === "dono" ? d.enums.tipoParceria[projeto.tipo_parceria]
+  // A linha "dono" do rateio é a participação da EMPRESA gestora (0022): o tipo de parceria
+  // e "sua participação" da 1ª versão saíram da tela e não voltam pela exportação.
+  const papel = (tipo: TipoRateio) => tipo === "dono" ? x.empresaGestora
     : tipo === "restante" ? "—" : d.enums.tipoParticipante[tipo];
-  const nomeParte = (r: Rateio) => r.tipo === "dono" ? d.parceria.voce : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome;
+  const nomeParte = (r: Rateio) => r.tipo === "dono" ? (org?.organizacao.nome ?? x.empresaGestora)
+    : r.tipo === "restante" ? d.dashboard.naoAlocado : r.nome;
 
   if (formato === "pdf") {
-    const [org, fluxoPdf] = await Promise.all([minhaOrganizacao(), Promise.resolve(fluxo)]);
     const html = montarRelatorio({
       projeto, empresa: org?.organizacao.nome ?? null, kpis,
       rateios: ratearParticipacoes(projeto, participantes, kpis),
-      nomeParte, papel: (r) => papel(r.tipo), fluxo: fluxoPdf,
-      breakeven: encontrarBreakeven(fluxoPdf), geradoEm: new Date().toISOString().slice(0, 10),
+      nomeParte, papel: (r) => papel(r.tipo), fluxo,
+      breakeven: encontrarBreakeven(fluxo), geradoEm: new Date().toISOString().slice(0, 10),
       d, f: formatadores(locale), lang: locale === "pt" ? "pt-BR" : locale === "zh" ? "zh-CN" : locale,
     });
     return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
@@ -61,6 +70,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         Number(v.custo_total ?? 0), detalharCustoVenda(v).margem]),
       ...despesas.map((y) => [x.tipoDespesa, y.id, y.data, y.descricao, d.enums.categoriaDespesa[y.categoria],
         "", "", "", -Number(y.valor), "", ""]),
+      // Aporte é capital do sócio, não caixa do projeto: entra positivo, com o tipo na categoria.
+      ...aportes.map((a) => [x.tipoAporteLinha, a.id, a.data, a.descricao, d.enums.tipoAporte[a.tipo],
+        "", "", "", Number(a.valor), "", ""]),
+      // Contrato por conta do projeto: venda positiva, compra negativa; valor vazio se ainda não dá para calcular.
+      ...contratos.map((c) => {
+        const v = valorContrato(c);
+        return [x.tipoContrato, c.id, (c.atualizado_em ?? "").slice(0, 10), c.numero ?? "",
+          `${d.enums.direcaoContrato[c.direcao]} · ${d.enums.statusContrato[c.status]}`,
+          Number(c.volume), c.unidade, c.preco_fixo === null ? "" : Number(c.preco_fixo),
+          v === null ? "" : c.direcao === "compra" ? -v : v, "", ""];
+      }),
     ];
     return new NextResponse(montarCsv(linhas, locale), {
       headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${slug}_dados.csv"` },
@@ -75,14 +95,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   resumo.columns = [{ header: x.indicador, key: "k", width: 34 }, { header: x.valor, key: "v", width: 28 }];
   resumo.addRows([
     [x.projeto, projeto.nome], [x.moeda, projeto.moeda], [x.dataInicio, projeto.data_inicio],
-    [x.tipoParceria, d.enums.tipoParceria[projeto.tipo_parceria]], [x.suaParticipacao, Number(projeto.participacao_pct)],
+    [x.status, d.enums.statusProjeto[projeto.status]], [x.participacaoEmpresa, Number(projeto.participacao_pct)],
     [x.investimentoTotal, kpis.investimentoTotal], [x.custoVendas, kpis.custoVendasTotal],
     [x.despesas, kpis.despesasTotal], [x.saidaTotal, kpis.saidaTotal],
     [x.receitaTotal, kpis.receitaTotal], [x.margem, kpis.margemBruta], [x.margemPct, pctExcel(kpis.margemPct)],
     [x.saldo, kpis.saldo],
     [x.roi, pctExcel(kpis.roi)], [x.roiAnualizado, pctExcel(roiAnualizado(kpis.roi, fluxo.length))],
-    [x.tirAnual, pctExcel(tirAnual(fluxo.map((m) => m.receita - m.investimento)))],
+    // TIR sobre a SAÍDA (regra 6), como os cenários logo abaixo — não só sobre o investimento.
+    [x.tirAnual, pctExcel(tirAnual(fluxo.map((m) => m.receita - m.saida)))],
     [x.breakeven, breakeven ?? x.naoAtingido],
+    [x.notaFluxo, ""],
   ]);
 
   const part = wb.addWorksheet(x.participacao);
@@ -106,6 +128,21 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   for (const a of aportes) {
     apo.addRow({ data: a.data, participante: nomeParticipante.get(a.participante_id) ?? "", tipo: d.enums.tipoAporte[a.tipo],
       descricao: a.descricao, valor: Number(a.valor), obs: a.observacoes ?? "" });
+  }
+
+  const ctr = wb.addWorksheet(x.contratos);
+  ctr.columns = [
+    { header: x.numero, key: "num", width: 16 }, { header: x.direcao, key: "dir", width: 12 },
+    { header: x.statusContrato, key: "st", width: 16 }, { header: x.volume, key: "vol", width: 14 },
+    { header: x.unidade, key: "un", width: 12 }, { header: x.moeda, key: "moeda", width: 8 },
+    { header: x.precoUnitario, key: "preco", width: 16 }, { header: x.valorTotal, key: "valor", width: 18 },
+    { header: x.noResultado, key: "res", width: 20 },
+  ];
+  for (const c of contratos) {
+    const v = valorContrato(c);
+    ctr.addRow({ num: c.numero ?? "", dir: d.enums.direcaoContrato[c.direcao], st: d.enums.statusContrato[c.status],
+      vol: Number(c.volume), un: c.unidade, moeda: c.moeda, preco: c.preco_fixo === null ? "" : Number(c.preco_fixo),
+      valor: v ?? "", res: noResultado(c) ? x.sim : x.nao });
   }
 
   const inv = wb.addWorksheet(x.investimentos);

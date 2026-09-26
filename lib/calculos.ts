@@ -3,7 +3,7 @@
  * A agregação mensal contínua é feita no banco por public.fluxo_mensal(); aqui
  * ficam KPIs, break-even e rateio por participação.
  */
-import type { Aporte, Despesa, FluxoMensal, Investimento, Participante, Projeto, TipoParticipante, Venda } from "./types";
+import type { Aporte, Despesa, FluxoMensal, Investimento, Participante, Projeto, ResumoProjeto, TipoParticipante, Venda } from "./types";
 
 export interface Kpis {
   investimentoTotal: number;
@@ -41,6 +41,30 @@ export function calcularKpis(investimentos: Pick<Investimento, "valor_total">[],
     despesasTotal: arred(despesasTotal),
     saidaTotal: arred(saidaTotal),
     margemBruta: arred(margemBruta),
+    margemPct: receitaTotal > 0 ? margemBruta / receitaTotal : null,
+    saldo,
+    roi: investimentoTotal > 0 ? saldo / investimentoTotal : null,
+  };
+}
+
+/**
+ * KPIs a partir de resumo_projeto() — os MESMOS totais da tela e do investidor
+ * (venda antiga OU contrato concluído, na moeda do projeto; capital zerado para
+ * quem não o enxerga). A exportação usava calcularKpis sobre as vendas antigas e
+ * divergia da tela assim que o projeto tinha contrato concluído.
+ */
+export function kpisDoResumo(r: Pick<ResumoProjeto, "investimento_total" | "receita_total" | "custo_vendas_total"
+  | "despesas_total" | "saida_total" | "saldo">): Kpis {
+  const investimentoTotal = arred(Number(r.investimento_total));
+  const receitaTotal = arred(Number(r.receita_total));
+  const custoVendasTotal = arred(Number(r.custo_vendas_total));
+  const margemBruta = arred(receitaTotal - custoVendasTotal);
+  const saldo = arred(Number(r.saldo));
+  return {
+    investimentoTotal, receitaTotal, custoVendasTotal,
+    despesasTotal: arred(Number(r.despesas_total)),
+    saidaTotal: arred(Number(r.saida_total)),
+    margemBruta,
     margemPct: receitaTotal > 0 ? margemBruta / receitaTotal : null,
     saldo,
     roi: investimentoTotal > 0 ? saldo / investimentoTotal : null,

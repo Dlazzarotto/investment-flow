@@ -33,7 +33,7 @@ export default async function EstimativaPage({ params }: { params: { id: string;
 
   return (
     <>
-      <Link href={`/projetos/${projeto.id}/custeio`} className="text-navy underline">← {t.voltar}</Link>
+      <Link href={`/projetos/${projeto.id}/custeio`} className="inline-flex min-h-touch items-center text-navy underline">← {t.voltar}</Link>
       <h1 className="mt-2 text-2xl">{estimativa.nome}</h1>
       <p className="mt-1 text-stone">
         {[estimativa.commodity, estimativa.cliente, d.enums.modoEstimativa[estimativa.modo]].filter(Boolean).join(" · ")}

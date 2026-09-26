@@ -64,6 +64,13 @@ supabase/migrations/   0001_schema.sql (tabelas, colunas geradas, trigger ≤100
                                                      os dicionários e COMMODITIES_PADRAO — editar a fonte, não o SQL à mão)
                        0031_pesquisa_mercado.sql (pesquisas_mercado da empresa: modo livre/bolsas, cotação lida do JSON do
                                                      agente; painel_commodities: até 3 commodities por USUÁRIO para o painel)
+                       0032_auditoria_travas.sql (auditoria: suspensão trava cadastros/ADM/capex/projeto; gerente sem capital;
+                                                     resultado do projeto por moeda + compra concluída; contrato convertido travado;
+                                                     histórico com empresa; excluir_empresa conta locais/grupos; escritório no custeio)
+                       0033_contratos_na_carteira.sql (contratos_do_projeto(): só números dos contratos que entram no resultado,
+                                                     para a carteira do investidor — ele não lê `contratos`)
+                       0034_situacao_empresa.sql (situação ativa/parada/arquivada; só ATIVA entra no sistema — nem o dono, nem o
+                                                     investidor; `ativa` é espelho por check; painel do master conta arquivadas à parte)
 app/actions/           server actions (zod → Supabase → revalidatePath); erros.ts traduz erros do Postgres
 app/projetos/          aba própria: cartões com status (em análise/em andamento/encerrado) e resultado, filtro por status
 app/projetos/[id]/     page.tsx = Resumo (resultado via resumo_projeto, sócios, como a empresa ganha, contratos do projeto);
@@ -92,11 +99,11 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
                        format.ts (formatadores(locale) — Intl, datas em UTC), csv.ts (CSV por idioma),
                        consultas.ts (leituras, com cache() por requisição), custeio.ts (motor de cálculo reverso),
                        ia/estimativa.ts (chamarClaude compartilhado) e ia/custo.ts (prompt de cargo/serviço)
-components/            Shell, SeletorProjeto, SeletorIdioma, NavProjeto, Cenarios, forms/, tabelas/ (edição na
-                       própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario),
+components/            Shell (menu por papel + aviso de suspensão), Lateral, SeletorIdioma, Cenarios, forms/, tabelas/ (edição na
+                       própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario, FormAcao, BotaoExcluir),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, pesquisa.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
-                       schema*.test.sql (psql; schema13–20 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
+                       schema*.test.sql (psql; schema13 e schema15–24 rodam da raiz). schema, schema4, schema5 e o trecho de PIN do schema6 estão
                        DESATUALIZADOS desde 0005/0006 (inv_acumulado, papel leitor, autorizacoes) — reescrever, não confiar
 ```
 
@@ -105,7 +112,7 @@ tests/                 calculos.test.ts, custeio.test.ts, pesquisa.test.ts, text
 ```
 npm ci            # instalar exatamente pelo lock
 npm run typecheck # tsc --noEmit (deve ficar limpo)
-npm test          # vitest — 152 testes, todos devem passar
+npm test          # vitest — 161 testes, todos devem passar
 npm run build     # build de produção (deve ficar sem warnings)
 npm run dev       # http://localhost:3000
 ```
@@ -174,6 +181,15 @@ Decisões fechadas com o usuário (não reabrir sem pedido):
   funciona com o único), remover ADM só quando há mais de um, "Reenviar convite" (link + copiar + mailto: abre o
   e-mail de quem usa, sem depender do SMTP do Supabase) e excluir empresa VAZIA. Empresa com dados se suspende.
   Ação de formulário do master devolve mensagem, nunca lança: lançar derruba a página em "Algo deu errado".
+- **Situação da empresa (0034, pedido do usuário): Ativa · Parada · Arquivada**, botões no cartão do master. Só ATIVA
+  entra no sistema: `eh_admin_organizacao` e `papel_no_projeto` passam por `empresa_acessivel()`, e `projetos` tem
+  restritiva de leitura (o dono lia direto por `owner_id`). Os dados ficam; reativar devolve tudo. Parada = cliente
+  a recuperar (conta em "inativas"); arquivada = encerrado (sai do panorama, filtro próprio). `ativa` virou espelho de
+  `situacao` (check `organizacoes_situacao_ativa_ck`) e o formulário do Contrato não tem mais a caixa "ativa".
+  Vigência vencida continua só leitura — quem bloqueia acesso é o master, não uma data. O Shell mostra "Acesso
+  bloqueado" (`minha_empresa_bloqueada()`) no lugar do conteúdo.
+- **No master, sem abrir abas:** "Editar nome" ao lado do nome (`renomearEmpresa`) e "Reenviar acesso" em cada ADM,
+  com os DOIS links (/criar-conta para primeiro acesso, /login para quem já tem senha — o master não sabe qual é).
 - **Confirmar exclusão digitando o nome** usa `mesmoNome()` (lib/texto.ts): ignora maiúsculas, acentos e espaços.
 - **Equipe da empresa mora em "Conta e empresa" (/conta), não em Projetos.** Quem está em `organizacao_membros` é
   ADMINISTRADOR da empresa (vê tudo, ocupa assento) — não "sócio" (vocabulário da 1ª versão). A tela mostra
@@ -269,6 +285,29 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   de que o usuário é DONO; projeto compartilhado não muda de empresa por decisão de quem só participa.
 - Painel: "Operação" vem primeiro — contratos ativos, em negociação, contratado por moeda e posição por
   commodity (comprado − vendido; toneladas não se somam com barris).
+
+### Auditoria de integração (0032, decisões do usuário)
+
+- **Ação curta devolve mensagem, nunca lança.** Excluir, mudar status, revogar: `(s, fd) => Promise<ActionState>` com
+  `FormAcao`/`BotaoExcluir`. Server action que lança derruba a página em "Algo deu errado" e, em produção, o Next troca
+  a mensagem traduzida por texto genérico. Delete recusado pelo RLS volta 0 linhas SEM erro: conferir com `.select("id")`.
+- **Resultado do projeto (resumo_projeto):** só contratos na MOEDA do projeto (os de outra moeda aparecem marcados no
+  Resumo, fora da soma); venda concluída = receita, compra concluída = saída, ambas por conta do projeto e como principal.
+  Intermediação (agente) é receita da EMPRESA em qualquer conta e não entra em "sob gestão".
+- **Gerente e escritório não veem capital:** `resumo_projeto` zera investimento e aportes para eles; `aportes_ver` só
+  dono/admin (e o investidor, a própria linha).
+- **Contrato convertido da 1ª versão** tem os números travados (trigger); excluir leva a venda antiga junto.
+- **Suspensão:** restritivas `*_em_dia_*` na escrita; o master continua gerindo ADMs de empresa suspensa. O aviso mora no
+  Shell (todas as telas) e `meu_acesso_suspenso()` inclui o ADM sem projeto e o investidor.
+- **Menu por papel:** sem empresa, a lateral não mostra Painel/Vendas/Compras/Propostas/cadastros.
+- **Painel ↔ listas:** cartão e lista usam o mesmo recorte (`porDirecao`, filtro `?status=ativos`).
+- **Exportação (CSV/Excel/PDF) sai do Resumo do projeto** (só quem administra) e usa `kpisDoResumo(resumo_projeto)` — os
+  mesmos totais da tela e do investidor. TIR sobre a saída. Fluxo mensal, TIR e cenários só veem lançamentos com data
+  (capex, vendas, despesas): contrato concluído está nos totais, não no fluxo — a planilha diz isso.
+- **Carteira:** a tabela de vendas soma as antigas e os contratos concluídos (`contratos_do_projeto`, 0033), que fecham
+  com a receita do topo. Nunca nomes nem número de contrato.
+- `components/Cenarios.tsx` e `components/charts/Grafico*.tsx` estão órfãos desde a 0022 (o dashboard do projeto saiu):
+  religar no Resumo ou apagar é decisão pendente com o usuário.
 
 ### Pesquisa de mercado e preços no painel (0031, decisões do usuário)
 

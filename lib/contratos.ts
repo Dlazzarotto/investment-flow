@@ -58,9 +58,12 @@ export const STATUS_ATIVOS: readonly StatusContrato[] = ["assinado", "em_execuca
 
 export interface ResumoContratos {
   ativos: number;
-  /** Ativos da operação própria: a empresa é dona da carga, por conta dela. */
-  ativosProprios: number;
-  emNegociacao: number;
+  /**
+   * Contagem por direção com o MESMO recorte das listas /vendas e /compras (todo
+   * contrato daquela direção), para o cartão do painel e a lista que ele abre
+   * mostrarem o mesmo número.
+   */
+  porDirecao: Record<"venda" | "compra", { ativos: number; negociacao: number }>;
   /**
    * Posição PRÓPRIA por commodity e unidade — só contratos em que a empresa é
    * dona da carga e por conta dela. Intermediação não é posição; contrato por
@@ -91,9 +94,12 @@ export function resumoContratos(contratos: Campos[]): ResumoContratos {
 
   for (const c of ativos) {
     if (c.papel === "agente") {
+      // Intermediação é receita da EMPRESA em qualquer conta (decisão já tomada). E
+      // NÃO entra em "sob gestão": o projeto não é dono da carga — somar o valor
+      // cheio dela ali contava o mesmo contrato duas vezes, em lugares opostos.
       const com = comissaoAgente(c);
       if (com === null) din(c.moeda).semPreco += 1; else din(c.moeda).comissao += com;
-      if (c.conta !== "projeto" || !c.projeto_id) continue;
+      continue;
     }
     if (c.conta === "projeto" && c.projeto_id) {
       const k = `${c.projeto_id}|${c.moeda}`;
@@ -114,8 +120,12 @@ export function resumoContratos(contratos: Campos[]): ResumoContratos {
 
   return {
     ativos: ativos.length,
-    ativosProprios: ativos.filter((c) => c.papel === "principal" && c.conta !== "projeto").length,
-    emNegociacao: contratos.filter((c) => c.status === "rascunho").length,
+    porDirecao: {
+      venda: { ativos: ativos.filter((c) => c.direcao === "venda").length,
+               negociacao: contratos.filter((c) => c.status === "rascunho" && c.direcao === "venda").length },
+      compra: { ativos: ativos.filter((c) => c.direcao === "compra").length,
+                negociacao: contratos.filter((c) => c.status === "rascunho" && c.direcao === "compra").length },
+    },
     volumes: [...volumes.values()],
     valores: [...valores.values()].map((x) => ({
       ...x, venda: arred(x.venda), compra: arred(x.compra), comissao: arred(x.comissao),
@@ -213,9 +223,13 @@ export interface BaseRemuneracao {
  * cujo valor não dá para projetar (fórmula sem índice) deixa `vendas` null — o %
  * sobre vendas fica "a confirmar" em vez de sair menor do que é.
  */
-export function baseDoProjeto(contratos: Campos[], projetoId: string, capital: number): BaseRemuneracao {
+export function baseDoProjeto(contratos: Campos[], projetoId: string, capital: number, moeda?: Moeda): BaseRemuneracao {
+  // Concluído também: a venda realizada é justamente a base de "% sobre vendas" — antes
+  // a base caía a zero no momento em que o contrato era concluído. E só na moeda do
+  // projeto: somar USD numa base rotulada em BRL dá um número que não existe.
   const vendas = contratos.filter((c) => c.conta === "projeto" && c.projeto_id === projetoId
-    && c.direcao === "venda" && c.papel === "principal" && STATUS_ATIVOS.includes(c.status));
+    && c.direcao === "venda" && c.papel === "principal" && (STATUS_ATIVOS.includes(c.status) || c.status === "concluido")
+    && (!moeda || c.moeda === moeda));
   const valores = vendas.map(valorContrato);
   return {
     capital,

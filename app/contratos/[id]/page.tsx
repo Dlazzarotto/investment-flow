@@ -89,7 +89,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
     [t.entregaInterior, contrato.entrega_interior
       ? [e.modalInterior[contrato.entrega_interior], contrato.entrega_interior_obs].filter(Boolean).join(" — ") : null],
     [t.rotaFluvial, [contrato.rota_fluvial,
-      contrato.barcacas_qtd !== null ? `${contrato.barcacas_qtd} × ${t.barcacasQtd.toLowerCase()}` : null, contrato.barcaca_obs]
+      contrato.barcacas_qtd !== null ? fmtTexto(t.barcacasN, { n: contrato.barcacas_qtd }) : null, contrato.barcaca_obs]
       .filter(Boolean).join(" · ") || null],
     [t.porteNavio, [contrato.porte_navio ? e.porteNavio[contrato.porte_navio] : null, contrato.navio_nome,
       contrato.navio_imo ? `IMO ${contrato.navio_imo}` : null].filter(Boolean).join(" · ") || null],
@@ -113,7 +113,7 @@ export default async function ContratoPage({ params, searchParams }: { params: {
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
-      <Link href={contrato.direcao === "compra" ? "/compras" : "/vendas"} className="text-navy underline">← {t.voltar}</Link>
+      <Link href={contrato.direcao === "compra" ? "/compras" : "/vendas"} className="inline-flex min-h-touch items-center text-navy underline">← {t.voltar}</Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl">{titulo}</h1>
         <SeloStatus status={contrato.status} rotulo={d.enums.statusContrato[contrato.status]} />
@@ -124,6 +124,9 @@ export default async function ContratoPage({ params, searchParams }: { params: {
           contrato.conta === "projeto" ? `${d.enums.contaContrato.projeto}: ${projetos.find((p) => p.id === contrato.projeto_id)?.nome ?? ""}` : null,
         ].filter(Boolean).join(" · ")}
       </p>
+      {contrato.venda_origem_id && (
+        <p role="note" className="mt-3 rounded-md border-l-4 border-orange bg-orange-soft px-4 py-3">{t.convertidoAviso}</p>
+      )}
       {searchParams.erro === "partes" && <p role="alert" className="mt-3 rounded-md border-l-4 border-loss bg-red-50 px-4 py-3 text-loss">{t.erroPartes}</p>}
       <dl className="mt-3 grid gap-2 sm:grid-cols-3">
         <div><dt className="text-sm text-stone">{t.vendedor}</dt><dd className="font-semibold">{nome(parte("vendedor")) ?? org.organizacao.nome}</dd></div>

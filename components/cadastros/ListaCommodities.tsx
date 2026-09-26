@@ -13,6 +13,7 @@ import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
 import { formatadores } from "@/lib/format";
 import { especificacaoDoGrade, rotuloGrupo } from "@/lib/catalogo";
 import type { Commodity, CommodityGrade, CommodityGrupo, CommodityPadrao, CommodityParametro } from "@/lib/types";
+import { FormAcao } from "@/components/ui/FormAcao";
 
 interface Props {
   grupos: CommodityGrupo[];
@@ -87,11 +88,11 @@ export function ListaCommodities({ grupos, catalogo, commodities, grades, parame
           {atual && (atual.organizacao_id === null ? (
             <span className="rounded bg-navy-soft px-2 py-0.5 text-sm text-navy">{t.grupoPadrao}</span>
           ) : (
-            <form action={excluirGrupo}
+            <FormAcao action={excluirGrupo}
                   onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirGrupo, { nome: rotuloGrupo(atual, d) }))) e.preventDefault(); }}>
               <input type="hidden" name="id" value={atual.id} />
               <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-            </form>
+            </FormAcao>
           ))}
         </div>
 
@@ -292,11 +293,11 @@ function LinhaGrade({ grade: g, parametros }: { grade: CommodityGrade; parametro
           <button type="button" className="btn-quieto px-3" aria-expanded={aberto} onClick={() => setAberto(!aberto)}>
             {t.especificacao} ({proprios})
           </button>
-          <form action={excluirGrade}
+          <FormAcao action={excluirGrade}
                 onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirGrade, { nome: g.nome }))) e.preventDefault(); }}>
             <input type="hidden" name="id" value={g.id} />
             <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-          </form>
+          </FormAcao>
         </div>
       </div>
       {aberto && (
@@ -356,11 +357,11 @@ function TabelaSpec({ itens }: { itens: CommodityParametro[] }) {
                 {f.numero(Number(p.ajuste_por_ponto), 2)}
               </td>
               <td>
-                <form action={excluirParametro}
+                <FormAcao action={excluirParametro}
                       onSubmit={(e) => { if (!window.confirm(fmtTexto(t.excluirParametro, { nome: p.nome }))) e.preventDefault(); }}>
                   <input type="hidden" name="id" value={p.id} />
                   <button type="submit" className="btn-perigo px-3">{d.comum.excluir}</button>
-                </form>
+                </FormAcao>
               </td>
             </tr>
           ))}

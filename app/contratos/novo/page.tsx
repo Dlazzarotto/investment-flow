@@ -60,7 +60,7 @@ export default async function NovoContratoPage({ searchParams }: { searchParams:
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
-      <Link href={direcao === "compra" ? "/compras" : "/vendas"} className="text-navy underline">← {t.voltar}</Link>
+      <Link href={direcao === "compra" ? "/compras" : "/vendas"} className="inline-flex min-h-touch items-center text-navy underline">← {t.voltar}</Link>
       <h1 className="mt-2 text-2xl">{t.novo}</h1>
       <p className="mt-1 text-stone">{origem ? `${t.daProposta}: ${origem}` : t.novoSubtitulo}</p>
       <ProjetosForaDaEmpresa organizacaoId={orgId}

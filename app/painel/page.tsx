@@ -5,7 +5,7 @@ import { PrecosMercado } from "@/components/pesquisa/PrecosMercado";
 import { pesquisaConfigurada } from "@/lib/ia/pesquisador";
 import { ProjetosForaDaEmpresa } from "@/components/contratos/ProjetosForaDaEmpresa";
 import {
-  acessoSuspenso, capitalPorProjeto, ehMaster, listarCarteira, listarCommodities, listarContratos, listarInstrumentos,
+  capitalPorProjeto, ehMaster, listarCarteira, listarCommodities, listarContratos, listarInstrumentos,
   listarMonetizacoes, listarCommoditiesPadrao, listarPesquisas, listarProjetos, listarRemuneracoes, minhaOrganizacao, obterCommoditiesPainel, obterPainelEmpresa, obterUsuario,
 } from "@/lib/consultas";
 import {
@@ -35,8 +35,8 @@ export default async function PainelPage() {
   if (!org) redirect(master ? "/master" : "/projetos");
   const orgId = org.organizacao.id;
   const projetosDaEmpresa = projetos.filter((p) => p.organizacao_id === orgId);
-  const [painel, suspenso, contratos, commodities, instrumentos, monetizacoes, remuneracoes, capital] = await Promise.all([
-    obterPainelEmpresa(orgId), acessoSuspenso(), listarContratos(orgId), listarCommodities(orgId),
+  const [painel, contratos, commodities, instrumentos, monetizacoes, remuneracoes, capital] = await Promise.all([
+    obterPainelEmpresa(orgId), listarContratos(orgId), listarCommodities(orgId),
     listarInstrumentos(orgId), listarMonetizacoes(orgId), listarRemuneracoes(orgId),
     capitalPorProjeto(projetosDaEmpresa.map((p) => p.id)),
   ]);
@@ -46,7 +46,7 @@ export default async function PainelPage() {
   const gestao = remuneracoes.map((r) => {
     const projeto = projetosDaEmpresa.find((p) => p.id === r.projeto_id);
     return { moeda: projeto?.moeda ?? "USD" as const,
-             ...projetarRemuneracao(r, baseDoProjeto(contratos, r.projeto_id, capital.get(r.projeto_id) ?? 0)) };
+             ...projetarRemuneracao(r, baseDoProjeto(contratos, r.projeto_id, capital.get(r.projeto_id) ?? 0, projeto?.moeda)) };
   });
   const receita = receitaDaEmpresa(resumo, resumoMonetizacoes(monetizacoes, instrumentos), gestao);
   const alertas = alertasInstrumentos(instrumentos, hojeISO()).map((a) => {
@@ -57,12 +57,6 @@ export default async function PainelPage() {
 
   return (
     <Shell projetos={projetos} temCarteira={carteira.length > 0} ehMaster={master} empresa={org.organizacao.nome}>
-      {suspenso && (
-        <p role="alert" className="mb-6 rounded-md border-l-4 border-loss bg-red-50 px-4 py-3">
-          <strong className="text-loss">{d.comum.acessoSuspenso}</strong>
-          <span className="mt-1 block">{d.comum.acessoSuspensoTexto}</span>
-        </p>
-      )}
       <h1 className="text-2xl">{t.titulo}</h1>
       <p className="mt-1 text-stone">{fmtTexto(t.subtitulo, { nome: org.organizacao.nome })}</p>
       <ProjetosForaDaEmpresa organizacaoId={org.organizacao.id}

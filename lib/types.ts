@@ -88,6 +88,12 @@ export interface ResumoProjeto {
   aportes_total: number;
 }
 
+/** Linha de public.contratos_do_projeto() (0033): só números, sem partes nem número do contrato. */
+export interface ContratoDoProjeto {
+  id: string; data: string; direcao: "venda" | "compra"; volume: number; unidade: string; moeda: Moeda;
+  preco: number; valor: number;
+}
+
 /** Linha de public.minha_carteira(): um projeto em que o usuário é participante. */
 export interface CarteiraItem {
   projeto_id: string;
@@ -200,6 +206,12 @@ export interface EstimativaIA {
  */
 export const PAPEIS_MEMBRO = ["admin", "manager", "escritorio", "investidor"] as const;
 export type PapelMembro = (typeof PAPEIS_MEMBRO)[number];
+/**
+ * Papéis que se DÃO por membro/convite. "investidor" existe no enum do banco, mas
+ * investidor entra pelo e-mail em Participantes: por membro ele caía numa carteira
+ * vazia (minha_carteira só lê participantes) e numa página inexistente.
+ */
+export const PAPEIS_CONVIDAVEIS = ["admin", "manager", "escritorio"] as const satisfies readonly PapelMembro[];
 
 /** Papel do usuário logado no projeto; null quando não tem acesso. */
 export type PapelNoProjeto = PapelMembro | "dono" | null;
@@ -329,6 +341,10 @@ export type PlanoEmpresa = (typeof PLANOS_EMPRESA)[number];
  * Uma empresa vista pelo master (public.empresas_da_plataforma()).
  * Traz CONTAGEM, nunca conteúdo: quantos projetos existem, não quais.
  */
+/** Situação da empresa cliente (0034). Só "ativa" tem acesso ao sistema; os dados das outras ficam guardados. */
+export const SITUACOES_EMPRESA = ["ativa", "parada", "arquivada"] as const;
+export type SituacaoEmpresa = (typeof SITUACOES_EMPRESA)[number];
+
 export interface EmpresaPlataforma {
   id: string;
   nome: string;
@@ -336,6 +352,8 @@ export interface EmpresaPlataforma {
   /** null = sem teto de assentos. */
   assentos: number | null;
   ativa: boolean;
+  /** 0034: ativa | parada | arquivada. `ativa` é espelho (ativa = situacao === "ativa"). */
+  situacao: SituacaoEmpresa;
   vigencia_ate: string | null;
   /** ativa e dentro da vigência. */
   em_dia: boolean;
@@ -382,7 +400,9 @@ export interface Fatura {
 export interface PainelPlataforma {
   moeda: Moeda;
   ativas: number;
+  /** Paradas ou com a vigência vencida — clientes a recuperar. Arquivadas ficam fora. */
   inativas: number;
+  arquivadas: number;
   em_debito: number;
   contrato_mensal: number;
   a_receber: number;
@@ -711,6 +731,8 @@ export type BaseComissao = (typeof BASES_COMISSAO)[number];
 export interface Contrato {
   id: string;
   organizacao_id: string;
+  /** Venda da 1ª versão de onde o contrato veio (0022). Com ela, os números ficam travados (0032). */
+  venda_origem_id: string | null;
   numero: string | null;
   /** Obsoleto desde a 0019: as partes moram em contrato_partes. */
   contraparte_id: string | null;
