@@ -99,7 +99,7 @@ lib/                   types.ts (enums espelham o SQL), validacao.ts (criarSchem
                        format.ts (formatadores(locale) — Intl, datas em UTC), csv.ts (CSV por idioma),
                        consultas.ts (leituras, com cache() por requisição), custeio.ts (motor de cálculo reverso),
                        ia/estimativa.ts (chamarClaude compartilhado) e ia/custo.ts (prompt de cargo/serviço)
-components/            Shell (menu por papel + aviso de suspensão), Lateral, SeletorIdioma, Cenarios, forms/, tabelas/ (edição na
+components/            Shell (menu por papel + aviso de suspensão), Lateral, SeletorIdioma, AnaliseProjeto + Cenarios, forms/, tabelas/ (edição na
                        própria linha), charts/ (estilo.ts = cores e fontes), ui/ (useHoje, useAcaoFormulario, FormAcao, BotaoExcluir),
                        custeio/ (Cadeia, FormEstimativa, Lancamentos, FormItem, PainelIA, PainelResultado)
 tests/                 calculos.test.ts, custeio.test.ts, pesquisa.test.ts, texto.test.ts, catalogo.test.ts, contratos.test.ts, documentos.test.ts, ia.test.ts, i18n.test.ts, csv.test.ts (vitest);
@@ -306,8 +306,11 @@ embarque ligados a fornecedor** e margem real × proposta (etapa 4) → painel r
   (capex, vendas, despesas): contrato concluído está nos totais, não no fluxo — a planilha diz isso.
 - **Carteira:** a tabela de vendas soma as antigas e os contratos concluídos (`contratos_do_projeto`, 0033), que fecham
   com a receita do topo. Nunca nomes nem número de contrato.
-- `components/Cenarios.tsx` e `components/charts/Grafico*.tsx` estão órfãos desde a 0022 (o dashboard do projeto saiu):
-  religar no Resumo ou apagar é decisão pendente com o usuário.
+- **Gráficos e cenários ficam DENTRO do projeto (decisão do usuário):** `components/AnaliseProjeto.tsx` no Resumo —
+  saída × receita por mês, acumulado com break-even, capex por categoria (só quem vê investimentos) e cenários, com os
+  números também em tabela ("Ver os números em tabela"). As negociações da empresa seguem no painel principal. Fonte:
+  `fluxo_mensal()` pelo RLS de quem olha (gerente vê sem capex). Legenda e rótulos em tinta (`TINTA`), nunca na cor
+  da série; eixo Y com 112 px para "R$ 600 mil" a 18 px.
 
 ### Pesquisa de mercado e preços no painel (0031, decisões do usuário)
 

@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { fmtTexto } from "@/lib/i18n";
 import type { FluxoMensal, Moeda } from "@/lib/types";
 import {
-  EIXO, ESPACO_ROTULO, ESTILO_LEGENDA, ESTILO_TOOLTIP, FONTE, GAIN, GRADE, LARGURA_EIXO_Y, MARGEM, NAVY, ORANGE, TICK,
+  EIXO, ESPACO_ROTULO, ESTILO_LEGENDA, ESTILO_TOOLTIP, FONTE, GAIN, GRADE, LARGURA_EIXO_Y, MARGEM, NAVY, ORANGE, TICK, TINTA,
 } from "./estilo";
 
 /** Gráfico 2 — acumulados com a linha do break-even. */
@@ -33,13 +33,13 @@ export function GraficoBreakeven({ fluxo, moeda, breakeven }:
           <YAxis tick={TICK} tickLine={false} axisLine={false} width={LARGURA_EIXO_Y}
                  tickFormatter={(v) => f.moeda(Number(v), moeda, true)} />
           <Tooltip formatter={(v: number, nome: string) => [f.moeda(v, moeda), nome]} contentStyle={ESTILO_TOOLTIP} />
-          <Legend wrapperStyle={ESTILO_LEGENDA} />
+          <Legend wrapperStyle={ESTILO_LEGENDA} formatter={(v: string) => <span style={{ color: TINTA }}>{v}</span>} />
           <Area type="monotone" dataKey="rec_acumulada" name={d.dashboard.serieReceitaAcum} stroke={NAVY} strokeWidth={3}
                 fill="url(#gRec)" dot={{ r: 3 }} />
           <Line type="monotone" dataKey="saida_acumulada" name={d.dashboard.serieCusto} stroke={ORANGE} strokeWidth={3} dot={{ r: 3 }} />
           {rotuloBe && (
             <ReferenceLine x={rotuloBe} stroke={GAIN} strokeWidth={2} strokeDasharray="6 4"
-                           label={{ value: fmtTexto(d.dashboard.breakevenRotulo, { mes: rotuloBe }), position: "top", fill: GAIN, fontSize: FONTE }} />
+                           label={{ value: fmtTexto(d.dashboard.breakevenRotulo, { mes: rotuloBe }), position: "top", fill: NAVY, fontSize: FONTE }} />
           )}
         </ComposedChart>
       </ResponsiveContainer>

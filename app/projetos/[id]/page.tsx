@@ -4,9 +4,11 @@ import { ConfirmarExclusaoProjeto } from "@/components/ConfirmarExclusaoProjeto"
 import { SelectAutoSubmit } from "@/components/ui/SelectAutoSubmit";
 import { SeloStatus } from "@/components/contratos/SeloStatus";
 import {
-  capitalPorProjeto, listarContratos, listarParticipantes, listarRemuneracoes, obterPapel, obterProjeto, obterResumo,
+  capitalPorProjeto, listarContratos, listarInvestimentos, obterFluxoMensal, listarParticipantes, listarRemuneracoes, obterPapel, obterProjeto, obterResumo,
 } from "@/lib/consultas";
 import { baseDoProjeto, projetarRemuneracao, valorContrato } from "@/lib/contratos";
+import { alocacaoPorCategoria } from "@/lib/calculos";
+import { AnaliseProjeto } from "@/components/AnaliseProjeto";
 import { permissoes } from "@/lib/permissoes";
 import { obterD } from "@/lib/i18n/server";
 import { fmtTexto, rotuloUnidade } from "@/lib/i18n";
@@ -30,11 +32,14 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
   const papel = await obterPapel(projeto.id);
   const pode = permissoes(papel);
   const org = projeto.organizacao_id;
-  const [resumo, participantes, contratos, remuneracoes, capital] = await Promise.all([
+  const [resumo, participantes, contratos, remuneracoes, capital, fluxo, investimentos] = await Promise.all([
     obterResumo(projeto.id), listarParticipantes(projeto.id),
     org && pode.administrar ? listarContratos(org) : Promise.resolve([]),
     org && pode.administrar ? listarRemuneracoes(org) : Promise.resolve([]),
     capitalPorProjeto([projeto.id]),
+    // Fluxo pelo RLS de quem olha: para gerente e escritório vem sem capex, como o resto da tela.
+    obterFluxoMensal(projeto.id),
+    pode.verInvestimentos ? listarInvestimentos(projeto.id) : Promise.resolve([]),
   ]);
   const m = projeto.moeda;
   const doProjeto = contratos.filter((c) => c.projeto_id === projeto.id && c.conta === "projeto");
@@ -81,6 +86,10 @@ export default async function ResumoProjetoPage({ params }: { params: { id: stri
           </nav>
         )}
       </section>
+
+      {/* Análise do PROJETO (decisão do usuário): gráficos e cenários ficam aqui dentro; as
+          negociações da empresa seguem no painel principal. */}
+      <AnaliseProjeto fluxo={fluxo} moeda={m} alocacao={pode.verInvestimentos ? alocacaoPorCategoria(investimentos) : []} />
 
       <section className="secao">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
