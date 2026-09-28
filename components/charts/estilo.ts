@@ -15,8 +15,8 @@ export const FONTE = 18;
 /** Espaço mínimo entre rótulos do eixo X: a 18 px o Recharts omite os que não couberem. */
 export const ESPACO_ROTULO = 16;
 
-/** Largura do eixo Y — comporta "US$ 2,1 mi" a 18 px sem cortar. */
-export const LARGURA_EIXO_Y = 92;
+/** Largura do eixo Y — comporta "R$ 600 mil" / "US$ 2,1 mi" a 18 px sem cortar (92 cortava o "R$"). */
+export const LARGURA_EIXO_Y = 112;
 
 /**
  * Margem do gráfico. O `right` existe para o último rótulo do eixo X: ele é centrado
@@ -27,3 +27,6 @@ export const MARGEM = { top: 8, right: 34, left: 8, bottom: 0 } as const;
 export const ESTILO_TOOLTIP = { fontSize: FONTE } as const;
 export const ESTILO_LEGENDA = { fontSize: FONTE, paddingTop: 8 } as const;
 export const TICK = { fontSize: FONTE } as const;
+
+/** Texto usa tinta, nunca a cor da série: a cor fica na marca ao lado (legenda, rótulos de fatia). */
+export const TINTA = "#1B1C23";

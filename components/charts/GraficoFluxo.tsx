@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { formatadores } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/client";
 import type { FluxoMensal, Moeda } from "@/lib/types";
-import { EIXO, ESPACO_ROTULO, ESTILO_LEGENDA, ESTILO_TOOLTIP, GRADE, LARGURA_EIXO_Y, MARGEM, NAVY, ORANGE, TICK } from "./estilo";
+import { EIXO, ESPACO_ROTULO, ESTILO_LEGENDA, ESTILO_TOOLTIP, GRADE, LARGURA_EIXO_Y, MARGEM, NAVY, ORANGE, TICK, TINTA } from "./estilo";
 
 /** Gráfico 1 — Investimentos vs Receitas por mês. */
 export function GraficoFluxo({ fluxo, moeda }: { fluxo: FluxoMensal[]; moeda: Moeda }) {
@@ -21,7 +21,7 @@ export function GraficoFluxo({ fluxo, moeda }: { fluxo: FluxoMensal[]; moeda: Mo
                  tickFormatter={(v) => f.moeda(Number(v), moeda, true)} />
           <Tooltip formatter={(v: number, nome: string) => [f.moeda(v, moeda), nome]}
                    labelFormatter={(l) => String(l)} contentStyle={ESTILO_TOOLTIP} />
-          <Legend wrapperStyle={ESTILO_LEGENDA} />
+          <Legend wrapperStyle={ESTILO_LEGENDA} formatter={(v: string) => <span style={{ color: TINTA }}>{v}</span>} />
           {/* Uma barra por lado: tudo que saiu (aporte + custo de venda + despesa) contra a receita. */}
           <Bar dataKey="saida" name={d.dashboard.serieSaida} fill={ORANGE} radius={[3, 3, 0, 0]} />
           <Bar dataKey="receita" name={d.dashboard.serieReceitas} fill={NAVY} radius={[3, 3, 0, 0]} />
